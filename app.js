@@ -28,26 +28,48 @@ const ACTIVE_ST = ['في الانتظار','قيد التجهيز','قيد ال�
 const SOURCES = ['ماسنجر','إنستغرام','تعليقات','لاندنج بيج','تيك توك','اتصال','زبون قديم'];
 const EXP_CATS = ['إيجار مكتب ومستودع','كهرباء وماء','إنترنت واتصالات','تغليف','برامج واشتراكات','مواصلات','رواتب ومكافآت','نثريات','أخرى'];
 const COLORS = ['#0f4c45','#8a3b12','#2c5f8f','#6b3f8a','#a0611a','#3e6b2a','#9b2d4a','#334155'];
-const SECTIONS = [['dash','لوحة التحكم'],['orders','الطلبات والشحنات'],['delivery','التوصيل والجولات'],['products','المنتجات'],['inventory','المستودع'],['purchases','المشتريات'],['expenses','المصاريف'],['users','المستخدمين والصلاحيات'],['settings','الإعدادات']];
-const SEC_NAME = Object.fromEntries(SECTIONS);
-const NAV = [['اليومي', ['dash','orders','delivery']], ['المخزون', ['products','inventory','purchases']], ['المالية', ['expenses']], ['الإدارة', ['users','settings']]];
+const SECTIONS = [['dash','لوحة التحكم'],['orders','الطلبات والشحنات'],['delivery','التوصيل والجولات'],
+  ['inbox','صندوق الرسائل'],['control','غرفة التحكم'],['team','مراقبة الموظفين'],['tasks','المهام'],
+  ['ads','الحسابات الإعلانية'],['landing','صفحات الهبوط'],['page','تقوية الصفحة'],
+  ['products','المنتجات'],['inventory','المستودع'],['purchases','المشتريات'],
+  ['agency','الوكالة وعملاءها'],['leads','العملاء المحتملين'],
+  ['accounting','المحاسبة'],['expenses','المصاريف'],['staff','الموظفين والرواتب'],
+  ['ai','المساعد الذكي'],['users','المستخدمين والصلاحيات'],['settings','الإعدادات']];
+const SEC_NAME = Object.fromEntries(SECTIONS.concat([['myday','دوامي'],['mytasks','مهامي'],['portal','متابعة الشغل'],['client','ملف العميل']]));
+const PERSONAL = new Set(['myday','mytasks']);
+const NAV = [['اليومي', ['dash','orders','delivery']], ['شغلي', ['myday','mytasks']], ['الرسائل والفريق', ['inbox','control','team','tasks']],
+  ['التسويق', ['ads','landing','page']], ['المخزون', ['products','inventory','purchases']], ['الوكالة', ['agency','leads']],
+  ['المالية', ['accounting','expenses','staff']], ['الإدارة', ['ai','users','settings']]];
 const TEMPLATES = {
   'مدير عام': null,
+  'موظفة رسائل': {inbox:'edit', orders:'edit', products:'view'},
+  'مشرفة فريق': {dash:'view', control:'edit', team:'view', inbox:'edit', orders:'edit', tasks:'edit', page:'edit', products:'view'},
   'مدخل طلبات': {dash:'view', orders:'edit', products:'view'},
   'مستودع وتوصيل': {dash:'view', orders:'edit', delivery:'edit', products:'view', inventory:'edit', purchases:'edit'},
-  'محاسب': {dash:'view', orders:'view', delivery:'view', inventory:'view', purchases:'view', expenses:'edit'},
+  'محاسب': {dash:'view', orders:'view', delivery:'view', inventory:'view', purchases:'view', expenses:'edit', accounting:'view', staff:'view'},
+  'ميديا باير': {dash:'view', ads:'edit', landing:'edit', page:'edit', products:'view', ai:'edit'},
+  'تسويق ومبيعات للشركات': {leads:'edit', agency:'view'},
+  'مدير الوكالة': {dash:'view', agency:'edit', leads:'edit', tasks:'edit', ai:'edit', ads:'view'},
+  'فريق إنتاج وتصميم': {},
   'مخصص': {}
 };
 const TPL_DESC = {
   'مدير عام': 'كل الأقسام، تعديل كامل، وإدارة المستخدمين',
+  'موظفة رسائل': 'بوابة خاصة: رسائلها، والطلبات، ودوامها ومهامها. تحت المراقبة',
+  'مشرفة فريق': 'غرفة التحكم ومراقبة الموظفين والرسائل والمهام',
   'مدخل طلبات': 'بيدخل طلبات وبيجهزها، وبيشوف المنتجات',
   'مستودع وتوصيل': 'الطلبات والجولات والسائقين والمستودع والمشتريات',
-  'محاسب': 'المصاريف تعديل، والطلبات والجولات والمستودع عرض فقط',
+  'محاسب': 'المصاريف تعديل، والمحاسبة والرواتب والطلبات عرض فقط',
+  'ميديا باير': 'الحسابات الإعلانية وصفحات الهبوط وتقوية الصفحة والمساعد الذكي',
+  'تسويق ومبيعات للشركات': 'بيجيب شركات ومطاعم للوكالة وبيتابعهم لحد التعاقد',
+  'مدير الوكالة': 'عملاء الوكالة والحملات والتسليمات والمهام',
+  'فريق إنتاج وتصميم': 'مهامه وتسليماته (صور، فيديو، تصاميم) بس',
   'مخصص': 'إنت بتحدد كل قسم لحال'
 };
 
 let db = null, me = null;
 const ST = {settings: null, products: [], couriers: []};
+const K = {onEnter: [], onLogout: [], onLive: [], liveIgnore: new Set(), liveViews: {}, badges: {}, badgeRed: {}, statusLine: '', adsList: []};
 const ui = {view: 'dash', ofilter: 'نشط', search: '', delTab: 'today', month: monthOf(today()), invTab: 'stock'};
 
 /* ================= طبقة البيانات (Supabase) ================= */
@@ -116,15 +138,33 @@ function supaDb(cfg) {
       const rows = chk(await apply(sb.from(t).update(patch), {eq: match}).select());
       if (!rows.length) throw new Error('ما عندك صلاحية لهالعملية'); return rows;
     },
-    async del(t, match) { const rows = chk(await apply(sb.from(t).delete(), {eq: match}).select()); if (!rows.length) throw new Error('ما عندك صلاحية لهالعملية'); },
-    live(cb) { sb.channel('saber-live').on('postgres_changes', {event: '*', schema: 'public'}, p => cb(p.table)).subscribe(); }
+    async del(t, match, allowEmpty) { const rows = chk(await apply(sb.from(t).delete(), {eq: match}).select()); if (!rows.length && !allowEmpty) throw new Error('ما عندك صلاحية لهالعملية'); },
+    live(cb) { sb.channel('saber-live').on('postgres_changes', {event: '*', schema: 'public'}, p => cb(p.table, p)).subscribe(); },
+    async qAll(t, o = {}) {
+      const out = []; for (let from = 0; ; from += 1000) {
+        let r = apply(sb.from(t).select(o.select || '*'), o).range(from, from + 999);
+        const rows = chk(await r); out.push(...rows); if (rows.length < 1000) break;
+      } return out;
+    },
+    async fn(name, body) {
+      const {data, error} = await sb.functions.invoke(name, {body});
+      if (error) {
+        let msg = error.message || '';
+        try { const j = await error.context?.json?.(); if (j?.error) msg = j.error; } catch (e) {}
+        if (/not found|404|Failed to send/i.test(msg)) msg = 'الدالة "' + name + '" مش منشورة على Supabase لسا. شوف دليل الربط';
+        throw new Error(msg);
+      }
+      if (data?.error) throw new Error(data.error);
+      return data;
+    }
   };
 }
 
 /* ================= الصلاحيات ================= */
 const isAdmin = () => me?.role === 'مدير عام';
 const perm = sec => !me ? 'none' : isAdmin() ? 'edit' : (me.perms?.[sec] || 'none');
-const can = (sec, lvl = 'view') => lvl === 'edit' ? perm(sec) === 'edit' : perm(sec) !== 'none';
+const isClient = () => me?.role === 'عميل';
+const can = (sec, lvl = 'view') => PERSONAL.has(sec) ? !!me && !isClient() : lvl === 'edit' ? perm(sec) === 'edit' : perm(sec) !== 'none';
 const ACT_SEC = {
   orderForm:'orders', toPrep:'orders', toWaiting:'orders', cancelOrd:'orders', allPrep:'orders', editInfo:'orders',
   dispatchOne:'delivery', dispatchSel:'delivery', outcomeForm:'delivery', closeRunForm:'delivery', closeDay:'delivery', kForm:'delivery', kPay:'delivery',
@@ -280,16 +320,19 @@ async function enter(user, fresh) {
   if (fresh) db.rpc('touch_login').catch(() => {});
   await loadBase();
   $('#login').hidden = true; $('.app').hidden = false;
-  const allowed = NAV.flatMap(g => g[1]).filter(k => can(k));
-  if (!allowed.includes(ui.view)) ui.view = allowed[0] || 'dash';
+  const allowed = isClient() ? ['portal'] : NAV.flatMap(g => g[1]).filter(k => can(k));
+  if (!allowed.includes(ui.view)) ui.view = can('inbox', 'edit') && !can('dash') ? 'inbox' : (allowed.find(k => !PERSONAL.has(k)) || allowed[0] || 'dash');
   render();
   try { db.live(onLive); } catch (e) {}
+  for (const f of K.onEnter) { try { f(); } catch (e) {} }
 }
-async function logout() { await db.signOut(); me = null; ui.view = 'dash'; closeM(); showLogin(); }
+async function logout() { for (const f of K.onLogout) { try { f(); } catch (e) {} } await db.signOut(); me = null; ui.view = 'dash'; closeM(); showLogin(); }
 
 /* ================= العرض ================= */
 let renderSeq = 0, pendingRefresh = false, liveT = 0;
-function onLive(table) {
+function onLive(table, payload) {
+  for (const f of K.onLive) { try { f(table, payload); } catch (e) {} }
+  if (K.liveIgnore.has(table) && !K.liveViews[ui.view]?.includes(table)) return;
   clearTimeout(liveT);
   liveT = setTimeout(async () => {
     if (table === 'products') { try { ST.products = await db.q('products', {order: ['name', true]}); } catch (e) {} }
@@ -305,9 +348,9 @@ async function render() {
   if (!me) return;
   const seq = ++renderSeq;
   $('#coName').textContent = ST.settings?.company || 'صابر أونلاين';
-  $('#me').innerHTML = `<div><b>${esc(me.name || me.email)}</b><small>${esc(me.role)}</small></div><div class="row" style="gap:4px"><button data-act="myPw">كلمة السر</button><button data-act="logout">خروج</button></div>`;
-  const nav = NAV.map(([g, ks]) => [g, ks.filter(k => can(k))]).filter(g => g[1].length);
-  $('#nav').innerHTML = nav.map(([g, ks]) => `<div class="grp">${g}</div>` + ks.map(k => `<button class="${ui.view === k ? 'on' : ''}" data-act="go" data-id="${k}"><span>${SEC_NAME[k]}</span></button>`).join('')).join('');
+  $('#me').innerHTML = `<div><b>${esc(me.name || me.email)}</b><small>${esc(me.role)}${K.statusLine ? ' · ' + K.statusLine : ''}</small></div><div class="row" style="gap:4px"><button data-act="myPw">كلمة السر</button><button data-act="logout">خروج</button></div>`;
+  const nav = isClient() ? [['', ['portal']]] : NAV.map(([g, ks]) => [g, ks.filter(k => can(k))]).filter(g => g[1].length);
+  $('#nav').innerHTML = nav.map(([g, ks]) => `<div class="grp">${g}</div>` + ks.map(k => `<button class="${ui.view === k || (k === 'agency' && ui.view === 'client') ? 'on' : ''}" data-act="go" data-id="${k}"><span>${SEC_NAME[k]}</span>${K.badges[k] ? `<em class="${K.badgeRed[k] ? 'red' : ''}">${K.badges[k]}</em>` : ''}</button>`).join('')).join('');
   if (!nav.length) { $('#main').innerHTML = '<p class="note">ما إلك صلاحية على أي قسم. راجع المدير.</p>'; return; }
   const slow = setTimeout(() => { if (seq === renderSeq) $('#main').classList.add('loading'); }, 180);
   try {
@@ -416,19 +459,21 @@ function ofRow(i) {
   i = i || {}; const list = ST.products.filter(p => p.active); const p = P(i.product_id) || list[0];
   return `<div class="ofrow"><select class="of-p" aria-label="المنتج">${list.map(x => `<option value="${x.id}" ${x.id === p?.id ? 'selected' : ''}>${esc(x.name)} (${x.stock} بالمستودع)</option>`).join('')}</select><input class="of-q" type="number" min="1" value="${i.qty || 1}" aria-label="الكمية"><input class="of-pr" type="number" step="any" value="${i.price ?? p?.price ?? 0}" aria-label="سعر القطعة"><button type="button" class="btn sm ghost" data-act="ofDel" aria-label="حذف السطر">✕</button></div>`;
 }
-function openOrderForm() {
+function openOrderForm(init = {}) {
   if (!ST.products.some(p => p.active)) { toast('أضف منتج أول من قسم المنتجات', true); return; }
-  const cs = cities(); const city = cs.includes('عمان') ? 'عمان' : (cs[0] || 'عمان');
+  const cs = cities(); const city = init.city && cs.includes(init.city) ? init.city : cs.includes('عمان') ? 'عمان' : (cs[0] || 'عمان');
+  const ads = (K.adsList || []);
   const fld = (id, l, inner, wide) => `<label class="fld ${wide ? 'wide' : ''}" for="${id}"><span>${l}</span>${inner}</label>`;
-  $('#mtitle').textContent = 'طلب جديد';
+  $('#mtitle').textContent = init.customer ? 'طلب جديد لـ ' + init.customer : 'طلب جديد';
   $('#mform').innerHTML = `<div class="fgrid">
-    ${fld('of_name', 'اسم الزبون', '<input id="of_name" required autocomplete="off">')}${fld('of_phone', 'الهاتف', '<input id="of_phone" required inputmode="tel" placeholder="07xxxxxxxx" autocomplete="off">')}
-    ${fld('of_phone2', 'هاتف ثاني (اختياري)', '<input id="of_phone2" inputmode="tel" autocomplete="off">')}${fld('of_src', 'المصدر', `<select id="of_src">${SOURCES.map(s => `<option>${s}</option>`).join('')}</select>`)}
+    ${fld('of_name', 'اسم الزبون', `<input id="of_name" required autocomplete="off" value="${esc(init.customer || '')}">`)}${fld('of_phone', 'الهاتف', '<input id="of_phone" required inputmode="tel" placeholder="07xxxxxxxx" autocomplete="off">')}
+    ${fld('of_phone2', 'هاتف ثاني (اختياري)', '<input id="of_phone2" inputmode="tel" autocomplete="off">')}${fld('of_src', 'المصدر', `<select id="of_src">${SOURCES.map(s => `<option ${s === init.source ? 'selected' : ''}>${s}</option>`).join('')}</select>`)}
     ${fld('of_city', 'المدينة', `<select id="of_city">${cs.map(c => `<option ${c === city ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select>`)}
     ${fld('of_area', 'المنطقة / الحي', `<input id="of_area" list="of_areas" required autocomplete="off"><datalist id="of_areas">${areasFor(city).map(a => `<option value="${esc(a)}">`).join('')}</datalist>`)}
     ${fld('of_addr', 'العنوان بالتفصيل', '<input id="of_addr" required placeholder="الشارع، البناية، الطابق، علامة مميزة" autocomplete="off">', 1)}
-    ${fld('of_notes', 'ملاحظات للسائق', '<input id="of_notes" placeholder="مثلاً: يتصل قبل بنص ساعة" autocomplete="off">', 1)}</div>
-   <h3 style="margin:16px 0 8px">المنتجات <small class="m">المنتج · الكمية · سعر القطعة</small></h3><div id="ofItems" class="ofitems">${ofRow()}</div>
+    ${fld('of_notes', 'ملاحظات للسائق', '<input id="of_notes" placeholder="مثلاً: يتصل قبل بنص ساعة" autocomplete="off">', 1)}
+    ${!init.conv_id && ads.length ? fld('of_ad', 'الإعلان اللي جاب الزبون (إذا معروف)', `<select id="of_ad"><option value="">ما بعرف / بدون إعلان</option>${ads.map(a => `<option value="${esc(a.ad_id)}" ${a.ad_id === init.ad_id ? 'selected' : ''}>${esc(a.name)}</option>`).join('')}</select>`, 1) : ''}</div>
+   <h3 style="margin:16px 0 8px">المنتجات <small class="m">المنتج · الكمية · سعر القطعة</small></h3><div id="ofItems" class="ofitems">${(init.items && init.items.length ? init.items : [null]).map(ofRow).join('')}</div>
    <button type="button" class="btn sm" data-act="ofAdd" style="margin-top:8px">+ منتج ثاني</button>
    <div class="fgrid" style="margin-top:14px">${fld('of_fee', 'سعر التوصيل على الزبون (د.أ)', `<input id="of_fee" type="number" step="any" inputmode="decimal" value="${feeFor(city)}">`)}${fld('of_disc', 'خصم (د.أ)', '<input id="of_disc" type="number" step="any" inputmode="decimal" value="0">')}</div>
    <div class="ofsum" id="ofSum"></div><p class="lerr" id="ferr"></p>
@@ -453,7 +498,9 @@ function openOrderForm() {
     const btn = $('#fsave'); btn.disabled = true;
     try {
       const r = await db.rpc('create_order', {p: {customer: $('#of_name').value.trim(), phone, phone2: cleanPhone($('#of_phone2').value), source: $('#of_src').value, city: $('#of_city').value,
-        area: $('#of_area').value.trim(), address: $('#of_addr').value.trim(), notes: $('#of_notes').value.trim(), delivery_fee: N($('#of_fee').value), discount: N($('#of_disc').value), items}});
+        area: $('#of_area').value.trim(), address: $('#of_addr').value.trim(), notes: $('#of_notes').value.trim(), delivery_fee: N($('#of_fee').value), discount: N($('#of_disc').value), items,
+        conv_id: init.conv_id || null, ad_id: init.conv_id ? null : ($('#of_ad')?.value || null)}});
+      if (init.onDone) { try { await init.onDone(r); } catch (e) {} }
       const low = items.filter(i => N(P(i.product_id)?.stock) < i.qty).map(i => P(i.product_id)?.name);
       closeM(true); ST.products = await db.q('products', {order: ['name', true]});
       toast('انضاف الطلب #' + r.no + (low.length ? ' · انتبه: ' + low.join('، ') + ' الكمية بالمستودع ما بتكفي' : ''), !!low.length); render();
@@ -759,7 +806,7 @@ function boot() {
   const c = window.SABER_CONFIG || {};
   if (!c.url || /YOUR-PROJECT/.test(c.url) || !c.key || /YOUR-ANON/.test(c.key)) {
     const el = $('#login'); el.hidden = false;
-    el.innerHTML = `<div class="lwrap" style="grid-template-columns:1fr"><div class="lform"><h2>خطوة أخيرة قبل التشغيل</h2><p class="note">افتح ملف <b>assets/config.js</b> وحط فيه <b>Project URL</b> و<b>anon public key</b> من Supabase ← Project Settings ← API، وارفعه على GitHub.</p></div></div>`;
+    el.innerHTML = `<div class="lwrap" style="grid-template-columns:1fr"><div class="lform"><h2>خطوة أخيرة قبل التشغيل</h2><p class="note">افتح ملف <b>config.js</b> وحط فيه <b>Project URL</b> و<b>anon public key</b> من Supabase ← Project Settings ← API، وارفعه على GitHub.</p></div></div>`;
     return;
   }
   if (!window.supabase?.createClient) { toast('ما قدرت أحمّل مكتبة Supabase. تأكد من الإنترنت وحدّث الصفحة', true); return; }
@@ -767,5 +814,12 @@ function boot() {
   const impl = supaDb(c);
   start(impl, link).then(() => { if (location.hash || /type=|error_code=/.test(location.search)) history.replaceState(null, '', location.pathname); });
 }
-window.App = {boot, start};
+Object.assign(K, {$, $$, esc, N, fmt, jd, pct, sum, today, addDays, monthOf, monthEnd, fmtDT, dayName, cleanPhone, PHONE_RE,
+  STATUSES, ST_CLS, SOURCES, COLORS, SECTIONS, SEC_NAME, NAV, TEMPLATES, TPL_DESC, PERSONAL, ACT_SEC, V, A, ST, ui,
+  pill, kpi, head, table, chips, toast, openForm, openInfo, closeM, copyText, can, perm, isAdmin, isClient, render, softRender,
+  openOrderForm, arabicErr, P, cities, feeFor, shrink, applyPerms,
+  setModalCancel: f => { modalCancel = f; } });
+Object.defineProperty(K, 'db', {get: () => db});
+Object.defineProperty(K, 'me', {get: () => me});
+window.App = {boot, start, _: K};
 })();

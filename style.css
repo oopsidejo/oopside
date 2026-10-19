@@ -262,3 +262,17 @@ img{max-width:100%}
 .lerr:empty{display:none}
 #sform{flex-wrap:nowrap}
 @media (max-width:600px){.srch{width:100%}#sform{width:100%}}
+/* phase 2 */
+.board{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;align-items:start}
+.board .col{background:var(--surface-2);border-radius:var(--r);padding:10px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.board .col>h3{font-size:14px;margin:2px 4px 4px}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.tcard{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.tcard.late{border-color:var(--bad)}
+.tcard b{font-size:14px}
+.tdet{margin:0;font-size:13px;white-space:pre-wrap}
+.warnbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--warn-bg);color:var(--warn)}
+.bub.outside{background:var(--bad-bg);color:var(--ink);border:1px dashed var(--bad)}
+.aitext{font-size:14.5px;line-height:1.9;max-width:80ch}
+.empty.m{padding:8px;text-align:center}
+.bar .tr i{max-width:100%}
