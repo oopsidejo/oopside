@@ -5,7 +5,9 @@
 'use strict';
 const K = window.App._;
 const {$, $$, esc, N, fmt, jd, pct, sum, today, addDays, monthOf, monthEnd, fmtDT, pill, kpi, head, table, chips, toast,
-  openForm, openInfo, closeM, copyText, can, isAdmin, isClient, V, A, ST, ui, ACT_SEC, P} = K;
+  openForm, openInfo, closeM, copyText, can, isAdmin, isClient, V, A, ST, ui, ACT_SEC, P, wsName} = K;
+const WSK = () => ui.ws || 'store';
+const inWs = kind => WSK() === 'agency' ? kind === 'الوكالة' : kind !== 'الوكالة';
 const db = new Proxy({}, {get: (_, k) => { const d = K.db; const v = d[k]; return typeof v === 'function' ? v.bind(d) : v; }});
 const me = () => K.me;
 const rule = (k, d) => N(ST.settings?.rules?.[k] ?? d);
@@ -28,7 +30,8 @@ Object.assign(ACT_SEC, {
   empForm: 'staff', depForm: 'staff', payAdj: 'staff', paySalary: 'staff', clientForm: 'agency', genInvoices: 'agency',
   campForm: 'agency', delivForm: 'agency', stageForm: 'agency', stageSet: 'agency', invForm: 'agency', invToggle: 'agency',
   updForm: 'agency', portalLogin: 'agency', srvForm: 'agency', leadForm: 'leads', leadConvert: 'leads',
-  aiProducts: 'ai', aiTasks: 'ai', aiAsk: 'ai', aiCreate: 'ai', saveRules: 'settings', metaPageForm: 'settings', backup: 'settings'
+  aiProducts: 'ai', aiTasks: 'ai', aiAsk: 'ai', aiCreate: 'ai', saveRules: 'settings', metaPageForm: 'settings', backup: 'settings',
+  pageForm: 'settings', saveAgName: 'settings'
 });
 ACT_SEC.leadStage = 'leads';
 
@@ -229,7 +232,7 @@ Object.assign(A, {
     ta.value = ''; await K.render(); const m = $('#msgs'); if (m) m.scrollTop = m.scrollHeight; refreshBadges();
   },
   convOrder: id => { const c = ui.convData; const p = c?.product_id ? P(c.product_id) : null;
-    K.openOrderForm({customer: c?.customer || '', conv_id: id, source: CH_SOURCE[c?.channel] || 'ماسنجر', items: p ? [{product_id: p.id, qty: 1, price: p.price}] : null}); },
+    K.openOrderForm({customer: c?.customer || '', conv_id: id, source: CH_SOURCE[c?.channel] || 'ماسنجر', sales_page_id: c?.sales_page_id || '', items: p ? [{product_id: p.id, qty: 1, price: p.price}] : null}); },
   convClose: id => openForm('إغلاق بدون طلب', [{k:'reason', l:'السبب', t:'select', opts: CLOSE_REASONS, wide: 1}], null,
     async v => { await db.rpc('conv_close', {cid: id, reason: v.reason}); toast(['سأل عن السعر بس','غالي عليه','بدو يفكر'].includes(v.reason) ? 'انغلقت وانضاف الزبون لقائمة المتابعة' : 'انغلقت'); refreshBadges(); K.render(); }),
   convReopen: async id => { await db.rpc('conv_reopen', {cid: id}); K.render(); }
@@ -259,9 +262,10 @@ function score(r, days) {
 V.team = async () => {
   const d = ui.teamDays || 1, from = addDays(today(), -(d - 1));
   const [rows, warns] = await Promise.all([db.rpc('team_stats', {d_from: from, d_to: today()}), db.q('v_warnings', {order: ['at', false], limit: 60})]);
-  const list = (rows || []).filter(r => r.role !== 'مدير عام').map(r => ({...r, score: score(r, d)}));
+  const kinds = await db.rpc('team_kinds').catch(() => []) || []; const kindOf = u => kinds.find(k => k.user_id === u)?.kind;
+  const list = (rows || []).filter(r => r.role !== 'مدير عام' && inWs(kindOf(r.user_id))).map(r => ({...r, score: score(r, d)}));
   const cls = s => s >= 75 ? 'good' : s >= 55 ? 'warn' : 'bad';
-  return head('مراقبة الموظفين', 'سرعة الرد، الرسائل الضايعة، الخمول، الخروج من الصفحة، التأخير، والتحويل لطلبات', periodChips(d, 'teamDays', [[1, 'اليوم'], [7, '7 أيام'], [30, '30 يوم']])) +
+  return head('مراقبة الموظفين · ' + esc(wsName(WSK())), 'موظفين ' + esc(wsName(WSK())) + ' بس (حسب قسم الموظف). سرعة الرد، الرسائل الضايعة، الخمول، الخروج من الصفحة، التأخير، والتحويل لطلبات', periodChips(d, 'teamDays', [[1, 'اليوم'], [7, '7 أيام'], [30, '30 يوم']])) +
     table([{h:'الموظف', f:r => `<b>${esc(r.name)}</b><br><small class="m">${esc(r.role)}</small>`}, {h:'التقييم', f:r => pill(r.score + '/100', cls(r.score))}, {h:'أيام دوام', f:r => r.days},
       {h:'محادثات', f:r => r.convs}, {h:'أول رد', f:r => `<span class="${N(r.avg_first_min) > rule('sla', 5) ? 'neg' : ''}">${r.avg_first_min != null ? r.avg_first_min + ' د' : '—'}</span>`}, {h:'رد متأخر', f:r => r.late_replies},
       {h:'ضاعت', f:r => `<b class="${N(r.missed) ? 'neg' : ''}">${r.missed}</b>`}, {h:'برا الصفحة', f:r => `<span class="${N(r.away_min) > 30 * d ? 'neg' : ''}">${fmt(r.away_min)} د</span>`}, {h:'خمول', f:r => fmt(r.idle_min) + ' د'},
@@ -291,11 +295,11 @@ function taskCard(t, mine) {
 V.tasks = async () => {
   await people();
   const f = ui.tfilter || {}, o = {order: ['created_at', false], limit: 400};
-  o.eq = {}; if (f.assignee) o.eq.assignee = f.assignee; if (f.dep) o.eq.department_id = f.dep;
-  const [list, deps] = await Promise.all([db.q('v_tasks', o), db.q('departments', {order: ['name', true]})]);
-  ST.deps = deps; ui.tasksCache = list;
+  o.eq = {ws: WSK()}; if (f.assignee) o.eq.assignee = f.assignee; if (f.dep) o.eq.department_id = f.dep;
+  const [list, allDeps] = await Promise.all([db.q('v_tasks', o), db.q('departments', {order: ['name', true]})]);
+  ST.deps = allDeps; ui.tasksCache = list; const deps = allDeps.filter(d => inWs(d.kind));
   const vis = list.filter(t => t.status !== 'منتهية' || (t.done_at && minsAgo(t.done_at) < 60 * 24 * 7));
-  return head('المهام', 'وزّع الشغل على الفريق وتابع شو خلص وشو متأخر. الموظف بيشوف مهامه من "مهامي"', '<button class="btn" data-act="go" data-id="ai">اقتراح مهام بالذكاء الاصطناعي</button><button class="btn pri" data-act="taskForm">+ مهمة</button>') +
+  return head('المهام · ' + esc(wsName(WSK())), 'مهام ' + esc(wsName(WSK())) + ' بس. الموظف بيشوف كل مهامه من "مهامي"', '<button class="btn" data-act="go" data-id="ai">اقتراح مهام بالذكاء الاصطناعي</button><button class="btn pri" data-act="taskForm">+ مهمة</button>') +
     `<div class="row">${sel('tf_a', (ST.people || []).map(p => [p.id, p.name]), f.assignee, 'كل الموظفين', 'data-chg="tfAssignee" aria-label="الموظف"')}${sel('tf_d', deps.map(d => [d.id, d.name]), f.dep, 'كل الأقسام', 'data-chg="tfDep" aria-label="القسم"')}</div>
     <div class="kpis">${kpi('مفتوحة', list.filter(t => t.status !== 'منتهية').length)}${kpi('متأخرة', list.filter(t => t.due && t.due < today() && t.status !== 'منتهية').length, '', list.some(t => t.due && t.due < today() && t.status !== 'منتهية') ? 'red' : '')}${kpi('بانتظار مراجعة', list.filter(t => t.status === 'بانتظار مراجعة').length)}${kpi('خلصت هالأسبوع', list.filter(t => t.status === 'منتهية' && t.done_at && minsAgo(t.done_at) < 60 * 24 * 7).length)}</div>
     <div class="board">${TSTAT.map(s => `<div class="col"><h3>${s} <small class="m">${vis.filter(t => t.status === s).length}</small></h3>${vis.filter(t => t.status === s).map(t => taskCard(t)).join('') || '<p class="m empty">—</p>'}</div>`).join('')}</div>`;
@@ -313,9 +317,9 @@ V.mytasks = async () => {
 };
 async function taskFields(t) {
   await people(); const deps = ST.deps || await db.q('departments', {order: ['name', true]});
-  const clients = can('agency') ? await db.q('agency_clients', {eq: {status: 'نشط'}, select: 'id,name', order: ['name', true]}) : [];
+  const clients = can('agency') && WSK() === 'agency' ? await db.q('agency_clients', {eq: {status: 'نشط'}, select: 'id,name', order: ['name', true]}) : [];
   return [{k:'title', l:'المهمة', req: 1, wide: 1}, {k:'details', l:'التفاصيل', t:'textarea'}, {k:'assignee', l:'الموظف', t:'select', opts: [['', '—'], ...(ST.people || []).map(p => [p.id, p.name])]},
-    {k:'department_id', l:'القسم', t:'select', opts: [['', '—'], ...deps.map(d => [d.id, d.name])]}, ...(clients.length ? [{k:'client_id', l:'عميل الوكالة', t:'select', opts: [['', '—'], ...clients.map(c => [c.id, c.name])]}] : []),
+    {k:'department_id', l:'القسم', t:'select', opts: [['', '—'], ...deps.filter(d => inWs(d.kind) || d.id === t?.department_id).map(d => [d.id, d.name])]}, ...(clients.length ? [{k:'client_id', l:'عميل الوكالة', t:'select', opts: [['', '—'], ...clients.map(c => [c.id, c.name])]}] : []),
     {k:'due', l:'الموعد', t:'date'}, {k:'priority', l:'الأولوية', t:'select', opts: PRIO, def: 'عادية'}];
 }
 Object.assign(A, {
@@ -323,12 +327,12 @@ Object.assign(A, {
     const t = id ? (ui.tasksCache || []).find(x => x.id === id) : null;
     openForm(t ? 'تعديل مهمة' : 'مهمة جديدة', await taskFields(t), t || {priority: 'عادية'}, async v => {
       const row = {title: v.title, details: v.details || null, assignee: v.assignee || null, department_id: v.department_id || null, client_id: v.client_id || null, due: v.due || null, priority: v.priority};
-      if (t) await db.upd('tasks', {id}, row); else await db.ins('tasks', {...row, created_by_name: me().name});
+      if (t) await db.upd('tasks', {id}, row); else await db.ins('tasks', {...row, ws: WSK(), created_by_name: me().name});
       toast('انحفظت المهمة'); refreshBadges(); K.render();
     });
   },
   selfTask: () => openForm('مهمة لنفسي', [{k:'title', l:'المهمة', req: 1, wide: 1}, {k:'details', l:'التفاصيل', t:'textarea'}, {k:'due', l:'الموعد', t:'date'}, {k:'priority', l:'الأولوية', t:'select', opts: PRIO, def: 'عادية'}], null,
-    async v => { await db.ins('tasks', {title: v.title, details: v.details || null, due: v.due || null, priority: v.priority, assignee: me().id, created_by_name: me().name}); toast('انضافت'); refreshBadges(); K.render(); }),
+    async v => { await db.ins('tasks', {title: v.title, details: v.details || null, due: v.due || null, priority: v.priority, assignee: me().id, ws: WSK(), created_by_name: me().name}); toast('انضافت'); refreshBadges(); K.render(); }),
   taskDel: async (id, b) => { if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'متأكد؟'; return; } await db.del('tasks', {id}); toast('انحذفت'); K.render(); }
 });
 
@@ -405,11 +409,12 @@ Object.assign(A, {
     const p = P(id); const L = p.landing || {};
     openForm('صفحة الهبوط: ' + p.name, [{k:'slug', l:'رابط الصفحة (أحرف إنجليزي وأرقام)', req: 1, ph: 'vacuum-cleaner'}, {k:'old_price', l:'السعر قبل الخصم (اختياري)', t:'number'},
       {k:'headline', l:'العنوان الرئيسي', wide: 1}, {k:'sub', l:'سطر تحت العنوان', wide: 1}, {k:'features', l:'المميزات (كل ميزة بسطر)', t:'textarea'},
+      ...((ST.pages || []).length ? [{k:'page_id', l:'الطلبات من هالصفحة بتنحسب على', t:'select', opts: [['', 'بدون صفحة'], ...ST.pages.map(x => [x.id, x.name])], wide: 1}] : []),
       {k:'cta', l:'نص زر الطلب', def: 'اطلب الآن والدفع عند الاستلام'}, {k:'badge', l:'شريط تحت السعر', def: 'توصيل لكل المملكة · الدفع عند الاستلام'}, {k:'on', l:'الحالة', t:'select', opts: [['true','منشورة'], ['false','مطفية']]}],
-      {slug: p.slug || slugify(p.sku || '') || '', old_price: L.old_price ?? null, headline: L.headline || p.name, sub: L.sub || '', features: (L.features || []).join('\n'), cta: L.cta, badge: L.badge, on: String(p.landing_on || !p.slug)},
+      {slug: p.slug || slugify(p.sku || '') || '', old_price: L.old_price ?? null, headline: L.headline || p.name, sub: L.sub || '', features: (L.features || []).join('\n'), cta: L.cta, badge: L.badge, page_id: L.page_id || '', on: String(p.landing_on || !p.slug)},
       async v => {
         const slug = slugify(v.slug); if (!slug) return 'اكتب رابط بالإنجليزي، مثلاً vacuum';
-        try { await db.upd('products', {id}, {slug, landing_on: v.on === 'true', landing: {headline: v.headline, sub: v.sub, old_price: v.old_price, features: v.features.split('\n').map(x => x.trim()).filter(Boolean), cta: v.cta, badge: v.badge}}); }
+        try { await db.upd('products', {id}, {slug, landing_on: v.on === 'true', landing: {headline: v.headline, sub: v.sub, old_price: v.old_price, features: v.features.split('\n').map(x => x.trim()).filter(Boolean), cta: v.cta, badge: v.badge, page_id: v.page_id || null}}); }
         catch (x) { if (/duplicate|unique/i.test(x.message)) return 'هالرابط مستخدم لمنتج ثاني، اختار غيره'; throw x; }
         ST.products = await db.q('products', {order: ['name', true]}); toast('انحفظت الصفحة'); K.render();
       });
@@ -496,22 +501,23 @@ V.staff = async () => {
   const deps = await db.q('departments', {order: ['name', true]}); ST.deps = deps;
   let body = '';
   if (tab === 'emp') {
-    const list = await db.q('v_employees', {order: ['name', true]}); ui.empCache = list;
-    const act = list.filter(e => e.active);
-    body = `<div class="kpis">${kpi('موظفين فعّالين', act.length)}${kpi('من البيت', act.filter(e => e.remote).length)}${kpi('رواتب المتجر', jd(sum(act.filter(e => e.dept_kind !== 'الوكالة'), e => e.salary)))}${kpi('رواتب الوكالة', jd(sum(act.filter(e => e.dept_kind === 'الوكالة'), e => e.salary)))}${kpi('إجمالي الرواتب', jd(sum(act, e => e.salary)), 'شهرياً', 'hl')}</div>` +
+    const all = await db.q('v_employees', {order: ['name', true]}); ui.empCache = all;
+    const list = all.filter(e => inWs(e.dept_kind)), act = list.filter(e => e.active);
+    body = `<div class="kpis">${kpi('موظفين فعّالين', act.length)}${kpi('من البيت', act.filter(e => e.remote).length)}${kpi('رواتب ' + esc(wsName(WSK())), jd(sum(act, e => e.salary)), 'شهرياً', 'hl')}${kpi('عمولات بالطلب', act.filter(e => N(e.commission)).length + ' موظف')}</div>` +
       table([{h:'الاسم', f:e => `<b>${esc(e.name)}</b><br><small class="m">${esc(e.job_title || '')}</small>`}, {h:'القسم', f:e => e.department ? pill(e.department, e.dept_kind === 'الوكالة' ? 'info' : 'brand') : '—'}, {h:'الدوام', f:e => e.shift_from ? e.shift_from.slice(0, 5) + '–' + (e.shift_to || '').slice(0, 5) + (e.remote ? ' ' + pill('من البيت', 'warn') : '') : (e.remote ? pill('من البيت', 'warn') : '—')},
         {h:'الراتب', f:e => jd(e.salary)}, {h:'عمولة/طلب مسلّم', f:e => N(e.commission) ? jd(e.commission) : '—'}, {h:'حساب الدخول', f:e => e.email ? esc(e.email) : '<small class="m">ما إله حساب</small>'}, {h:'الحالة', f:e => pill(e.active ? 'على رأس عمله' : 'موقوف', e.active ? 'good' : '')},
         {h:'', f:e => `<button class="btn sm" data-act="empForm" data-id="${e.id}">تعديل</button>`}], list, 'أضف أول موظف');
   }
   if (tab === 'pay') {
-    const rows = await db.rpc('payroll', {m}) || [];
+    const kindOfDep = n => deps.find(d => d.name === n)?.kind;
+    const rows = (await db.rpc('payroll', {m}) || []).filter(r => inWs(kindOfDep(r.department)));
     body = `<div class="row">${`<label class="row" style="font-size:13px;color:var(--muted)" for="pmpick">الشهر <input id="pmpick" type="month" value="${m}" data-chg="pmonth" class="inl"></label>`}<button class="btn" data-act="payAdj">+ مكافأة / خصم</button></div>
       <div class="kpis">${kpi('الرواتب الأساسية', jd(sum(rows, r => r.salary)))}${kpi('العمولات', jd(sum(rows, r => r.commission)))}${kpi('مكافآت وخصومات', jd(sum(rows, r => r.adjust)))}${kpi('المستحق', jd(sum(rows, r => r.total)), sum(rows.filter(r => r.paid), () => 1) + ' انصرف', 'hl')}</div>` +
       table([{h:'الموظف', f:r => `<b>${esc(r.name)}</b><br><small class="m">${esc(r.department || '')}</small>`}, {h:'الراتب', f:r => jd(r.salary)}, {h:'طلبات مسلّمة', f:r => r.delivered}, {h:'العمولة', f:r => jd(r.commission)}, {h:'مكافأة/خصم', f:r => `<span class="${N(r.adjust) < 0 ? 'neg' : ''}">${jd(r.adjust)}</span>`}, {h:'المستحق', f:r => `<b>${jd(r.total)}</b>`},
         {h:'', f:r => r.paid ? pill('انصرف ' + jd(r.paid_amount), 'good') : `<button class="btn sm pri" data-act="paySalary" data-id="${r.employee_id}" data-amt="${N(r.total)}">صرف</button>`}], rows, 'ما في موظفين');
   }
-  if (tab === 'dep') body = table([{h:'القسم', f:d => `<b>${esc(d.name)}</b>`}, {h:'تابع لـ', f:d => pill(d.kind, d.kind === 'الوكالة' ? 'info' : 'brand')}, {h:'', f:d => `<button class="btn sm" data-act="depForm" data-id="${d.id}">تعديل</button>`}], deps) + '<div class="row"><button class="btn pri" data-act="depForm">+ قسم</button></div>';
-  return head('الموظفين والرواتب', 'الأقسام الداخلية، بيانات كل موظف ودوامه وراتبه وعمولته، وكشف الرواتب الشهري', tab === 'emp' ? '<button class="btn pri" data-act="empForm">+ موظف</button>' : '') +
+  if (tab === 'dep') body = table([{h:'القسم', f:d => `<b>${esc(d.name)}</b>`}, {h:'تابع لـ', f:d => pill(d.kind, d.kind === 'الوكالة' ? 'info' : 'brand')}, {h:'', f:d => `<button class="btn sm" data-act="depForm" data-id="${d.id}">تعديل</button>`}], deps.filter(d => inWs(d.kind))) + '<div class="row"><button class="btn pri" data-act="depForm">+ قسم</button></div>';
+  return head('الموظفين والرواتب · ' + esc(wsName(WSK())), 'موظفين ' + esc(wsName(WSK())) + ' بس، حسب نوع القسم. الموظف بلا قسم بيطلع بالمتجر', tab === 'emp' ? '<button class="btn pri" data-act="empForm">+ موظف</button>' : '') +
     chips([['emp','الموظفين'], ['pay','كشف الرواتب'], ['dep','الأقسام']], tab, 'staffTab') + body;
 };
 Object.assign(A, {
@@ -519,7 +525,7 @@ Object.assign(A, {
   empForm: async id => {
     const e = id ? (ui.empCache || []).find(x => x.id === id) : null;
     const linked = new Set((ui.empCache || []).filter(x => x.user_id && x.id !== id).map(x => x.user_id));
-    openForm(e ? 'تعديل ' + e.name : 'موظف جديد', [{k:'name', l:'الاسم', req: 1}, {k:'job_title', l:'الوظيفة'}, {k:'department_id', l:'القسم', t:'select', opts: [['', '—'], ...(ST.deps || []).map(d => [d.id, d.name])]},
+    openForm(e ? 'تعديل ' + e.name : 'موظف جديد', [{k:'name', l:'الاسم', req: 1}, {k:'job_title', l:'الوظيفة'}, {k:'department_id', l:'القسم', t:'select', opts: [['', '—'], ...(ST.deps || []).map(d => [d.id, d.name + ' (' + d.kind + ')'])]},
       {k:'user_id', l:'حساب الدخول (للمراقبة والعمولة)', t:'select', opts: [['', 'بدون'], ...(ST.people || []).filter(p => !linked.has(p.id)).map(p => [p.id, p.name + ' · ' + p.email])]},
       {k:'phone', l:'الهاتف'}, {k:'salary', l:'الراتب الشهري (د.أ)', t:'number', def: 0}, {k:'commission', l:'عمولة على كل طلب مسلّم (د.أ)', t:'number', def: 0},
       {k:'shift_from', l:'بداية الدوام', t:'time'}, {k:'shift_to', l:'نهاية الدوام', t:'time'}, {k:'remote', l:'مكان العمل', t:'select', opts: [['false','بالمكتب'], ['true','من البيت']]},
@@ -533,8 +539,8 @@ Object.assign(A, {
       });
   },
   depForm: id => { const d = id ? (ST.deps || []).find(x => x.id === id) : null;
-    openForm(d ? 'تعديل قسم' : 'قسم جديد', [{k:'name', l:'اسم القسم', req: 1}, {k:'kind', l:'تابع لـ (للمحاسبة)', t:'select', opts: ['المتجر','الوكالة','الإدارة']}], d, async v => { if (d) await db.upd('departments', {id}, v); else await db.ins('departments', v); toast('انحفظ'); K.render(); }); },
-  payAdj: async () => { const emps = await db.q('employees', {eq: {active: true}, order: ['name', true]});
+    openForm(d ? 'تعديل قسم' : 'قسم جديد', [{k:'name', l:'اسم القسم', req: 1}, {k:'kind', l:'تابع لـ (للمحاسبة)', t:'select', opts: ['المتجر','الوكالة','الإدارة']}], d || {kind: WSK() === 'agency' ? 'الوكالة' : 'المتجر'}, async v => { if (d) await db.upd('departments', {id}, v); else await db.ins('departments', v); toast('انحفظ'); K.render(); }); },
+  payAdj: async () => { const emps = (await db.q('employees', {eq: {active: true}, order: ['name', true]})).filter(e => inWs((ST.deps || []).find(d => d.id === e.department_id)?.kind));
     openForm('مكافأة أو خصم', [{k:'employee_id', l:'الموظف', t:'select', opts: emps.map(e => [e.id, e.name]), wide: 1}, {k:'amount', l:'المبلغ (موجب = مكافأة، سالب = خصم)', t:'number'}, {k:'note', l:'السبب', wide: 1}], null,
       async v => { if (!N(v.amount)) return 'اكتب المبلغ'; await db.ins('payroll_adjust', {employee_id: v.employee_id, month: ui.pmonth || monthOf(today()), amount: N(v.amount), note: v.note || null, by_name: me().name}); toast('انسجل'); K.render(); }); },
   paySalary: (id, b) => openForm('صرف راتب', [{k:'amt', l:'المبلغ المصروف (د.أ)', t:'number', def: N(b.dataset.amt)}], null,
@@ -718,7 +724,7 @@ Object.assign(A, {
       <div class="row" style="margin-top:10px"><button class="btn pri" data-act="aiCreate">أضف المهام المختارة</button></div>`);
   },
   aiCreate: async () => { let n = 0; for (const [i, t] of (ui.aiTasks || []).entries()) { if (!$('#ait_' + i)?.checked) continue;
-      await db.ins('tasks', {title: t.title, details: t.details || null, assignee: $('#aia_' + i).value || null, due: $('#aid_' + i).value || null, priority: $('#aip_' + i).value, client_id: t.client_id || null, ai: true, created_by_name: me().name + ' (المساعد)'}); n++; }
+      await db.ins('tasks', {title: t.title, details: t.details || null, assignee: $('#aia_' + i).value || null, due: $('#aid_' + i).value || null, priority: $('#aip_' + i).value, client_id: t.client_id || null, ws: t.client_id ? 'agency' : WSK(), ai: true, created_by_name: me().name + ' (المساعد)'}); n++; }
     toast(`انضافت ${n} مهمة`); ui.view = 'tasks'; K.render(); }
 });
 
@@ -755,7 +761,9 @@ V.dash = async () => {
     if (can('control') || can('inbox')) { const w = await db.q('v_conversations', {eq: {waiting: true}, select: 'id,last_in'}); extra.push(kpi('زبائن مستنيين رد', w.length, w.filter(c => minsAgo(c.last_in) > rule('sla', 5)).length + ' متأخرين', w.some(c => minsAgo(c.last_in) > rule('escalate', 15)) ? 'red' : '')); }
     if (can('control')) { const t = await db.q('v_attendance_today', {select: 'user_id,check_in,check_out,state,last_ping,break_since,state_since'}); const s = t.map(liveState); extra.push(kpi('الموظفين بالدوام', s.filter(x => x[0] !== 'offline').length, s.filter(x => ['away','idle'].includes(x[0])).length + ' برا الصفحة أو خاملين', s.some(x => ['away','idle'].includes(x[0])) ? 'red' : '')); }
     if (can('ads')) { const r = (await db.rpc('ad_perf', {d_from: addDays(today(), -6), d_to: today()}) || []).map(adCalc); const sp = sum(r, g => g.spend); extra.push(kpi('صرف إعلانات 7 أيام', jd(sp), 'ROAS متوقع ' + (sp ? (sum(r, g => g.revenue + g.pending_rev * .8) / sp).toFixed(2) + 'x' : '—'))); }
-    const tk = await db.q('v_tasks', {in: {status: ['جديدة','قيد العمل']}, select: 'id,due,assignee'}); const late = tk.filter(t => t.due && t.due < today());
+    if (can('dash') && (ST.pages || []).length) { const ps = (await db.rpc('page_stats', {d_from: addDays(today(), -29), d_to: today()}) || []).filter(r => r.page_id); const top = ps[0];
+      if (top) extra.push(kpi('أقوى صفحة (30 يوم)', esc(top.name), top.orders + ' طلب · ' + top.delivered + ' انسلّم')); }
+    const tk = await db.q('v_tasks', {eq: {ws: 'store'}, in: {status: ['جديدة','قيد العمل']}, select: 'id,due,assignee'}); const late = tk.filter(t => t.due && t.due < today());
     if (tk.length) extra.push(kpi(can('tasks') ? 'مهام مفتوحة' : 'مهامي', tk.length, late.length + ' متأخرة', late.length ? 'red' : ''));
   } catch (e) {}
   return extra.length ? html.replace('<div class="kpis">', `<div class="kpis">${extra.join('')}`) : html;
@@ -782,7 +790,7 @@ Object.assign(A, {
     toast('جاري تجهيز النسخة…');
     const tables = ['settings','profiles','products','stock_moves','couriers','runs','orders','order_items','order_log','run_orders','courier_payments','purchases','expenses','fin_days','audit_log',
       'departments','employees','payroll_adjust','payroll_paid','attendance','alerts','warnings','ad_accounts','ads','ad_insights','meta_pages','conversations','messages','quick_replies','followups',
-      'agency_clients','posts','tasks','services','client_services','campaigns','deliverables','stages','invoices','client_updates','leads'];
+      'agency_clients','posts','tasks','services','client_services','campaigns','deliverables','stages','invoices','client_updates','leads','sales_pages'];
     const out = {app: 'saber-online', at: new Date().toISOString(), tables: {}};
     for (const t of tables) { try { out.tables[t] = await db.qAll(t); } catch (e) { out.tables[t] = {error: e.message}; } }
     const blob = new Blob([JSON.stringify(out)], {type: 'application/json'}); const a = document.createElement('a');
@@ -790,4 +798,104 @@ Object.assign(A, {
     toast('نزلت النسخة الاحتياطية');
   }
 });
+/* ================= صفحات البيع: تقرير وإدارة ================= */
+V.pagesrep = async () => {
+  const d = ui.pgDays || 30, from = addDays(today(), -(d - 1));
+  const rows = (await db.rpc('page_stats', {d_from: from, d_to: today()}) || []).map(r => ({...r, orders: N(r.orders), delivered: N(r.delivered), returned: N(r.returned), pending: N(r.pending), cancelled: N(r.cancelled), revenue: N(r.revenue), profit: N(r.profit)}));
+  const tot = sum(rows, r => r.orders), named = rows.filter(r => r.page_id), mx = Math.max(1, ...rows.map(r => r.orders));
+  const rate = r => r.delivered + r.returned ? r.delivered / (r.delivered + r.returned) : null;
+  const best = [...named].sort((a, b) => b.orders - a.orders)[0], bestProfit = [...named].sort((a, b) => b.profit - a.profit)[0];
+  const noPage = rows.find(r => !r.page_id);
+  return head('أداء صفحات البيع', 'كل طلب بينحسب على الصفحة اللي إجا منها. هيك بتعرف أي صفحة بتجيب طلبات أكثر، وأي وحدة طلباتها بتنسلّم فعلاً',
+      periodChips(d, 'pgDays', [[7, '7 أيام'], [30, '30 يوم'], [90, '90 يوم']]) + (can('settings', 'edit') ? '<button class="btn pri" data-act="pageForm">+ صفحة</button>' : '')) +
+    (!(ST.pages || []).length ? `<div class="warnbar">ما في صفحات مضافة لسا. ${can('settings', 'edit') ? 'اضغط <b>+ صفحة</b> وأضف صفحاتك (اسمها، ورابطها، ورقم صفحة Meta إذا مربوطة).' : 'اطلب من المدير يضيف الصفحات من الإعدادات.'} بعدها كل طلب جديد بينسأل عن صفحته.</div>` : '') +
+    `<div class="kpis">${kpi('أكثر صفحة بتجيب طلبات', best ? esc(best.name) : '—', best ? best.orders + ' طلب من ' + tot + (tot ? ' (' + pct(best.orders / tot) + ')' : '') : '', 'hl')}
+      ${kpi('أكثر صفحة ربح', bestProfit && bestProfit.profit ? esc(bestProfit.name) : '—', bestProfit && bestProfit.profit ? 'ربح ' + jd(bestProfit.profit) + ' من المسلّم' : 'لسا ما في طلبات مسلّمة')}
+      ${kpi('كل الطلبات', tot, d + ' يوم')}${noPage?.orders ? kpi('طلبات بدون صفحة', noPage.orders, 'حددلها الصفحة من تفاصيل الطلب', 'red') : ''}</div>
+    <div class="card"><h2>ترتيب الصفحات حسب عدد الطلبات</h2>${rows.length ? `<div class="bars">${rows.map(r => `<div class="bar"><span>${esc(r.name)}</span><span class="tr"><i style="width:${r.orders / mx * 100}%"></i></span><b>${r.orders}</b></div>`).join('')}</div>` : '<p class="note">ما في طلبات بهالفترة.</p>'}</div>` +
+    table([{h:'الصفحة', f:r => `<b>${esc(r.name)}</b>${r.platform ? `<br><small class="m">${esc(r.platform)}</small>` : ''}`}, {h:'طلبات', f:r => `<b>${r.orders}</b>`}, {h:'حصتها', f:r => tot ? pct(r.orders / tot) : '—'},
+      {h:'انسلّم', f:r => r.delivered}, {h:'رجع', f:r => `<span class="${r.returned ? 'neg' : ''}">${r.returned}</span>`}, {h:'بالمسار', f:r => r.pending}, {h:'انلغى قبل الشحن', f:r => r.cancelled},
+      {h:'نسبة التسليم', f:r => rate(r) == null ? '—' : pill(pct(rate(r)), rate(r) >= .8 ? 'good' : rate(r) >= .65 ? 'warn' : 'bad')}, {h:'مبيعات مسلّمة', f:r => jd(r.revenue)}, {h:'ربح المسلّم', f:r => `<b class="${r.profit < 0 ? 'neg' : 'pos'}">${jd(r.profit)}</b>`},
+      {h:'من صفحة الهبوط', f:r => N(r.landing) || '—'}, {h:'', f:r => `<button class="btn sm" data-act="pageOrders" data-id="${r.page_id || 'none'}">الطلبات</button>`}], rows, 'ما في طلبات') +
+    `<p class="note">الربح هون = سعر البضاعة المسلّمة − تكلفتها + التوصيل − أجرة السائق، قبل الإعلانات والرواتب. الطلب اللي بييجي من محادثة صفحة مربوطة بـ Meta بتنحدد صفحته لحاله.</p>` +
+    (can('settings', 'edit') ? pagesTable() : '');
+};
+const pagesTable = () => `<div class="card"><div class="head" style="margin-bottom:10px"><h2>صفحات البيع</h2><button class="btn sm" data-act="pageForm">+ صفحة</button></div>${table([{h:'الصفحة', f:p => `<b>${esc(p.name)}</b>`}, {h:'المنصة', f:p => pill(p.platform)},
+    {h:'الرابط', f:p => p.link ? `<a href="${esc(p.link)}" target="_blank" rel="noopener">فتح</a>` : '—'}, {h:'رقم صفحة Meta', f:p => esc(p.meta_page_id || '—')}, {h:'الحالة', f:p => pill(p.active ? 'شغالة' : 'موقوفة', p.active ? 'good' : '')},
+    {h:'', f:p => `<button class="btn sm" data-act="pageForm" data-id="${p.id}">تعديل</button>`}], ST.pages || [], 'ما في صفحات لسا')}
+  <p class="note" style="margin-top:8px">رقم صفحة Meta اختياري: إذا الصفحة مربوطة بصندوق الرسائل، الطلب اللي بيطلع من محادثتها بتنحدد صفحته تلقائياً.</p></div>`;
+Object.assign(A, {
+  pgDays: k => { ui.pgDays = +k; K.render(); },
+  pageOrders: id => { ui.opage = id; ui.ofilter = 'الكل'; ui.search = ''; ui.view = 'orders'; K.render(); window.scrollTo?.(0, 0); },
+  pageForm: id => { const p = id ? (ST.pages || []).find(x => x.id === id) : null;
+    openForm(p ? 'تعديل ' + p.name : 'صفحة بيع جديدة', [{k:'name', l:'اسم الصفحة (مثل ما بتعرفها)', req: 1, wide: 1}, {k:'platform', l:'المنصة', t:'select', opts: ['فيسبوك','إنستغرام','تيك توك','فيسبوك وإنستغرام','واتساب','أخرى']},
+      {k:'link', l:'رابط الصفحة (اختياري)', wide: 1}, {k:'meta_page_id', l:'رقم صفحة Meta (Page ID، اختياري)'}, {k:'active', l:'الحالة', t:'select', opts: [['true','شغالة'], ['false','موقوفة']]}],
+      p ? {...p, active: String(p.active)} : {platform: 'فيسبوك', active: 'true'},
+      async v => { const row = {name: v.name.trim(), platform: v.platform, link: v.link?.trim() || null, meta_page_id: v.meta_page_id?.trim() || null, active: v.active === 'true'};
+        if (p) await db.upd('sales_pages', {id}, row); else await db.ins('sales_pages', row);
+        ST.pages = await db.q('sales_pages', {order: ['name', true]}); toast('انحفظت الصفحة'); K.render(); }); }
+});
+
+/* ================= لوحة الوكالة ================= */
+V.agdash = async () => {
+  const m = monthOf(today()), t = today();
+  const [cl, dl, leads, tk] = await Promise.all([db.q('v_clients', {order: ['name', true]}), db.q('v_deliverables', {eq: {month: m}, limit: 1000}),
+    can('leads') ? db.q('v_leads', {order: ['updated_at', false], limit: 500}).catch(() => []) : [],
+    db.q('v_tasks', {eq: {ws: 'agency'}, in: {status: ['جديدة','قيد العمل','بانتظار مراجعة']}, order: ['due', true], limit: 300}).catch(() => [])]);
+  ui.delivCache = dl; ui.leadCache = leads;
+  const act = cl.filter(c => c.status === 'نشط');
+  const openLeads = leads.filter(l => !['تم التعاقد','خسرناه'].includes(l.stage));
+  const fu = openLeads.filter(l => l.next_followup && l.next_followup <= t);
+  const won = leads.filter(l => l.stage === 'تم التعاقد' && monthOf(String(l.updated_at).slice(0, 10)) === m);
+  const pend = dl.filter(d => ['قيد العمل','بانتظار موافقة العميل'].includes(d.status)).sort((a, b) => String(a.due || '9').localeCompare(String(b.due || '9')));
+  const lateT = tk.filter(x => x.due && x.due < t);
+  const quota = c => sum(Object.values(c.quota || {}), x => N(x));
+  const due = sum(cl, c => c.due);
+  return head('لوحة الوكالة', `${esc(wsName('agency'))} · ${t}`, (can('leads', 'edit') ? '<button class="btn" data-act="leadForm">+ عميل محتمل</button>' : '') + (can('agency', 'edit') ? '<button class="btn" data-act="delivForm">+ تسليم</button><button class="btn pri" data-act="clientForm">+ عميل</button>' : '')) +
+    `<div class="kpis">${kpi('دخل شهري ثابت', jd(sum(act, c => c.monthly_fee)), act.length + ' عميل نشط', 'hl')}${kpi('فواتير غير مدفوعة', jd(due), '', due ? 'red' : '')}
+      ${kpi('تسليمات الشهر', sum(dl, d => ['معتمد','منشور'].includes(d.status) ? 1 : 0) + ' / ' + sum(act, quota), 'المنجز من المتفق عليه')}${kpi('بانتظار موافقة العملاء', sum(cl, c => c.awaiting))}
+      ${kpi('حملات شغالة', sum(cl, c => c.live_campaigns))}${can('leads') ? kpi('عملاء محتملين', openLeads.length, won.length + ' تعاقدنا معهم هالشهر') : ''}${kpi('مهام الوكالة', tk.length, lateT.length + ' متأخرة', lateT.length ? 'red' : '')}</div>
+    <div class="cols"><div class="card"><h2>شغل العملاء هالشهر</h2>${act.length ? `<div class="bars">${act.map(c => { const q = quota(c), dn = N(c.delivered_month); return `<div class="bar"><span><button class="lnk" data-act="openClient" data-id="${c.id}">${esc(c.name)}</button></span><span class="tr"><i style="width:${q ? Math.min(100, dn / q * 100) : (dn ? 100 : 0)}%"></i></span><b>${dn}${q ? ' / ' + q : ''}</b></div>`; }).join('')}</div>` : '<p class="note">ما في عملاء نشطين لسا.</p>'}</div>
+     <div class="card"><h2>متابعات العملاء المحتملين لليوم</h2>${can('leads') ? (fu.length ? table([{h:'الشركة', f:l => `<b>${esc(l.company)}</b><br><small class="m">${esc(l.type || '')}</small>`}, {h:'المرحلة', f:l => pill(l.stage, 'info')}, {h:'الموعد', f:l => `<span class="${l.next_followup < t ? 'neg' : ''}">${l.next_followup}</span>`}, {h:'المسؤول', f:l => esc(l.owner_name || '—')}], fu) : '<p class="note">ما في متابعات مستحقة اليوم.</p>') + '<div class="row" style="margin-top:10px"><button class="btn sm" data-act="go" data-id="leads">كل العملاء المحتملين</button></div>' : '<p class="note">ما عندك صلاحية على العملاء المحتملين.</p>'}</div></div>
+    <div class="card"><h2>تسليمات لسا ما خلصت</h2>${table([{h:'العميل', f:x => esc(x.client_name)}, {h:'النوع', f:x => pill(x.type)}, {h:'العنوان', f:x => esc(x.title), c:'wrap'}, {h:'المسؤول', f:x => esc(x.assignee_name || '—')},
+      {h:'الموعد', f:x => x.due ? `<span class="${x.due < t ? 'neg' : ''}">${x.due}</span>` : '—'}, {h:'الحالة', f:x => pill(x.status, x.status === 'قيد العمل' ? 'warn' : 'info')}, {h:'', f:x => `<button class="btn sm" data-act="delivForm" data-id="${x.id}">تعديل</button>`}], pend.slice(0, 30), 'كل التسليمات خالصة')}</div>
+    ${tk.length ? `<div class="card"><h2>مهام الوكالة المفتوحة</h2>${table([{h:'المهمة', f:x => esc(x.title), c:'wrap'}, {h:'العميل', f:x => esc(x.client_name || '—')}, {h:'الموظف', f:x => esc(x.assignee_name || '—')}, {h:'الموعد', f:x => x.due ? `<span class="${x.due < t ? 'neg' : ''}">${x.due}</span>` : '—'}, {h:'الحالة', f:x => pill(x.status)}], tk.slice(0, 20))}<div class="row" style="margin-top:10px"><button class="btn sm" data-act="go" data-id="tasks">لوحة المهام</button></div></div>` : ''}`;
+};
+
+/* ================= المحاسبة: كل قسم لحال ================= */
+V.accounting = async () => {
+  const m = ui.month || monthOf(today()), ws = WSK(), other = ws === 'agency' ? 'store' : 'agency';
+  const [x, y] = await Promise.all([db.rpc('ws_pnl', {m, ws}), isAdmin() ? db.rpc('ws_pnl', {m, ws: other}).catch(() => null) : null]);
+  const L = (l, v, c = '') => `<tr class="${c}"><td>${l}</td><td class="${N(v) < 0 ? 'neg' : ''}">${jd(v)}</td></tr>`, sec = t => `<tr class="sec"><td colspan="2">${t}</td></tr>`;
+  const exp = Object.entries(x.expenses || {}), pr = N(x.prorate) < 1 ? ' (' + Math.round(N(x.prorate) * 100) + '% من الشهر)' : '';
+  const expRows = exp.map(([k, v]) => L(esc(k), -v)).join('') || '<tr><td>ما في</td><td>—</td></tr>';
+  const both = y ? `<div class="kv"><span>صافي ${esc(wsName(other))}</span><b class="${N(y.net) < 0 ? 'neg' : ''}">${jd(y.net)}</b></div><div class="kv"><span><b>صافي الشركتين مع بعض</b></span><b class="${N(x.net) + N(y.net) < 0 ? 'neg' : 'pos'}">${jd(N(x.net) + N(y.net))}</b></div>` : '';
+  const pick = `<label class="row" style="font-size:13px;color:var(--muted)" for="mpick">الشهر <input id="mpick" type="month" value="${m}" data-chg="month" class="inl"></label>`;
+  if (ws === 'agency') return head('المحاسبة · ' + esc(wsName('agency')), 'أرباح وخسائر الوكالة لحالها: الفواتير المدفوعة ناقص رواتب فريق الوكالة ومصاريفها', pick) +
+    `<div class="kpis">${kpi('صافي ربح الوكالة', jd(x.net), '', 'hl')}${kpi('فواتير مدفوعة', jd(x.paid), x.invoices + ' فاتورة هالشهر')}${kpi('اشتراكات شهرية', jd(x.mrr), x.active_clients + ' عميل نشط')}${kpi('غير مدفوع هالشهر', jd(x.due), 'كل الذمم ' + jd(x.all_due), N(x.all_due) ? 'red' : '')}</div>
+    <div class="cols"><div class="tw"><table class="pl">${sec('الدخل')}${L('فواتير مدفوعة', x.paid)}${sec('التكاليف')}${L('رواتب فريق الوكالة' + pr, -x.salaries)}${N(x.adjust) ? L('مكافآت وخصومات', -x.adjust) : ''}
+      ${sec('مصاريف الوكالة')}${expRows}${L('صافي ربح الوكالة', x.net, 'tot')}</table></div>
+     <div class="card"><h2>أرقام لازم تعرفها</h2><div class="kv"><span>فواتير الشهر اللي لسا ما اندفعت</span><b>${jd(x.due)}</b></div><div class="kv"><span>كل الفواتير غير المدفوعة</span><b>${jd(x.all_due)}</b></div>
+      <div class="kv"><span>تسليمات معتمدة أو منشورة هالشهر</span><b>${x.deliverables}</b></div><div class="kv"><span>ميزانيات حملات العملاء الشغالة</span><b>${jd(x.client_budget)}</b></div><div class="kv"><span>المصروف منها</span><b>${jd(x.client_spend)}</b></div>${both}
+      <p class="note" style="margin-top:12px">ميزانيات إعلانات العملاء من فلوسهم، مش مصروف على الوكالة. رواتب الموظفين بتنحسب هون إذا قسمهم "الوكالة".</p></div></div>`;
+  return head('المحاسبة · ' + esc(wsName('store')), 'أرباح وخسائر المتجر لحاله. المبيعات محسوبة من الجولات المسكّرة', pick) +
+    `<div class="kpis">${kpi('صافي ربح المتجر', jd(x.net), '', 'hl')}${kpi('مجمل الربح', jd(x.gross), x.delivered + ' طلب مسلّم')}${kpi('ROAS الشهر', x.roas != null ? x.roas + 'x' : '—', 'صرف ' + jd(x.ads))}${kpi('نسبة المرتجع', pct(x.return_rate), x.returned + ' راجع من ' + (N(x.delivered) + N(x.returned)))}</div>
+    <div class="cols"><div class="tw"><table class="pl">${sec('المبيعات')}
+      ${L('مبيعات الطلبات المسلّمة (' + x.delivered + ' طلب)', x.sales)}${L('رسوم توصيل محصّلة (ومرفوض برسوم)', x.fees)}${L('تكلفة البضاعة المسلّمة', -x.cogs)}${L('أجور التوصيل', -x.delivery)}
+      ${L('مجمل الربح', x.gross, 'tot')}${sec('التكاليف')}${L('الإعلانات', -x.ads)}${L('رواتب فريق المتجر والإدارة' + pr, -x.salaries)}${L('عمولات الطلبات المسلّمة', -x.commissions)}${N(x.adjust) ? L('مكافآت وخصومات', -x.adjust) : ''}
+      ${sec('مصاريف المتجر')}${expRows}${L('صافي ربح المتجر', x.net, 'tot')}</table></div>
+     <div class="card"><h2>أرقام لازم تعرفها</h2>
+      <div class="kv"><span>قيمة الطلبات اللي لسا بالمسار</span><b>${jd(x.pending_value)}</b></div><div class="kv"><span>قيمة المخزون بالتكلفة</span><b>${jd(x.stock_value)}</b></div>
+      <div class="kv"><span>ذمم على السائقين هالشهر</span><b>${jd(x.courier_diff)}</b></div><div class="kv"><span>متوسط قيمة الطلب المسلّم</span><b>${jd(N(x.delivered) ? N(x.sales) / N(x.delivered) : 0)}</b></div>${both}
+      <p class="note" style="margin-top:12px">رواتب الأقسام من نوع "المتجر" و"الإدارة" بتنحسب هون. مصاريف الوكالة وفواتيرها بتطلع بمحاسبة الوكالة.</p></div></div>`;
+};
+
+/* ================= الإعدادات: صفحات البيع واسم الوكالة ================= */
+const baseSettings2 = V.settings;
+V.settings = async () => {
+  const html = await baseSettings2();
+  try { ST.pages = await db.q('sales_pages', {order: ['name', true]}); } catch (e) {}
+  return html + `<div class="cols">${pagesTable()}<div class="card"><h2>اسم الوكالة</h2><p class="m">بيطلع فوق لما تكون بشاشة الوكالة، وببوابة العملاء.</p><div class="row" style="margin-top:10px"><input id="set_ag" class="inl" style="flex:1;min-width:200px;font-size:15px;padding:8px 10px" value="${esc(ST.settings?.agency_name || 'وكالة صابر للتسويق')}" aria-label="اسم الوكالة"><button class="btn pri" data-act="saveAgName">حفظ</button></div></div></div>`;
+};
+A.saveAgName = async () => { const v = $('#set_ag')?.value.trim(); if (!v) return toast('اكتب اسم الوكالة', true); await db.upd('settings', {id: 1}, {agency_name: v}); ST.settings.agency_name = v; toast('انحفظ'); K.render(); };
 })();
