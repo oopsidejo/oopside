@@ -26,6 +26,7 @@ const ST_CLS = {'في الانتظار':'info','قيد التجهيز':'brand','
 const OUTCOMES = ['تم التوصيل','مؤجل','ملغي','مرفوض برسوم','مرفوض بدون رسوم'];
 const ACTIVE_ST = ['في الانتظار','قيد التجهيز','قيد التوصيل','تم التوصيل','مؤجل','مرفوض برسوم','مرفوض بدون رسوم'];
 const SOURCES = ['ماسنجر','إنستغرام','تعليقات','لاندنج بيج','تيك توك','اتصال','زبون قديم'];
+const AG_CATS = ['إيجار المكتب','برامج واشتراكات','تصوير وإنتاج','معدات','إعلانات للوكالة نفسها','مواصلات','رواتب ومكافآت','نثريات','أخرى'];
 const EXP_CATS = ['إيجار مكتب ومستودع','كهرباء وماء','إنترنت واتصالات','تغليف','برامج واشتراكات','مواصلات','رواتب ومكافآت','نثريات','أخرى'];
 const COLORS = ['#0f4c45','#8a3b12','#2c5f8f','#6b3f8a','#a0611a','#3e6b2a','#9b2d4a','#334155'];
 const SECTIONS = [['dash','لوحة التحكم'],['orders','الطلبات والشحنات'],['delivery','التوصيل والجولات'],
@@ -35,11 +36,23 @@ const SECTIONS = [['dash','لوحة التحكم'],['orders','الطلبات و�
   ['agency','الوكالة وعملاءها'],['leads','العملاء المحتملين'],
   ['accounting','المحاسبة'],['expenses','المصاريف'],['staff','الموظفين والرواتب'],
   ['ai','المساعد الذكي'],['users','المستخدمين والصلاحيات'],['settings','الإعدادات']];
-const SEC_NAME = Object.fromEntries(SECTIONS.concat([['myday','دوامي'],['mytasks','مهامي'],['portal','متابعة الشغل'],['client','ملف العميل']]));
+const SEC_NAME = Object.fromEntries(SECTIONS.concat([['myday','دوامي'],['mytasks','مهامي'],['portal','متابعة الشغل'],['client','ملف العميل'],['agdash','لوحة الوكالة'],['pagesrep','أداء صفحات البيع']]));
 const PERSONAL = new Set(['myday','mytasks']);
-const NAV = [['اليومي', ['dash','orders','delivery']], ['شغلي', ['myday','mytasks']], ['الرسائل والفريق', ['inbox','control','team','tasks']],
-  ['التسويق', ['ads','landing','page']], ['المخزون', ['products','inventory','purchases']], ['الوكالة', ['agency','leads']],
-  ['المالية', ['accounting','expenses','staff']], ['الإدارة', ['ai','users','settings']]];
+/* مساحتين شغل منفصلات: المتجر الأونلاين ووكالة التسويق. كل وحدة إلها قوائمها وحساباتها */
+const NAVS = {
+  store: [['اليومي', ['dash','orders','delivery']], ['شغلي', ['myday','mytasks']], ['الرسائل والفريق', ['inbox','control','team','tasks']],
+    ['التسويق', ['ads','pagesrep','landing','page']], ['المخزون', ['products','inventory','purchases']],
+    ['المالية', ['accounting','expenses','staff']], ['الإدارة', ['ai','users','settings']]],
+  agency: [['الوكالة', ['agdash','agency','leads']], ['شغلي', ['myday','mytasks']], ['الفريق', ['tasks','team']],
+    ['المالية', ['accounting','expenses','staff']], ['الإدارة', ['ai','users','settings']]]
+};
+const NAV = NAVS.store;
+const WS = {store: {name: 'المتجر الأونلاين', mark: 'م', sub: 'الطلبات والتوصيل والمستودع والرسائل والإعلانات'},
+  agency: {name: 'وكالة التسويق', mark: 'و', sub: 'العملاء والحملات والتسليمات والعملاء المحتملين'}};
+const STORE_ONLY = ['dash','orders','delivery','inbox','control','ads','landing','page','products','inventory','purchases'];
+const ALIAS = {agdash: 'agency', pagesrep: 'dash'};
+const lsGet = k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
 const TEMPLATES = {
   'مدير عام': null,
   'موظفة رسائل': {inbox:'edit', orders:'edit', products:'view'},
@@ -49,7 +62,7 @@ const TEMPLATES = {
   'محاسب': {dash:'view', orders:'view', delivery:'view', inventory:'view', purchases:'view', expenses:'edit', accounting:'view', staff:'view'},
   'ميديا باير': {dash:'view', ads:'edit', landing:'edit', page:'edit', products:'view', ai:'edit'},
   'تسويق ومبيعات للشركات': {leads:'edit', agency:'view'},
-  'مدير الوكالة': {dash:'view', agency:'edit', leads:'edit', tasks:'edit', ai:'edit', ads:'view'},
+  'مدير الوكالة': {agency:'edit', leads:'edit', tasks:'edit', team:'view', ai:'edit'},
   'فريق إنتاج وتصميم': {},
   'مخصص': {}
 };
@@ -70,7 +83,7 @@ const TPL_DESC = {
 let db = null, me = null;
 const ST = {settings: null, products: [], couriers: []};
 const K = {onEnter: [], onLogout: [], onLive: [], liveIgnore: new Set(), liveViews: {}, badges: {}, badgeRed: {}, statusLine: '', adsList: []};
-const ui = {view: 'dash', ofilter: 'نشط', search: '', delTab: 'today', month: monthOf(today()), invTab: 'stock'};
+const ui = {view: 'dash', ofilter: 'نشط', search: '', delTab: 'today', month: monthOf(today()), invTab: 'stock', ws: '', opage: ''};
 
 /* ================= طبقة البيانات (Supabase) ================= */
 function arabicErr(e) {
@@ -164,9 +177,9 @@ function supaDb(cfg) {
 const isAdmin = () => me?.role === 'مدير عام';
 const perm = sec => !me ? 'none' : isAdmin() ? 'edit' : (me.perms?.[sec] || 'none');
 const isClient = () => me?.role === 'عميل';
-const can = (sec, lvl = 'view') => PERSONAL.has(sec) ? !!me && !isClient() : lvl === 'edit' ? perm(sec) === 'edit' : perm(sec) !== 'none';
+const can = (sec, lvl = 'view') => (sec = ALIAS[sec] || sec, PERSONAL.has(sec)) ? !!me && !isClient() : lvl === 'edit' ? perm(sec) === 'edit' : perm(sec) !== 'none';
 const ACT_SEC = {
-  orderForm:'orders', toPrep:'orders', toWaiting:'orders', cancelOrd:'orders', allPrep:'orders', editInfo:'orders',
+  orderForm:'orders', setPage:'orders', toPrep:'orders', toWaiting:'orders', cancelOrd:'orders', allPrep:'orders', editInfo:'orders',
   dispatchOne:'delivery', dispatchSel:'delivery', outcomeForm:'delivery', closeRunForm:'delivery', closeDay:'delivery', kForm:'delivery', kPay:'delivery',
   prodForm:'products', prodToggle:'products', adjForm:'inventory', purForm:'purchases', expForm:'expenses', expDel:'expenses',
   userForm:'users', saveSettings:'settings', addCity:'settings'
@@ -237,7 +250,9 @@ async function loadBase() {
   const [s, p, k] = await Promise.all([db.q('settings', {eq: {id: 1}}), db.q('products', {order: ['name', true]}), db.q('couriers', {order: ['name', true]})]);
   ST.settings = s[0] || {company: 'صابر أونلاين', city_fees: {}, areas: {}};
   ST.products = p; ST.couriers = k;
+  ST.pages = await db.q('sales_pages', {order: ['name', true]}).catch(() => []);
 }
+const pageName = id => (ST.pages || []).find(p => p.id === id)?.name || '';
 const P = id => ST.products.find(p => p.id === id);
 const cities = () => Object.keys(ST.settings?.city_fees || {}).sort((a, b) => (b === 'عمان') - (a === 'عمان') || a.localeCompare(b, 'ar'));
 const feeFor = c => N(ST.settings?.city_fees?.[c] ?? 3);
@@ -319,14 +334,35 @@ async function enter(user, fresh) {
   }
   if (fresh) db.rpc('touch_login').catch(() => {});
   await loadBase();
-  $('#login').hidden = true; $('.app').hidden = false;
-  const allowed = isClient() ? ['portal'] : NAV.flatMap(g => g[1]).filter(k => can(k));
-  if (!allowed.includes(ui.view)) ui.view = can('inbox', 'edit') && !can('dash') ? 'inbox' : (allowed.find(k => !PERSONAL.has(k)) || allowed[0] || 'dash');
-  render();
   try { db.live(onLive); } catch (e) {}
   for (const f of K.onEnter) { try { f(); } catch (e) {} }
+  if (isClient()) { ui.view = 'portal'; $('#login').hidden = true; $('.app').hidden = false; return render(); }
+  const wl = wsList();
+  ui.ws = lsGet('saber-ws-' + me.id); if (!wl.includes(ui.ws)) ui.ws = '';
+  if (wl.length > 1 && (fresh || !ui.ws)) return showWsChooser(wl);
+  goWs(ui.ws || wl[0] || 'store', true);
 }
-async function logout() { for (const f of K.onLogout) { try { f(); } catch (e) {} } await db.signOut(); me = null; ui.view = 'dash'; closeM(); showLogin(); }
+/* ---------- اختيار مساحة الشغل ---------- */
+const wsList = () => isClient() ? [] : [...(STORE_ONLY.some(k => can(k)) ? ['store'] : []), ...(can('agency') || can('leads') ? ['agency'] : [])];
+const wsName = w => w === 'agency' ? (ST.settings?.agency_name || WS.agency.name) : (ST.settings?.company || WS.store.name);
+function showWsChooser(wl) {
+  $('.app').hidden = true; const el = $('#login'); el.hidden = false;
+  el.innerHTML = `<div class="wspick"><h1>أهلين ${esc(me?.name || '')}، وين بدك تشتغل هلأ؟</h1><p class="m">كل قسم إله شاشاته وحساباته لحال. بتقدر تبدّل بأي وقت من الزر اللي فوق.</p>
+    <div class="wscards">${wl.map(w => `<button class="wscard" data-ws="${w}" type="button"><i>${WS[w].mark}</i><b>${esc(wsName(w))}</b><span>${WS[w].sub}</span></button>`).join('')}</div>
+    <button class="btn ghost" type="button" id="wsout">خروج</button></div>`;
+  el.querySelectorAll('.wscard').forEach(b => b.onclick = () => goWs(b.dataset.ws));
+  $('#wsout').onclick = logout;
+  setTimeout(() => el.querySelector('.wscard')?.focus(), 30);
+}
+function goWs(w, keep) {
+  ui.ws = w; lsSet('saber-ws-' + me.id, w); document.body.dataset.ws = w;
+  $('#login').hidden = true; $('.app').hidden = false;
+  const allowed = NAVS[w].flatMap(g => g[1]).filter(k => can(k));
+  if (!keep || !allowed.includes(ui.view)) ui.view = w === 'agency' ? (allowed.find(k => !PERSONAL.has(k)) || allowed[0] || 'mytasks')
+    : can('inbox', 'edit') && !can('dash') ? 'inbox' : (allowed.find(k => !PERSONAL.has(k)) || allowed[0] || 'dash');
+  render(); window.scrollTo?.(0, 0);
+}
+async function logout() { for (const f of K.onLogout) { try { f(); } catch (e) {} } await db.signOut(); me = null; ui.view = 'dash'; ui.opage = ''; closeM(); showLogin(); }
 
 /* ================= العرض ================= */
 let renderSeq = 0, pendingRefresh = false, liveT = 0;
@@ -347,9 +383,13 @@ function softRender() {
 async function render() {
   if (!me) return;
   const seq = ++renderSeq;
-  $('#coName').textContent = ST.settings?.company || 'صابر أونلاين';
+  const ws = ui.ws || 'store', wl = wsList();
+  $('#coName').textContent = isClient() ? (ST.settings?.agency_name || ST.settings?.company || 'صابر أونلاين') : wsName(ws);
+  const bar = $('#wsbar');
+  if (bar) { bar.hidden = isClient(); const other = wl.find(w => w !== ws);
+    bar.innerHTML = `<div class="wsin"><i>${WS[ws].mark}</i><div><small>إنت هلأ بـ</small><b>${esc(wsName(ws))}</b></div></div>${other ? `<button class="btn sm wsbtn" data-act="switchWs" type="button"><span aria-hidden="true">⇄</span> روح لـ${esc(wsName(other))}</button>` : ''}`; }
   $('#me').innerHTML = `<div><b>${esc(me.name || me.email)}</b><small>${esc(me.role)}${K.statusLine ? ' · ' + K.statusLine : ''}</small></div><div class="row" style="gap:4px"><button data-act="myPw">كلمة السر</button><button data-act="logout">خروج</button></div>`;
-  const nav = isClient() ? [['', ['portal']]] : NAV.map(([g, ks]) => [g, ks.filter(k => can(k))]).filter(g => g[1].length);
+  const nav = isClient() ? [['', ['portal']]] : NAVS[ws].map(([g, ks]) => [g, ks.filter(k => can(k))]).filter(g => g[1].length);
   $('#nav').innerHTML = nav.map(([g, ks]) => `<div class="grp">${g}</div>` + ks.map(k => `<button class="${ui.view === k || (k === 'agency' && ui.view === 'client') ? 'on' : ''}" data-act="go" data-id="${k}"><span>${SEC_NAME[k]}</span>${K.badges[k] ? `<em class="${K.badgeRed[k] ? 'red' : ''}">${K.badges[k]}</em>` : ''}</button>`).join('')).join('');
   if (!nav.length) { $('#main').innerHTML = '<p class="note">ما إلك صلاحية على أي قسم. راجع المدير.</p>'; return; }
   const slow = setTimeout(() => { if (seq === renderSeq) $('#main').classList.add('loading'); }, 180);
@@ -417,6 +457,7 @@ function ordersTable(list, actions = true) {
     {h:'رقم', f:o => `<button class="btn sm" data-act="orderInfo" data-id="${o.id}">#${o.no}</button>`},
     {h:'التاريخ', f:o => `${o.day}<br><small class="m">${esc(o.created_by_name || '')}</small>`},
     {h:'الزبون', f:o => esc(o.customer) + `<br><small class="m">${esc(o.phone)} · ${esc(o.city)}${o.area ? ' - ' + esc(o.area) : ''}</small>`},
+    {h:'الصفحة', f:o => o.page_name ? `<span class="pgtag">${esc(o.page_name)}</span>` + (o.source ? `<br><small class="m">${esc(o.source)}</small>` : '') : `<small class="m">${esc(o.source || '—')}</small>`},
     {h:'المنتجات', f:o => esc(o.items_txt || ''), c:'wrap'},
     {h:'على الزبون', f:o => `<b>${jd(o.cod)}</b><br><small class="m">منها توصيل ${fmt(o.delivery_fee)}</small>`},
     {h:'التوصيل', f:o => o.courier_name ? esc(o.courier_name) + (o.run_no ? `<br><small class="m">جولة #${o.run_no}</small>` : '') : '—'},
@@ -430,7 +471,9 @@ V.orders = async () => {
   const f = ui.ofilter, o = {order: ['created_at', false], limit: 200};
   if (f === 'نشط') o.in = {status: ACTIVE_ST}; else if (f !== 'الكل') o.eq = {status: f};
   if (ui.search) o.ilike = ['search', '%' + ui.search + '%'];
+  if (ui.opage === 'none') o.isNull = ['sales_page_id']; else if (ui.opage) o.eq = {...(o.eq || {}), sales_page_id: ui.opage};
   const list = await db.q('v_orders', o);
+  const pages = ST.pages || [];
   const step = (s, n) => `<button class="fstep ${f === s ? 'on' : ''}" data-act="ofilter" data-id="${s}"><small>${n}</small><span>${s}</span><b>${cnt(s)}</b></button><i class="farr">←</i>`;
   return head('الطلبات والشحنات', 'كل طلب بيمشي: في الانتظار ← قيد التجهيز ← قيد التوصيل مع سائق أو شركة ← النتيجة ← مكتمل بعد تسكير الجولة',
       `<button class="btn" data-act="allPrep">كل الانتظار للتجهيز</button><button class="btn pri" data-act="orderForm">+ طلب جديد</button>`) +
@@ -438,6 +481,7 @@ V.orders = async () => {
     <div class="fgroup"><small>4 · نتيجة التوصيل</small><div class="row">${OUTCOMES.map(s => `<button class="chip ${f === s ? 'on' : ''}" data-act="ofilter" data-id="${s}">${s} ${cnt(s)}</button>`).join('')}</div></div><i class="farr">←</i>
     <div class="fgroup"><small>5 · بعد تسكير الجولة</small><div class="row">${['مكتمل مسلم','مكتمل راجع'].map(s => `<button class="chip ${f === s ? 'on' : ''}" data-act="ofilter" data-id="${s}">${s} ${cnt(s)}</button>`).join('')}</div></div></div>
   <div class="row" style="justify-content:space-between">${chips([['نشط','الطلبات النشطة'], ['الكل','كل الطلبات']], f, 'ofilter')}
+   ${pages.length ? `<select class="inl" data-chg="opage" aria-label="الصفحة"><option value="">كل الصفحات</option>${pages.map(p => `<option value="${p.id}" ${ui.opage === p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}<option value="none" ${ui.opage === 'none' ? 'selected' : ''}>بدون صفحة</option></select>` : ''}
    <form class="row" id="sform"><input id="osearch" class="inl srch" type="search" placeholder="ابحث برقم الطلب أو الاسم أو الهاتف" value="${esc(ui.search)}"><button class="btn sm" type="submit">بحث</button>${ui.search ? '<button class="btn sm ghost" type="button" data-act="clearSearch">مسح</button>' : ''}</form></div>` +
   ordersTable(list) + (list.length >= 200 ? '<p class="note">معروض أحدث 200 طلب. استخدم البحث أو الفلاتر للوصول لطلب أقدم.</p>' : '');
 };
@@ -445,12 +489,12 @@ async function orderInfo(id) {
   const [[o], items, log] = await Promise.all([db.q('v_orders', {eq: {id}}), db.q('v_order_items', {eq: {order_id: id}, order: ['id', true]}), db.q('order_log', {eq: {order_id: id}, order: ['at', true]})]);
   if (!o) return toast('الطلب مش موجود', true);
   const editable = ['في الانتظار','قيد التجهيز'].includes(o.status) || (o.status === 'مؤجل' && !o.run_id);
-  openInfo('الطلب #' + o.no, `<div class="row" style="justify-content:space-between">${pill(o.status, ST_CLS[o.status])}<small class="m">${o.day} · ${esc(o.source || '')} · أدخله ${esc(o.created_by_name || '')}</small></div>
+  openInfo('الطلب #' + o.no, `<div class="row" style="justify-content:space-between">${pill(o.status, ST_CLS[o.status])}<small class="m">${o.day} · ${esc(o.source || '')}${o.page_name ? ' · صفحة ' + esc(o.page_name) : ''} · أدخله ${esc(o.created_by_name || '')}</small></div>
    <div class="cols" style="margin-top:12px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))">
     <div><h3 style="margin-bottom:6px">الزبون</h3><div class="kv"><span>الاسم</span><b>${esc(o.customer)}</b></div><div class="kv"><span>الهاتف</span><b>${esc(o.phone)}${o.phone2 ? ' / ' + esc(o.phone2) : ''}</b></div><div class="kv"><span>المدينة</span><b>${esc(o.city)}${o.area ? ' - ' + esc(o.area) : ''}</b></div><div class="kv"><span>العنوان</span><b>${esc(o.address || '—')}</b></div>${o.notes ? `<div class="kv"><span>ملاحظات</span><b>${esc(o.notes)}</b></div>` : ''}</div>
     <div><h3 style="margin-bottom:6px">الحساب</h3>${items.map(i => `<div class="kv"><span>${esc(i.product_name)} × ${i.qty}</span><b>${jd(N(i.qty) * N(i.price))}</b></div>`).join('')}${N(o.discount) ? `<div class="kv"><span>خصم</span><b>−${jd(o.discount)}</b></div>` : ''}<div class="kv"><span>توصيل</span><b>${jd(o.delivery_fee)}</b></div><div class="kv"><span><b>المطلوب من الزبون</b></span><b>${jd(o.cod)}</b></div>${o.courier_name ? `<div class="kv"><span>${esc(o.courier_name)}${o.run_no ? ' · جولة #' + o.run_no : ''}</span><b>أجرة ${jd(o.courier_cost)}</b></div>` : ''}${can('products') ? `<div class="kv"><span>تكلفة البضاعة</span><b>${jd(o.cogs)}</b></div>` : ''}</div></div>
    <h3 style="margin:14px 0 8px">مسار الطلب</h3><ol class="tl">${log.map(l => `<li><b>${esc(l.status)}</b> <small class="m">${fmtDT(l.at)}${l.by_name ? ' · ' + esc(l.by_name) : ''}${l.note ? ' · ' + esc(l.note) : ''}</small></li>`).join('')}</ol>
-   <div class="row" style="margin-top:12px">${nextBtns(o)}${editable ? `<button class="btn sm" data-act="editInfo" data-id="${o.id}">تعديل البيانات</button>` : ''}<button class="btn sm" data-act="copyOrder" data-id="${o.id}">انسخ للسائق</button></div>`);
+   <div class="row" style="margin-top:12px">${nextBtns(o)}${editable ? `<button class="btn sm" data-act="editInfo" data-id="${o.id}">تعديل البيانات</button>` : ''}<button class="btn sm" data-act="copyOrder" data-id="${o.id}">انسخ للسائق</button>${(ST.pages || []).length ? `<button class="btn sm ghost" data-act="setPage" data-id="${o.id}">${o.page_name ? 'تغيير الصفحة' : 'حدد الصفحة'}</button>` : ''}</div>`);
   orderInfo.last = o;
 }
 function orderText(o) { return [`طلب #${o.no}`, `${o.customer} - ${o.phone}${o.phone2 ? ' / ' + o.phone2 : ''}`, `${o.city}${o.area ? ' - ' + o.area : ''}${o.address ? '، ' + o.address : ''}`, o.items_txt || '', `المطلوب: ${fmt(o.cod)} د.أ`, o.notes ? 'ملاحظة: ' + o.notes : ''].filter(Boolean).join('\n'); }
@@ -463,11 +507,14 @@ function openOrderForm(init = {}) {
   if (!ST.products.some(p => p.active)) { toast('أضف منتج أول من قسم المنتجات', true); return; }
   const cs = cities(); const city = init.city && cs.includes(init.city) ? init.city : cs.includes('عمان') ? 'عمان' : (cs[0] || 'عمان');
   const ads = (K.adsList || []);
+  const pages = (ST.pages || []).filter(p => p.active || p.id === init.sales_page_id);
+  const pg0 = init.sales_page_id || (init.conv_id ? '' : lsGet('saber-page'));
   const fld = (id, l, inner, wide) => `<label class="fld ${wide ? 'wide' : ''}" for="${id}"><span>${l}</span>${inner}</label>`;
   $('#mtitle').textContent = init.customer ? 'طلب جديد لـ ' + init.customer : 'طلب جديد';
   $('#mform').innerHTML = `<div class="fgrid">
     ${fld('of_name', 'اسم الزبون', `<input id="of_name" required autocomplete="off" value="${esc(init.customer || '')}">`)}${fld('of_phone', 'الهاتف', '<input id="of_phone" required inputmode="tel" placeholder="07xxxxxxxx" autocomplete="off">')}
     ${fld('of_phone2', 'هاتف ثاني (اختياري)', '<input id="of_phone2" inputmode="tel" autocomplete="off">')}${fld('of_src', 'المصدر', `<select id="of_src">${SOURCES.map(s => `<option ${s === init.source ? 'selected' : ''}>${s}</option>`).join('')}</select>`)}
+    ${pages.length ? fld('of_page', 'الصفحة اللي إجا منها الطلب', `<select id="of_page" required><option value="">اختار الصفحة</option>${pages.map(p => `<option value="${p.id}" ${p.id === pg0 ? 'selected' : ''}>${esc(p.name)}${p.platform ? ' · ' + esc(p.platform) : ''}</option>`).join('')}</select>`, 1) : ''}
     ${fld('of_city', 'المدينة', `<select id="of_city">${cs.map(c => `<option ${c === city ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select>`)}
     ${fld('of_area', 'المنطقة / الحي', `<input id="of_area" list="of_areas" required autocomplete="off"><datalist id="of_areas">${areasFor(city).map(a => `<option value="${esc(a)}">`).join('')}</datalist>`)}
     ${fld('of_addr', 'العنوان بالتفصيل', '<input id="of_addr" required placeholder="الشارع، البناية، الطابق، علامة مميزة" autocomplete="off">', 1)}
@@ -495,11 +542,13 @@ function openOrderForm(init = {}) {
     e.preventDefault(); const err = m => { $('#ferr').textContent = m; };
     const items = rows().filter(r => r.qty > 0); if (!items.length) return err('اختار منتج واحد على الأقل');
     const phone = cleanPhone($('#of_phone').value); if (!PHONE_RE.test(phone)) return err('رقم الهاتف لازم يكون أردني مثل 0791234567');
+    const page = $('#of_page')?.value || null; if (pages.length && !page) return err('اختار الصفحة اللي إجا منها الطلب');
     const btn = $('#fsave'); btn.disabled = true;
     try {
       const r = await db.rpc('create_order', {p: {customer: $('#of_name').value.trim(), phone, phone2: cleanPhone($('#of_phone2').value), source: $('#of_src').value, city: $('#of_city').value,
         area: $('#of_area').value.trim(), address: $('#of_addr').value.trim(), notes: $('#of_notes').value.trim(), delivery_fee: N($('#of_fee').value), discount: N($('#of_disc').value), items,
-        conv_id: init.conv_id || null, ad_id: init.conv_id ? null : ($('#of_ad')?.value || null)}});
+        conv_id: init.conv_id || null, ad_id: init.conv_id ? null : ($('#of_ad')?.value || null), sales_page_id: page}});
+      if (page && !init.conv_id) lsSet('saber-page', page);
       if (init.onDone) { try { await init.onDone(r); } catch (e) {} }
       const low = items.filter(i => N(P(i.product_id)?.stock) < i.qty).map(i => P(i.product_id)?.name);
       closeM(true); ST.products = await db.q('products', {order: ['name', true]});
@@ -615,10 +664,10 @@ V.purchases = async () => {
 
 /* ---------- المصاريف ---------- */
 V.expenses = async () => {
-  const m = ui.month, list = await db.q('expenses', {gte: {day: m + '-01'}, lte: {day: monthEnd(m)}, order: ['day', false], order2: ['id', false]});
+  const m = ui.month, ws = ui.ws || 'store', list = await db.q('expenses', {eq: {ws}, gte: {day: m + '-01'}, lte: {day: monthEnd(m)}, order: ['day', false], order2: ['id', false]});
   const by = {}; list.forEach(x => by[x.category] = (by[x.category] || 0) + N(x.amount));
   const mx = Math.max(1, ...Object.values(by));
-  return head('المصاريف', 'المصاريف التشغيلية. مصاريف اليوم بتدخل بكشف اليوم المالي لما تسكّره', `<label class="row" style="font-size:13px;color:var(--muted)" for="mpick">الشهر <input id="mpick" type="month" value="${m}" data-chg="month" class="inl"></label><button class="btn pri" data-act="expForm">+ مصروف</button>`) +
+  return head('المصاريف · ' + esc(wsName(ws)), ws === 'agency' ? 'مصاريف الوكالة بس. مصاريف المتجر بتنسجل من شاشة المتجر' : 'مصاريف المتجر بس. مصاريف اليوم بتدخل بكشف اليوم المالي لما تسكّره', `<label class="row" style="font-size:13px;color:var(--muted)" for="mpick">الشهر <input id="mpick" type="month" value="${m}" data-chg="month" class="inl"></label><button class="btn pri" data-act="expForm">+ مصروف</button>`) +
     `<div class="cols"><div class="card"><h2>المجموع: ${jd(sum(list, x => x.amount))}</h2>${Object.keys(by).length ? `<div class="bars">${Object.entries(by).sort((a, b) => b[1] - a[1]).map(([l, v]) => `<div class="bar"><span>${esc(l)}</span><span class="tr"><i style="width:${v / mx * 100}%"></i></span><b>${jd(v)}</b></div>`).join('')}</div>` : '<p class="note">ما في مصاريف بهالشهر.</p>'}</div>
     <div style="min-width:0">${table([{h:'التاريخ', f:x => x.day}, {h:'البند', f:x => esc(x.category)}, {h:'المبلغ', f:x => `<b>${jd(x.amount)}</b>`}, {h:'ملاحظة', f:x => esc(x.note || ''), c:'wrap'}, {h:'بواسطة', f:x => esc(x.by_name || '')}, {h:'', f:x => `<button class="btn sm ghost" data-act="expDel" data-id="${x.id}">حذف</button>`}], list, 'ما في مصاريف بهالشهر')}</div></div>`;
 };
@@ -687,6 +736,12 @@ const A = {
   ofilter: s => { ui.ofilter = s; render(); }, clearSearch: () => { ui.search = ''; render(); },
   delTab: k => { ui.delTab = k; render(); }, invTab: k => { ui.invTab = k; render(); },
   orderForm: () => openOrderForm(),
+  switchWs: () => { const o = wsList().find(w => w !== ui.ws); if (o) { closeM(); goWs(o); toast('إنت هلأ بـ' + wsName(o)); } },
+  setPage: async id => {
+    const [o] = await db.q('v_orders', {eq: {id}});
+    openForm('صفحة الطلب #' + o.no, [{k:'pg', l:'الصفحة', t:'select', opts: [['', 'بدون صفحة'], ...(ST.pages || []).map(p => [p.id, p.name])], wide: 1}], {pg: o.sales_page_id || ''},
+      async v => { await db.rpc('order_set_page', {oid: id, pg: v.pg || null}); toast('انحفظت الصفحة'); render(); });
+  },
   orderInfo: id => orderInfo(id).catch(e => toast(arabicErr(e), true)),
   copyOrder: async id => { const [o] = await db.q('v_orders', {eq: {id}}); copyText(orderText(o)); },
   editInfo: async id => {
@@ -743,8 +798,8 @@ const A = {
     async v => { if (!N(v.qty)) return 'اكتب الكمية'; await db.rpc('adjust_stock', {pid: v.pid, qty: Math.round(N(v.qty)), note: v.note}); ST.products = await db.q('products', {order: ['name', true]}); toast('تعدّل المخزون'); render(); }),
   purForm: () => openForm('فاتورة شراء', [{k:'supplier', l:'المورد', req: 1}, {k:'day', l:'التاريخ', t:'date', def: today()}, {k:'product_id', l:'المنتج', t:'select', opts: ST.products.filter(p => p.active).map(p => [p.id, p.name]), wide: 1}, {k:'qty', l:'الكمية', t:'number'}, {k:'unit_cost', l:'سعر القطعة (د.أ)', t:'number'}, {k:'note', l:'ملاحظة', wide: 1}], null,
     async v => { if (!N(v.qty)) return 'اكتب الكمية'; if (v.unit_cost == null) return 'اكتب سعر القطعة'; const c = await db.rpc('add_purchase', {p: {...v, qty: Math.round(N(v.qty))}}); ST.products = await db.q('products', {order: ['name', true]}); toast('انضافت المشتريات. تكلفة القطعة صارت ' + jd(c)); render(); }),
-  expForm: () => openForm('مصروف جديد', [{k:'category', l:'البند', t:'select', opts: EXP_CATS}, {k:'amount', l:'المبلغ (د.أ)', t:'number'}, {k:'day', l:'التاريخ', t:'date', def: today()}, {k:'note', l:'ملاحظة'}], null,
-    async v => { if (!(N(v.amount) > 0)) return 'اكتب المبلغ'; await db.ins('expenses', {category: v.category, amount: N(v.amount), day: v.day || today(), note: v.note || null}); toast('انضاف المصروف'); render(); }),
+  expForm: () => openForm('مصروف جديد · ' + wsName(ui.ws || 'store'), [{k:'category', l:'البند', t:'select', opts: ui.ws === 'agency' ? AG_CATS : EXP_CATS}, {k:'amount', l:'المبلغ (د.أ)', t:'number'}, {k:'day', l:'التاريخ', t:'date', def: today()}, {k:'note', l:'ملاحظة'}], null,
+    async v => { if (!(N(v.amount) > 0)) return 'اكتب المبلغ'; await db.ins('expenses', {category: v.category, amount: N(v.amount), day: v.day || today(), note: v.note || null, ws: ui.ws || 'store'}); toast('انضاف المصروف'); render(); }),
   expDel: async (id, b) => { if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'متأكد؟'; return; } await db.del('expenses', {id}); toast('انحذف'); render(); },
   userForm: id => openUserForm(id ? V.users.cache?.find(u => u.id === id) : null),
   addCity: () => { const tb = $('#cityRows'); const i = tb.children.length + Date.now() % 1000; tb.insertAdjacentHTML('beforeend', cityRow('', 3, '', 'n' + i)); },
@@ -775,6 +830,7 @@ function bind() {
   document.addEventListener('change', async e => {
     const t = e.target;
     if (t.dataset.img && t.files?.[0]) { try { formImg = await shrink(t.files[0]); toast('الصورة جاهزة، اضغط حفظ'); } catch (x) { toast('ما قدرت أقرأ الصورة', true); } return; }
+    if (t.dataset.chg === 'opage') { ui.opage = t.value; render(); return; }
     if (t.dataset.chg === 'month') { ui.month = t.value || monthOf(today()); render(); return; }
     if (t.dataset.chg === 'dispAll') { $$('[data-dsel]').forEach(c => c.checked = t.checked); return; }
     if (t.dataset.chg === 'outcome') { if (!can('delivery', 'edit')) { toast('ما عندك صلاحية لهالعملية', true); t.value = t.dataset.was; return; } askOutcome(t.dataset.id, t.value, N(t.dataset.fee)); }
@@ -815,7 +871,7 @@ function boot() {
   start(impl, link).then(() => { if (location.hash || /type=|error_code=/.test(location.search)) history.replaceState(null, '', location.pathname); });
 }
 Object.assign(K, {$, $$, esc, N, fmt, jd, pct, sum, today, addDays, monthOf, monthEnd, fmtDT, dayName, cleanPhone, PHONE_RE,
-  STATUSES, ST_CLS, SOURCES, COLORS, SECTIONS, SEC_NAME, NAV, TEMPLATES, TPL_DESC, PERSONAL, ACT_SEC, V, A, ST, ui,
+  STATUSES, ST_CLS, SOURCES, COLORS, SECTIONS, SEC_NAME, NAV, NAVS, WS, wsList, wsName, goWs, lsGet, lsSet, pageName, TEMPLATES, TPL_DESC, PERSONAL, ACT_SEC, V, A, ST, ui,
   pill, kpi, head, table, chips, toast, openForm, openInfo, closeM, copyText, can, perm, isAdmin, isClient, render, softRender,
   openOrderForm, arabicErr, P, cities, feeFor, shrink, applyPerms,
   setModalCancel: f => { modalCancel = f; } });
