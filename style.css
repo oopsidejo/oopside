@@ -276,3 +276,27 @@ img{max-width:100%}
 .aitext{font-size:14.5px;line-height:1.9;max-width:80ch}
 .empty.m{padding:8px;text-align:center}
 .bar .tr i{max-width:100%}
+
+/* ---------- مساحات الشغل: المتجر والوكالة ---------- */
+body[data-ws="agency"]{--brand:#2f3b82;--brand-ink:#ffffff;--brand-soft:#e2e6f7}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) body[data-ws="agency"]{--brand:#8e9cf0;--brand-ink:#0c1233;--brand-soft:#1f2650}}
+:root[data-theme="dark"] body[data-ws="agency"]{--brand:#8e9cf0;--brand-ink:#0c1233;--brand-soft:#1f2650}
+.wsbar{max-width:1220px;margin:0 auto 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--brand-soft);border:1px solid color-mix(in srgb,var(--brand) 25%,transparent);border-radius:var(--r);padding:8px 12px}
+.wsbar[hidden]{display:none}
+.wsin{display:flex;align-items:center;gap:10px;min-width:0}
+.wsin i,.wscard i{font-style:normal;width:32px;height:32px;border-radius:9px;background:var(--brand);color:var(--brand-ink);display:grid;place-items:center;font:700 16px var(--f-display);flex:none}
+.wsin small{display:block;font-size:11.5px;color:var(--muted);line-height:1.2}
+.wsin b{font:600 15px/1.3 var(--f-display);color:var(--ink)}
+.wsbtn{white-space:nowrap}
+.wspick{width:100%;max-width:680px;min-width:0;min-height:calc(100vh - 64px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px 16px;text-align:center}
+.wspick h1{max-width:640px}
+.wscards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));gap:16px;width:100%;max-width:640px;margin:10px 0}
+.wscard{display:flex;flex-direction:column;align-items:center;gap:8px;padding:26px 18px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;font:inherit;text-align:center;transition:transform .12s,border-color .12s}
+.wscard:hover,.wscard:focus-visible{border-color:var(--brand);transform:translateY(-2px);outline:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 25%,transparent)}
+.wscard i{width:52px;height:52px;font-size:24px;border-radius:14px;background:#0f4c45;color:#fff}
+.wscard[data-ws="agency"] i{background:#2f3b82}
+.wscard b{font:600 19px var(--f-display)}
+.wscard span{font-size:13px;color:var(--muted)}
+.pgtag{display:inline-block;font-size:12px;font-weight:600;padding:1px 8px;border-radius:6px;background:var(--brand-soft);color:var(--brand);white-space:nowrap}
+.lnk{background:none;border:0;padding:0;font:inherit;color:var(--brand);cursor:pointer;text-align:right;text-decoration:underline;text-underline-offset:3px}
+@media (max-width:760px){.wsbar{margin-bottom:12px}.wsbtn{width:100%;justify-content:center}}
