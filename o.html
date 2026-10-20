@@ -2,6 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
+<link rel="icon" href="favicon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ابنِ باقتك التسويقية</title>
 <meta name="description" content="احكيلنا شو المشكلة، حدد ميزانيتك، واختار الخدمات. السعر بيطلعلك فوراً.">
@@ -641,7 +642,7 @@ async function boot() {
   SITE = data;
   const brand = SITE.brand || 'OOPSIDE';
   $('#brandName').textContent = brand; $('#fBrand').textContent = brand;
-  if (SITE.logo) { $('#brand').innerHTML = `<img src="${esc(SITE.logo)}" alt="${esc(brand)}">`; const l = document.createElement('link'); l.rel = 'icon'; l.href = SITE.logo; document.head.appendChild(l); }
+  if (SITE.logo) { $('#brand').innerHTML = `<img src="${esc(SITE.logo)}" alt="${esc(brand)}">`; document.querySelector('link[rel=icon]').href = SITE.logo; }
   document.title = brand + ' · ابنِ باقتك التسويقية';
   const c = SITE.config || {};
   $('#fContact').innerHTML = [c.phone ? `<a href="tel:${esc(c.phone)}">${esc(c.phone)}</a>` : '', c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : '', c.address ? `<span style="opacity:.8">${esc(c.address)}</span>` : ''].filter(Boolean).join('<br>');

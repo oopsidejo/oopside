@@ -265,7 +265,7 @@ async function showLogin(msg) {
   $('.app').hidden = true; const el = $('#login'); el.hidden = false;
   let setup = false; try { setup = await db.rpc('needs_setup'); } catch (e) {}
   let company = 'صابر أونلاين', logo = ''; try { const st = (await db.q('settings', {eq: {id: 1}, select: 'company,logo'}))[0]; company = st?.company || company; logo = st?.logo || ''; } catch (e) { try { company = (await db.q('settings', {eq: {id: 1}}))[0]?.company || company; } catch (e2) {} }
-  el.innerHTML = `<div class="lwrap"><div class="lside"><div class="logo" style="padding:0"><i class="${logo ? 'img' : ''}">${logo ? `<img src="${esc(logo)}" alt="">` : 'ص'}</i><div>${esc(company)}<small>نظام إدارة الشركة</small></div></div>
+  el.innerHTML = `<div class="lwrap"><div class="lside">${(setIcon(logo), '')}<div class="logo" style="padding:0"><i class="${logo ? 'img' : ''}">${logo ? `<img src="${esc(logo)}" alt="">` : 'ص'}</i><div>${esc(company)}<small>نظام إدارة الشركة</small></div></div>
     <h1>${setup ? 'أهلين، خلينا نجهز حساب المدير' : 'أهلين، سجّل دخولك'}</h1>
     <p>${setup ? 'هاد أول تشغيل للنظام. اعمل حساب المدير العام بنفس الإيميل اللي كتبته بملف قاعدة البيانات.' : 'كل موظف إله حساب خاص، وبيشوف بس الأقسام اللي إله صلاحية عليها.'}</p>
     <ul><li>كل عملية بتنسجل باسم اللي عملها</li><li>الصلاحيات محمية من قاعدة البيانات نفسها</li><li>بيشتغل على الجوال والكمبيوتر</li></ul></div>
@@ -348,6 +348,7 @@ async function enter(user, fresh) {
 const wsList = () => isClient() ? [] : [...(STORE_ONLY.some(k => can(k)) ? ['store'] : []), ...(can('agency') || can('leads') || can('oops') ? ['agency'] : [])];
 const logoOf = w => (w === 'agency' ? ST.settings?.agency_logo : ST.settings?.logo) || '';
 const markHtml = (w, letter) => logoOf(w) ? `<img src="${esc(logoOf(w))}" alt="">` : esc(letter);
+const setIcon = url => { let l = document.querySelector('link[rel=icon]'); if (!l) { l = document.createElement('link'); l.rel = 'icon'; document.head.appendChild(l); } const v = url || 'favicon.png'; if (l.getAttribute('href') !== v) l.setAttribute('href', v); };
 const wsName = w => w === 'agency' ? (ST.settings?.agency_name || WS.agency.name) : (ST.settings?.company || WS.store.name);
 function showWsChooser(wl) {
   $('.app').hidden = true; const el = $('#login'); el.hidden = false;
@@ -391,6 +392,7 @@ async function render() {
   $('#coName').textContent = isClient() ? (ST.settings?.agency_name || ST.settings?.company || 'صابر أونلاين') : wsName(ws);
   const lw = isClient() ? 'agency' : ws, li = $('.app .logo i'); if (li) { li.className = logoOf(lw) ? 'img' : ''; li.innerHTML = markHtml(lw, lw === 'agency' ? 'و' : 'ص'); }
   document.title = (isClient() ? (ST.settings?.agency_name || '') : wsName(ws)) || 'صابر أونلاين';
+  setIcon(logoOf(lw));
   const bar = $('#wsbar');
   if (bar) { bar.hidden = isClient(); const other = wl.find(w => w !== ws);
     bar.innerHTML = `<div class="wsin"><i class="${logoOf(ws) ? 'img' : ''}">${markHtml(ws, WS[ws].mark)}</i><div><small>إنت هلأ بـ</small><b>${esc(wsName(ws))}</b></div></div>${other ? `<button class="btn sm wsbtn" data-act="switchWs" type="button"><span aria-hidden="true">⇄</span> روح لـ${esc(wsName(other))}</button>` : ''}`; }

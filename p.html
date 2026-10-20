@@ -2,6 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
+<link rel="icon" href="favicon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>اطلب الآن</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -65,7 +66,7 @@ input:focus,select:focus{outline:none;border-color:var(--c)}
   if (!slug || !cfg.url || !window.supabase) { page.innerHTML = '<div class="msg">الصفحة مش موجودة.</div>'; return; }
   const sb = window.supabase.createClient(cfg.url, cfg.key, {auth: {persistSession: false, autoRefreshToken: false}});
   // Meta Pixel: من الإعدادات بالنظام (البكسل والتتبع)، وإذا فاضي من config.js
-  try { const {data: st} = await sb.from('settings').select('tracking').eq('id', 1).maybeSingle(); const px = String(st?.tracking?.store_pixel || '').replace(/\D/g, ''); if (px) cfg.pixel = px; } catch (e) {}
+  try { const {data: st} = await sb.from('settings').select('tracking,logo').eq('id', 1).maybeSingle(); if (st?.logo) document.querySelector('link[rel=icon]').href = st.logo; const px = String(st?.tracking?.store_pixel || '').replace(/\D/g, ''); if (px) cfg.pixel = px; } catch (e) {}
   if (cfg.pixel) {
     !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
     fbq('init', cfg.pixel); fbq('track', 'PageView');
