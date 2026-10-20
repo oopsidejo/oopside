@@ -167,6 +167,10 @@ input[type=range]{width:100%;accent-color:var(--indigo);height:32px}
 .rsum .ads{background:repeating-linear-gradient(-45deg,var(--lilac) 0 6px,transparent 6px 12px);border-radius:8px;padding:6px 8px}
 .rsum .gift{background:var(--mint-bg);color:var(--mint);border-radius:8px;padding:6px 8px;font-weight:600}
 .rsum .gift s{opacity:.7;font-weight:400}
+.rsum .saved{border:1.5px dashed var(--mint);color:var(--mint);border-radius:10px;padding:8px 10px;margin-top:8px;font-weight:700;animation:pop .35s ease}
+@keyframes pop{from{transform:scale(.94);opacity:.4}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion: reduce){.rsum .saved{animation:none}}
+.freetag{display:inline-block;background:var(--mint-bg);color:var(--mint);border-radius:6px;padding:1px 6px;font-weight:600;margin-inline-start:4px}
 .rsum .tot{border-top:2px dashed var(--line);padding-top:8px;margin-top:4px;font-size:16px}
 .rsum .tot b{font-size:24px;color:var(--indigo)}
 .gauge{margin-top:12px}
@@ -349,7 +353,9 @@ function lines() {
   return Object.entries(S.items).map(([id, it]) => { const s = svc(id); if (!s) return null; const pr = P.price(s, it.qty, adBudget(), it.opts);
     // رسوم الإعداد مجاناً: بتنشال من السعر وبتطلع للعميل كخصم
     let waived = 0; if (SITE.config?.setup_free && N(s.setup_fee) > 0) { waived = Math.min(N(pr.one_time), s.ptype === 'team' ? N(s.setup_fee) * N(pr.qty) : N(s.setup_fee)); pr.one_time = Math.round((N(pr.one_time) - waived) * 1000) / 1000; }
-    return {id, s, it, ...pr, waived}; }).filter(Boolean);
+    // خصم الكمية: الفرق بين السعر الأصلي والسعر بعد الخصم
+    const vol = s.ptype === 'unit' && N(pr.off) > 0 ? Math.round((N(s.price) * N(pr.qty) - N(pr.monthly)) * 1000) / 1000 : 0;
+    return {id, s, it, ...pr, waived, vol}; }).filter(Boolean);
 }
 const why = s => { const m = (s.problems || []).filter(k => S.problems.includes(k)); return m.length ? 'مقترحة لأنك اخترت: ' + m.slice(0, 2).map(plabel).join('، ') : ''; };
 function priceLabel(s) {
@@ -413,10 +419,17 @@ function drawReceipt() {
   $('#rCount').textContent = L.length ? nSvc(L.length) : '';
   $('#rLines').innerHTML = L.length ? L.map(l => `<li><div>${esc(l.s.name)}<small>${l.s.ptype === 'unit' ? l.qty + ' ' + esc(l.s.unit || '') + (l.off ? ' · خصم ' + l.off + '%' : '') : l.s.ptype === 'team' ? l.qty + ' موظفة · ' + l.hours + ' ساعة بالشهر' : l.s.ptype === 'quote' ? 'بيتسعّر بعد جلسة' : l.s.ptype === 'pct_spend' ? N(l.s.pct) + '% من الإعلانات' : l.one_time && !l.monthly ? 'مرة وحدة' : 'شهري'}</small></div><b>${l.quote ? '—' : l.monthly ? jd(l.monthly) : jd(l.one_time)}</b></li>`).join('')
     : '<li class="rempty">لسا ما اخترت خدمات. ابلش من المشكلة، ومنقترحلك.</li>';
-  const saved = L.reduce((a, l) => a + N(l.waived), 0);
-  $('#rSum').innerHTML = `<div><span>أتعابنا الشهرية</span><b>${jd(t.fees)}</b></div>${t.one_time ? `<div><span>رسوم لمرة وحدة</span><b>${jd(t.one_time)}</b></div>` : ''}${saved ? `<div class="gift"><span>رسوم الإعداد <s>${jd(saved)}</s></span><b>مجاناً</b></div>` : ''}
+  const saved = L.reduce((a, l) => a + N(l.waived), 0), vol = L.reduce((a, l) => a + N(l.vol), 0), disc = saved + vol;
+  // قبل ما يختار أي خدمة: كل شي صفر
+  if (!L.length) {
+    $('#rSum').innerHTML = `<div><span>أتعابنا الشهرية</span><b>${jd(0)}</b></div><div class="tot"><span>صرفك الشهري كامل</span><b>${jd(0)}</b></div>`;
+    $('#rGauge').className = 'gauge'; $('#rGauge').innerHTML = '';
+    const mt0 = $('#mTot'); if (mt0) mt0.textContent = jd(0);
+    return;
+  }
+  $('#rSum').innerHTML = `<div><span>أتعابنا الشهرية</span><b>${jd(t.fees)}</b></div>${t.one_time ? `<div><span>رسوم لمرة وحدة</span><b>${jd(t.one_time)}</b></div>` : ''}${saved ? `<div class="gift"><span>رسوم الإعداد <s>${jd(saved)}</s></span><b>مجاناً</b></div>` : ''}${vol ? `<div class="gift"><span>خصم الكمية</span><b>- ${jd(vol)}</b></div>` : ''}
     <div class="ads"><span>ميزانية الإعلانات <small class="m">(بتدفعها للمنصات مباشرة)</small></span><b>${jd(t.ad)}</b></div>
-    <div class="tot"><span>صرفك الشهري كامل</span><b>${jd(t.monthly)}</b></div>${t.one_time ? `<div><span>أول شهر مع رسوم البداية</span><b>${jd(t.first)}</b></div>` : ''}`;
+    <div class="tot"><span>صرفك الشهري كامل</span><b>${jd(t.monthly)}</b></div>${t.one_time ? `<div><span>أول شهر مع رسوم البداية</span><b>${jd(t.first)}</b></div>` : ''}${disc ? `<div class="saved"><span>🎁 وفّرت معنا</span><b>${jd(disc)}</b></div>` : ''}`;
   const fb = feesBudget(), used = t.fees + t.one_time, over = used > fb && fb > 0;
   $('#rGauge').className = 'gauge' + (over ? ' over' : '');
   $('#rGauge').innerHTML = fb > 0 ? `<div class="bar"><i style="width:${Math.min(100, used / fb * 100)}%"></i></div><p>${over ? `<b style="color:var(--coral)">زايد ${jd(used - fb)} عن ميزانية الأتعاب</b>. شيل خدمة أو قلل الكمية، أو اضغط "اقترحلي".` : `باقي من ميزانية الأتعاب <b>${jd(fb - used)}</b>`}</p>` : '';
@@ -495,7 +508,7 @@ function svcCard(s) {
       <p class="m" style="font-size:13px">تغطية ${pr.hours} ساعة بالشهر. العدد النهائي ومستوى الخدمة بيتأكدوا بعد ما نشوف رسائلك الفعلية.</p></div>`;
   }
   return `<div class="svc ${on ? 'on' : ''}"><div><div class="nm">${esc(s.name)}</div><div class="ds">${esc(s.description || '')}</div>${s.duration ? `<div class="ds dur">المدة: ${esc(s.duration)}</div>` : ''}${s.includes && on ? `<div class="ds" style="margin-top:4px">بيشمل: ${esc(s.includes)}</div>` : ''}</div>
-    <div class="act"><span class="pr">${priceLabel(s)}</span></div>
+    <div class="act"><span class="pr">${priceLabel(s)}${SITE.config?.setup_free && N(s.setup_fee) > 0 ? ' <small class="freetag">🎁 الإعداد مجاناً</small>' : ''}</span></div>
     ${w ? `<div class="why">${esc(w)}</div>` : ''}
     <div class="ctl" style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap">${ctl}<span></span><button type="button" class="add" data-add="${s.id}" aria-pressed="${pressed(on)}">${on ? 'مضافة ✓' : 'أضف'}</button></div>${team}</div>`;
 }
