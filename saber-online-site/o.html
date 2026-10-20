@@ -1,0 +1,665 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ابنِ باقتك التسويقية</title>
+<meta name="description" content="احكيلنا شو المشكلة، حدد ميزانيتك، واختار الخدمات. السعر بيطلعلك فوراً.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="ابنِ باقتك التسويقية">
+<meta property="og:description" content="أسعار واضحة، وميزانية الإعلانات منفصلة عن الأتعاب.">
+<meta name="theme-color" content="#2f3b82">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alexandria:wght@500;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ink:#16183d; --indigo:#2f3b82; --indigo-2:#4553b0; --paper:#fafafd; --card:#ffffff; --lilac:#ecebfa; --line:#dcdcee;
+  --on:#ffffff; --muted:#5d6080; --sun:#ffc83d; --sun-ink:#3a2a00; --mint:#1e8c63; --mint-bg:#e1f4ec; --coral:#c8402f; --coral-bg:#fbe5e1;
+  --f-d:"Alexandria","IBM Plex Sans Arabic",Tahoma,sans-serif; --f-b:"IBM Plex Sans Arabic",Tahoma,"Segoe UI",sans-serif;
+  --r:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --ink:#ecebff; --indigo:#9aa6ff; --indigo-2:#b7c0ff; --paper:#10122a; --card:#181b3a; --lilac:#20244b; --line:#2e3263;
+  --on:#10122a; --muted:#a4a7cc; --sun:#ffd166; --sun-ink:#2a1e00; --mint:#5fd3a2; --mint-bg:#123329; --coral:#ff8a76; --coral-bg:#3a1d1a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --ink:#ecebff; --indigo:#9aa6ff; --indigo-2:#b7c0ff; --paper:#10122a; --card:#181b3a; --lilac:#20244b; --line:#2e3263;
+  --on:#10122a; --muted:#a4a7cc; --sun:#ffd166; --sun-ink:#2a1e00; --mint:#5fd3a2; --mint-bg:#123329; --coral:#ff8a76; --coral-bg:#3a1d1a; color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.7 var(--f-b);direction:rtl;-webkit-font-smoothing:antialiased}
+a{color:var(--indigo)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--sun);outline-offset:2px;border-radius:6px}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:max(16px,env(safe-area-inset-left,0px))}
+h1,h2,h3{font-family:var(--f-d);margin:0;line-height:1.25;text-wrap:balance}
+h1{font-size:clamp(30px,5.4vw,54px);font-weight:800;letter-spacing:-.01em}
+h2{font-size:clamp(23px,3.2vw,32px);font-weight:700}
+h3{font-size:18px;font-weight:700}
+p{margin:0}
+.m{color:var(--muted)}
+.hidden{display:none!important}
+
+/* ---------- header ---------- */
+header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:62px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font:800 22px var(--f-d);letter-spacing:.02em}
+.brand img{height:36px;width:auto;max-width:140px;object-fit:contain}
+.brand .dot{width:12px;height:12px;border-radius:50%;background:var(--sun);display:inline-block;margin-inline-start:2px}
+nav.links{display:flex;gap:6px;align-items:center}
+nav.links a{text-decoration:none;color:var(--muted);font-weight:500;padding:6px 10px;border-radius:8px}
+nav.links a:hover{color:var(--ink);background:var(--lilac)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:12px;padding:12px 20px;font:700 16px var(--f-d);cursor:pointer;text-decoration:none;min-height:48px;transition:transform .12s,background .12s}
+.btn:active{transform:scale(.98)}
+.btn.pri{background:var(--indigo);color:var(--on)}
+.btn.pri:hover{background:var(--indigo-2)}
+.btn.sun{background:var(--sun);color:var(--sun-ink)}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.ghost:hover{border-color:var(--indigo)}
+.btn.sm{min-height:38px;padding:6px 14px;font-size:14px;border-radius:10px}
+.btn[disabled]{opacity:.55;cursor:not-allowed}
+@media (max-width:720px){nav.links a.nl{display:none}}
+
+/* ---------- hero ---------- */
+.hero{padding:56px 0 30px}
+.hero .wrap{display:grid;grid-template-columns:1.25fr .75fr;gap:40px;align-items:center}
+.hero p.sub{font-size:clamp(16px,2vw,19px);color:var(--muted);margin-top:16px;max-width:60ch}
+.hero .cta{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px}
+.steps3{list-style:none;padding:0;margin:0;display:grid;gap:12px;counter-reset:s}
+.steps3 li{counter-increment:s;display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px}
+.steps3 li::before{content:counter(s);font:800 20px var(--f-d);width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:var(--lilac);color:var(--indigo)}
+.steps3 li:last-child::before{background:var(--sun);color:var(--sun-ink)}
+.steps3 b{display:block;font-family:var(--f-d);font-weight:700}
+.steps3 span{font-size:14px;color:var(--muted)}
+@media (max-width:860px){.hero .wrap{grid-template-columns:1fr}.hero{padding-top:34px}}
+
+/* ---------- builder ---------- */
+section.sec{padding:40px 0}
+.sechead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:22px}
+.sechead p{color:var(--muted);max-width:62ch}
+.builder{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:26px;align-items:start}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px}
+.prog{display:flex;gap:6px;margin-bottom:20px;overflow-x:auto;scrollbar-width:none}
+.prog button{flex:1;min-width:76px;border:0;background:none;padding:0;cursor:pointer;text-align:start;color:var(--muted);font:500 13px var(--f-b)}
+.prog button i{display:block;height:6px;border-radius:4px;background:var(--line);margin-bottom:6px}
+.prog button.done i{background:var(--indigo)}
+.prog button.on{color:var(--ink);font-weight:600}
+.prog button.on i{background:var(--sun)}
+.prog button[disabled]{cursor:default}
+.step h2{margin-bottom:6px}
+.step > p.m{margin-bottom:18px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:9px 15px;cursor:pointer;font:500 15px var(--f-b);text-align:start;line-height:1.4;transition:border-color .12s,background .12s}
+.chip:hover{border-color:var(--indigo-2)}
+.chip[aria-pressed="true"]{background:var(--indigo);border-color:var(--indigo);color:var(--on)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.tile{border:1.5px solid var(--line);background:var(--card);border-radius:12px;padding:12px;cursor:pointer;font:600 15px var(--f-b);text-align:start;min-height:52px}
+.tile[aria-pressed="true"]{border-color:var(--indigo);background:var(--lilac);color:var(--indigo)}
+.seg{display:inline-flex;border:1.5px solid var(--line);border-radius:12px;overflow:hidden;flex-wrap:wrap}
+.seg button{border:0;background:none;padding:9px 16px;cursor:pointer;font:500 15px var(--f-b);min-height:44px}
+.seg button[aria-pressed="true"]{background:var(--indigo);color:var(--on)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:600px){.grid2{grid-template-columns:1fr}}
+.fld{display:flex;flex-direction:column;gap:6px;margin-top:14px}
+.fld > span{font-size:14px;font-weight:600}
+.fld small{color:var(--muted);font-size:13px}
+.fld input,.fld select,.fld textarea{width:100%;border:1.5px solid var(--line);background:var(--paper);border-radius:12px;padding:11px 13px;min-height:48px;font-size:16px}
+.fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--indigo);outline:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--indigo) 22%,transparent)}
+.ask{margin-top:18px;padding:14px 16px;border-radius:14px;background:var(--lilac);border-inline-start:4px solid var(--indigo)}
+.ask h3{font-size:15px}
+.nav{display:flex;justify-content:space-between;gap:10px;margin-top:26px;flex-wrap:wrap}
+.err{color:var(--coral);font-weight:600;margin-top:12px;min-height:1.5em}
+
+/* budget */
+.bigmoney{display:flex;align-items:baseline;gap:10px;margin:8px 0 4px}
+.bigmoney input{font:800 clamp(40px,7vw,64px)/1 var(--f-d);border:0;background:none;width:5.2ch;padding:0;color:var(--indigo);text-align:start;-moz-appearance:textfield}
+.bigmoney input::-webkit-outer-spin-button,.bigmoney input::-webkit-inner-spin-button{-webkit-appearance:none}
+.bigmoney span{font:700 20px var(--f-d);color:var(--muted)}
+input[type=range]{width:100%;accent-color:var(--indigo);height:32px}
+.toggle{display:flex;gap:12px;align-items:flex-start;margin-top:18px;cursor:pointer}
+.toggle input{width:22px;height:22px;accent-color:var(--indigo);margin-top:3px;flex:none}
+.split{margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.split div{border-radius:12px;padding:12px 14px;background:var(--paper);border:1px solid var(--line)}
+.split small{display:block;color:var(--muted);font-size:13px}
+.split b{font:700 22px var(--f-d)}
+.planbox{margin-top:18px;border-radius:16px;border:1.5px dashed var(--indigo);padding:16px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+
+/* services */
+.cats{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.svcs{display:grid;gap:10px}
+.svc{border:1.5px solid var(--line);border-radius:16px;padding:14px 16px;background:var(--card);display:grid;grid-template-columns:1fr auto;gap:6px 14px;align-items:start}
+.svc.on{border-color:var(--indigo);box-shadow:inset 4px 0 0 var(--indigo)}
+.svc .nm{font:700 16px var(--f-d)}
+.svc .ds{font-size:14px;color:var(--muted)}
+.svc .pr{font:600 14px var(--f-b);color:var(--indigo);white-space:nowrap}
+.svc .why{grid-column:1/-1;font-size:13px;background:color-mix(in srgb,var(--sun) 28%,transparent);border-radius:8px;padding:4px 10px;justify-self:start}
+.svc .act{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.svc .ctl{grid-column:1/-1}
+.add{border:1.5px solid var(--indigo);background:none;color:var(--indigo);border-radius:10px;padding:6px 14px;min-height:40px;font:700 14px var(--f-d);cursor:pointer;white-space:nowrap}
+.svc.on .add{background:var(--indigo);color:var(--on)}
+.stepper{display:inline-flex;align-items:center;border:1.5px solid var(--line);border-radius:10px;overflow:hidden}
+.stepper button{border:0;background:var(--lilac);width:38px;height:38px;font:700 18px var(--f-d);cursor:pointer;color:var(--indigo)}
+.stepper output{min-width:40px;text-align:center;font:700 16px var(--f-d)}
+.team{margin-top:8px;padding:14px;border-radius:12px;background:var(--paper);border:1px solid var(--line);display:grid;gap:12px}
+.team .row{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.team label.l{font-size:14px;font-weight:600;min-width:110px}
+.warn{background:var(--coral-bg);color:var(--coral);border-radius:10px;padding:8px 12px;font-size:14px;font-weight:600}
+.okk{background:var(--mint-bg);color:var(--mint);border-radius:10px;padding:8px 12px;font-size:14px;font-weight:600}
+
+/* receipt: the memorable bit */
+.receipt{position:sticky;top:78px;background:var(--card);border-radius:18px 18px 0 0;padding:20px 20px 26px;filter:drop-shadow(0 10px 24px color-mix(in srgb,var(--indigo) 18%,transparent));
+  --cut:radial-gradient(circle at 10px 0,transparent 9px,var(--card) 9.5px);}
+.receipt::after{content:"";position:absolute;inset-inline:0;bottom:-10px;height:12px;background:var(--cut);background-size:20px 12px;background-repeat:repeat-x}
+.rhead{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px dashed var(--line);padding-bottom:10px;margin-bottom:8px}
+.rhead b{font:800 18px var(--f-d)}
+.rlines{list-style:none;margin:0;padding:0;max-height:300px;overflow-y:auto}
+.rlines li{display:grid;grid-template-columns:1fr auto;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px;animation:print .28s ease-out}
+.rlines li small{display:block;color:var(--muted);font-size:12px}
+.rlines li b{font-family:var(--f-d);font-variant-numeric:tabular-nums;white-space:nowrap}
+@keyframes print{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.rempty{color:var(--muted);font-size:14px;padding:14px 0}
+.rsum{margin-top:10px;display:grid;gap:4px;font-size:14px}
+.rsum div{display:flex;justify-content:space-between;gap:8px}
+.rsum b{font-family:var(--f-d);font-variant-numeric:tabular-nums}
+.rsum .ads{background:repeating-linear-gradient(-45deg,var(--lilac) 0 6px,transparent 6px 12px);border-radius:8px;padding:6px 8px}
+.rsum .tot{border-top:2px dashed var(--line);padding-top:8px;margin-top:4px;font-size:16px}
+.rsum .tot b{font-size:24px;color:var(--indigo)}
+.gauge{margin-top:12px}
+.gauge .bar{height:10px;border-radius:6px;background:var(--lilac);overflow:hidden}
+.gauge .bar i{display:block;height:100%;background:var(--mint);border-radius:6px;transition:width .3s}
+.gauge.over .bar i{background:var(--coral)}
+.gauge p{font-size:13px;margin-top:6px}
+.rfoot{font-size:12px;color:var(--muted);margin-top:12px}
+.mbar{display:none}
+@media (max-width:980px){
+  .builder{grid-template-columns:minmax(0,1fr)}
+  .panel{padding:18px 14px}
+  .receipt{position:fixed;inset-inline:0;bottom:0;top:auto;z-index:30;border-radius:18px 18px 0 0;max-height:78vh;overflow-y:auto;transform:translateY(105%);transition:transform .25s}
+  .receipt::after{display:none}
+  body.rshow .receipt{transform:none}
+  .mbar{display:flex;position:fixed;inset-inline:0;bottom:0;z-index:25;background:#2f3b82;color:#fff;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));align-items:center;justify-content:space-between;gap:10px}
+  .mbar b{font:800 20px var(--f-d)}
+  .mbar small{display:block;font-size:12px;opacity:.8}
+  .mbar button{background:var(--sun);color:var(--sun-ink);border:0;border-radius:10px;padding:8px 14px;font:700 14px var(--f-d);min-height:42px}
+  body{padding-bottom:76px}
+  .rclose{display:inline-flex!important}
+}
+.rclose{display:none}
+
+/* tools */
+.tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.tabs button{border:1.5px solid var(--line);background:var(--card);border-radius:12px;padding:10px 16px;font:700 15px var(--f-d);cursor:pointer;min-height:46px}
+.tabs button[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.calc{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+@media (max-width:860px){.calc{grid-template-columns:1fr}}
+.out{background:var(--ink);color:var(--paper);border-radius:20px;padding:22px}
+.out .big{font:800 clamp(34px,5vw,48px)/1.1 var(--f-d);color:var(--sun);margin:6px 0}
+.out .kv{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid color-mix(in srgb,var(--paper) 18%,transparent);font-size:15px}
+.out .kv b{font-family:var(--f-d);font-variant-numeric:tabular-nums}
+.out p.note{font-size:13px;opacity:.75;margin-top:12px}
+.range3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+.range3 div{background:color-mix(in srgb,var(--paper) 10%,transparent);border-radius:12px;padding:10px;text-align:center}
+.range3 small{display:block;font-size:12px;opacity:.75}
+.range3 b{font:800 22px var(--f-d)}
+.src{display:inline-block;font-size:12px;border-radius:6px;padding:2px 8px;background:var(--lilac);color:var(--indigo);font-weight:600}
+
+/* faq + footer */
+details{border-bottom:1px solid var(--line);padding:14px 0}
+summary{cursor:pointer;font:700 17px var(--f-d);list-style:none;display:flex;justify-content:space-between;gap:12px}
+summary::after{content:"+";color:var(--indigo);font-size:22px;line-height:1}
+details[open] summary::after{content:"−"}
+details p{margin-top:8px;color:var(--muted)}
+footer{background:var(--ink);color:var(--paper);padding:34px 0 40px;margin-top:40px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:20px;justify-content:space-between}
+footer a{color:var(--sun)}
+footer .brand{color:var(--paper)}
+dialog{border:0;border-radius:18px;max-width:560px;width:calc(100% - 32px);padding:24px;background:var(--card);color:var(--ink)}
+dialog::backdrop{background:rgba(10,12,40,.5)}
+
+/* success + quote */
+.done{text-align:center;padding:30px 10px}
+.done .no{font:800 clamp(44px,9vw,80px)/1 var(--f-d);color:var(--indigo);margin:12px 0}
+.done ol{text-align:start;max-width:440px;margin:18px auto;padding-inline-start:20px}
+.done ol li{margin:6px 0}
+.qt{max-width:820px;margin:30px auto;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:28px}
+.qt table{width:100%;border-collapse:collapse;margin:14px 0;font-size:15px}
+.qt th,.qt td{text-align:start;padding:9px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+.qt th{font-size:13px;color:var(--muted);font-weight:600}
+.qt td.n{font-family:var(--f-d);white-space:nowrap}
+.stamp{display:inline-block;font:700 14px var(--f-d);padding:4px 12px;border-radius:8px;background:var(--lilac);color:var(--indigo)}
+.stamp.good{background:var(--mint-bg);color:var(--mint)}
+.stamp.bad{background:var(--coral-bg);color:var(--coral)}
+.center{min-height:70vh;display:grid;place-items:center;text-align:center;padding:30px 16px}
+@media print{
+  header.top,footer,.mbar,.noprint,#tools,#faq,.hero{display:none!important}
+  body{background:#fff;color:#000;padding:0}
+  .qt{border:0;margin:0;max-width:none}
+}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="#" id="brand"><span id="brandName">OOPSIDE</span><i class="dot" aria-hidden="true"></i></a>
+  <nav class="links"><a class="nl" href="#tools">حاسبات مجانية</a><a class="nl" href="#faq">أسئلة</a><a class="btn pri sm" href="#build">ابنِ باقتك</a></nav>
+</div></header>
+<main id="app"><div class="center"><p class="m">جاري التحميل…</p></div></main>
+<footer><div class="wrap">
+  <div><a class="brand" href="#"><span id="fBrand">OOPSIDE</span></a><p style="opacity:.75;margin-top:6px;max-width:40ch" id="fAbout">تسويق بأرقام واضحة.</p></div>
+  <div id="fContact"></div>
+  <div><a href="#" id="privLink">سياسة الخصوصية</a></div>
+</div></footer>
+<dialog id="dlg"><h3 id="dlgT"></h3><p id="dlgB" style="margin-top:10px;white-space:pre-line"></p><form method="dialog" style="margin-top:16px"><button class="btn pri sm">تمام</button></form></dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="oops-price.js"></script>
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const N = x => Number(x) || 0;
+const fmt = n => { n = Math.round(N(n) * 100) / 100; return n.toLocaleString('en-US', {maximumFractionDigits: 2}); };
+const jd = n => fmt(n) + ' د.أ';
+const P = window.OopsPrice;
+const nSvc = n => n === 1 ? 'خدمة وحدة' : n === 2 ? 'خدمتين' : n <= 10 ? n + ' خدمات' : n + ' خدمة';
+const cfg = window.SABER_CONFIG || {};
+const qs = new URLSearchParams(location.search);
+const ls = {get: k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }, del: k => { try { localStorage.removeItem(k); } catch (e) {} }};
+let sb = null, SITE = null;
+const CITIES = ['عمّان','الزرقاء','إربد','العقبة','السلط','مادبا','جرش','عجلون','المفرق','الكرك','معان','الطفيلة','خارج الأردن'];
+const STAGES = [['new','جديدة'], ['grow','بتكبر'], ['est','ثابتة بالسوق']];
+const AGENCY_NOW = [['no','لا'], ['yes','نعم، هلأ'], ['before','اشتغلت قبل']];
+const STEPS = ['المشكلة','شغلك','الميزانية','الخدمات','التواصل'];
+
+/* ---------- utm: بنحفظ مصدر الزيارة أول ما يفوت ---------- */
+const UTM_KEYS = ['utm_source','utm_medium','utm_campaign','utm_content','utm_term','ad','fbclid','gclid','ref'];
+(function keepUtm() {
+  const got = {}; UTM_KEYS.forEach(k => { const v = qs.get(k); if (v) got[k] = v.slice(0, 120); });
+  try { if (Object.keys(got).length) sessionStorage.setItem('oops-utm', JSON.stringify(got)); } catch (e) {}
+  if (!got.utm_source && document.referrer && !document.referrer.includes(location.host)) { try { if (!sessionStorage.getItem('oops-utm')) sessionStorage.setItem('oops-utm', JSON.stringify({ref: new URL(document.referrer).host})); } catch (e) {} }
+})();
+const utm = () => { try { return JSON.parse(sessionStorage.getItem('oops-utm') || '{}'); } catch (e) { return {}; } };
+
+/* ---------- التتبع (بدون أي بيانات شخصية) ---------- */
+const track = (ev, data) => {
+  try { if (window.fbq) fbq('track', ev, data || {}); } catch (e) {}
+  try { if (window.gtag) gtag('event', {Lead: 'generate_lead', ViewContent: 'view_item_list', InitiateCheckout: 'begin_checkout'}[ev] || ev, data || {}); } catch (e) {}
+  try { (window.dataLayer = window.dataLayer || []).push({event: 'oops_' + ev, ...(data || {})}); } catch (e) {}
+};
+function loadTracking(s) {
+  const px = String(s.pixel || '').replace(/\D/g, ''), ga = String(s.ga4 || '').replace(/[^A-Z0-9-]/gi, ''), gtm = String(s.gtm || '').replace(/[^A-Z0-9-]/gi, '');
+  if (px) {
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', px); fbq('track', 'PageView');
+  }
+  if (ga) { const t = document.createElement('script'); t.async = true; t.src = 'https://www.googletagmanager.com/gtag/js?id=' + ga; document.head.appendChild(t); window.dataLayer = window.dataLayer || []; window.gtag = function () { dataLayer.push(arguments); }; gtag('js', new Date()); gtag('config', ga); }
+  if (gtm) { window.dataLayer = window.dataLayer || []; dataLayer.push({'gtm.start': Date.now(), event: 'gtm.js'}); const t = document.createElement('script'); t.async = true; t.src = 'https://www.googletagmanager.com/gtm.js?id=' + gtm; document.head.appendChild(t); }
+}
+
+/* ---------- حالة الباني ---------- */
+const blank = () => ({step: 0, problems: [], problem_other: '', sector: '', company: '', city: 'عمّان', stage: '', agency_now: '', answers: {}, about: '',
+  budget: 600, includes_ads: true, ad: 300, items: {}, contact: '', phone: '', email: '', website: '', social: '', consent: false, marketing_ok: false, cat: 'مقترحة', started: false});
+let S = Object.assign(blank(), ls.get('oops-draft') || {});
+const save = () => ls.set('oops-draft', S);
+const svc = id => SITE.services.find(s => s.id === id);
+const problems = () => SITE.config.problems || [];
+const plabel = k => problems().find(p => p.k === k)?.l || k;
+const adBudget = () => S.includes_ads ? Math.min(N(S.ad), N(S.budget)) : N(S.ad);
+const feesBudget = () => S.includes_ads ? Math.max(0, N(S.budget) - adBudget()) : N(S.budget);
+function lines() {
+  return Object.entries(S.items).map(([id, it]) => { const s = svc(id); if (!s) return null; const pr = P.price(s, it.qty, adBudget(), it.opts); return {id, s, it, ...pr}; }).filter(Boolean);
+}
+const why = s => { const m = (s.problems || []).filter(k => S.problems.includes(k)); return m.length ? 'مقترحة لأنك اخترت: ' + m.slice(0, 2).map(plabel).join('، ') : ''; };
+function priceLabel(s) {
+  switch (s.ptype) {
+    case 'monthly': return jd(s.price) + ' شهرياً';
+    case 'unit': return jd(s.price) + ' لكل ' + (s.unit || 'وحدة');
+    case 'one_time': return jd(s.price) + ' مرة وحدة';
+    case 'pct_spend': return N(s.pct) + '% من صرف الإعلانات' + (N(s.min_fee) ? '، وأقل إشي ' + jd(s.min_fee) : '');
+    case 'team': return 'حسب الساعات والقنوات';
+    case 'quote': return 'بيتسعّر بعد جلسة';
+  }
+  return '';
+}
+
+/* ---------- الصفحة الرئيسية ---------- */
+function home() {
+  const c = SITE.config;
+  return `<section class="hero"><div class="wrap">
+    <div><h1>${esc(c.headline || 'تسويق على قد شركتك')}</h1><p class="sub">${esc(c.sub || '')}</p>
+      <div class="cta"><a class="btn pri" href="#build" data-start>ابنِ باقتك</a><a class="btn ghost" href="#tools">احسب أقصى تكلفة للزبون</a></div></div>
+    <ol class="steps3"><li><div><b>احكيلنا المشكلة</b><span>اختار اللي مضايقك بالتسويق، ولو أكثر من وحدة</span></div></li>
+      <li><div><b>حدد ميزانيتك</b><span>منقترحلك خدمات على قدها، والإعلانات منفصلة عن أتعابنا</span></div></li>
+      <li><div><b>شوف السعر فوراً وابعت</b><span>فريقنا بيراجع ويرجعلك بعرض رسمي</span></div></li></ol>
+  </div></section>
+  <section class="sec" id="build"><div class="wrap">
+    <div class="sechead"><div><h2>ابنِ باقتك</h2><p>كل اختيار بيبيّن سعره دغري. الأرقام تقدير مبدئي، والعرض الرسمي بيوصلك بعد المراجعة.</p></div></div>
+    <div class="builder"><div class="panel" id="wiz"></div>${receiptShell()}</div>
+  </div></section>
+  <div class="mbar noprint" id="mbar"><div><small>أتعاب شهرية</small><b id="mTot">0 د.أ</b></div><button type="button" id="mOpen">شوف الفاتورة</button></div>
+  <section class="sec" id="tools"><div class="wrap">
+    <div class="sechead"><div><h2>حاسبات مجانية</h2><p>قبل ما تصرف دينار على الإعلان، اعرف قديش بتقدر تدفع لتجيب زبون، وشو ممكن تجيب ميزانيتك.</p></div></div>
+    <div class="tabs" role="tablist"><button role="tab" aria-selected="true" data-tab="cac">أقصى تكلفة للزبون</button><button role="tab" aria-selected="false" data-tab="fc">شو بتجيب ميزانيتك</button></div>
+    <div id="toolBody"></div>
+  </div></section>
+  <section class="sec" id="faq"><div class="wrap" style="max-width:820px">
+    <h2 style="margin-bottom:10px">أسئلة بتتكرر</h2>
+    <details><summary>ميزانية الإعلانات بتدفعها إلنا؟</summary><p>لا. ميزانية الإعلانات بتندفع لفيسبوك وجوجل وتيك توك مباشرة من بطاقتك، وأتعابنا منفصلة وواضحة بالفاتورة.</p></details>
+    <details><summary>السعر اللي طلعلي نهائي؟</summary><p>هو تقدير مبني على أسعارنا الحالية. بعد ما تبعت، منراجع احتياجك ومنبعتلك عرض رسمي بتقدر تقبله أو ترفضه من نفس الرابط.</p></details>
+    <details><summary>بتضمنولي عدد مبيعات؟</summary><p>ما منوعد بأرقام مبيعات. منحطلك أهداف واضحة ومنقيسها معك بتقارير مفهومة، والحاسبات هون افتراضية عشان تفهم الأرقام.</p></details>
+    <details><summary>بتطلبوا كلمة سر حساباتي؟</summary><p>أبداً. الربط بيصير بصلاحيات من حسابك الإعلاني بدون ما تعطينا كلمة السر.</p></details>
+    <details><summary>بقدر أغير الباقة بعدين؟</summary><p>أكيد. بتقدر تزيد أو تنقص الخدمات من شهر لشهر.</p></details>
+  </div></section>`;
+}
+function receiptShell() {
+  return `<aside class="receipt" id="receipt" aria-label="الفاتورة الحية"><div class="rhead"><b>الفاتورة الحية</b><button class="btn ghost sm rclose" type="button" id="rClose">سكّر</button><small class="m" id="rCount"></small></div>
+    <ul class="rlines" id="rLines"></ul><div class="rsum" id="rSum"></div><div class="gauge" id="rGauge"></div>
+    <p class="rfoot">تقدير مبدئي. السعر المعتمد بيوصلك بعرض رسمي.</p></aside>`;
+}
+function drawReceipt() {
+  const L = lines(), t = P.totals(L, adBudget());
+  $('#rCount').textContent = L.length ? nSvc(L.length) : '';
+  $('#rLines').innerHTML = L.length ? L.map(l => `<li><div>${esc(l.s.name)}<small>${l.s.ptype === 'unit' ? l.qty + ' ' + esc(l.s.unit || '') + (l.off ? ' · خصم ' + l.off + '%' : '') : l.s.ptype === 'team' ? l.qty + ' موظفة · ' + l.hours + ' ساعة بالشهر' : l.s.ptype === 'quote' ? 'بيتسعّر بعد جلسة' : l.s.ptype === 'pct_spend' ? N(l.s.pct) + '% من الإعلانات' : l.one_time && !l.monthly ? 'مرة وحدة' : 'شهري'}</small></div><b>${l.quote ? '—' : l.monthly ? jd(l.monthly) : jd(l.one_time)}</b></li>`).join('')
+    : '<li class="rempty">لسا ما اخترت خدمات. ابلش من المشكلة، ومنقترحلك.</li>';
+  $('#rSum').innerHTML = `<div><span>أتعابنا الشهرية</span><b>${jd(t.fees)}</b></div>${t.one_time ? `<div><span>رسوم لمرة وحدة</span><b>${jd(t.one_time)}</b></div>` : ''}
+    <div class="ads"><span>ميزانية الإعلانات <small class="m">(بتدفعها للمنصات مباشرة)</small></span><b>${jd(t.ad)}</b></div>
+    <div class="tot"><span>صرفك الشهري كامل</span><b>${jd(t.monthly)}</b></div>${t.one_time ? `<div><span>أول شهر مع رسوم البداية</span><b>${jd(t.first)}</b></div>` : ''}`;
+  const fb = feesBudget(), used = t.fees + t.one_time, over = used > fb && fb > 0;
+  $('#rGauge').className = 'gauge' + (over ? ' over' : '');
+  $('#rGauge').innerHTML = fb > 0 ? `<div class="bar"><i style="width:${Math.min(100, used / fb * 100)}%"></i></div><p>${over ? `<b style="color:var(--coral)">زايد ${jd(used - fb)} عن ميزانية الأتعاب</b>. شيل خدمة أو قلل الكمية، أو اضغط "اقترحلي".` : `باقي من ميزانية الأتعاب <b>${jd(fb - used)}</b>`}</p>` : '';
+  const mt = $('#mTot'); if (mt) mt.textContent = jd(t.fees);
+}
+
+/* ---------- خطوات الباني ---------- */
+const pressed = b => b ? 'true' : 'false';
+function stepHtml() {
+  const c = SITE.config, st = S.step;
+  const prog = `<div class="prog" role="list">${STEPS.map((n, i) => `<button type="button" role="listitem" class="${i < st ? 'done' : ''} ${i === st ? 'on' : ''}" data-go="${i}" ${i > st ? 'disabled' : ''} aria-current="${i === st ? 'step' : 'false'}"><i></i>${n}</button>`).join('')}</div>`;
+  let body = '';
+  if (st === 0) body = `<div class="step"><h2>شو اللي مضايقك بالتسويق؟</h2><p class="m">اختار كل اللي بينطبق عليك. على أساسه منقترحلك الخدمات.</p>
+    <div class="chips">${problems().map(p => `<button type="button" class="chip" data-prob="${esc(p.k)}" aria-pressed="${pressed(S.problems.includes(p.k))}">${esc(p.l)}</button>`).join('')}</div>
+    <label class="fld"><span>مشكلة ثانية؟ <small>(اختياري)</small></span><input id="i_po" value="${esc(S.problem_other)}" maxlength="300" placeholder="احكيلنا بكلمتين"></label></div>`;
+  if (st === 1) {
+    const asks = new Set(problems().filter(p => S.problems.includes(p.k) && p.ask).map(p => p.ask));
+    body = `<div class="step"><h2>عرّفنا على شغلك</h2><p class="m">أسئلة قليلة عشان نفهم وضعك.</p>
+    <span style="font-weight:600;font-size:14px">شو نوع نشاطك؟</span>
+    <div class="tiles" style="margin-top:8px">${(c.sectors || []).map(x => `<button type="button" class="tile" data-sector="${esc(x)}" aria-pressed="${pressed(S.sector === x)}">${esc(x)}</button>`).join('')}</div>
+    <div class="grid2"><label class="fld"><span>اسم الشركة أو المحل</span><input id="i_co" value="${esc(S.company)}" maxlength="120" autocomplete="organization" required></label>
+    <label class="fld"><span>المدينة</span><select id="i_city">${CITIES.map(x => `<option ${x === S.city ? 'selected' : ''}>${x}</option>`).join('')}</select></label></div>
+    <div class="fld"><span>الشركة</span><div class="seg">${STAGES.map(([k, l]) => `<button type="button" data-stage="${k}" aria-pressed="${pressed(S.stage === k)}">${l}</button>`).join('')}</div></div>
+    <div class="fld"><span>بتشتغل مع شركة تسويق؟</span><div class="seg">${AGENCY_NOW.map(([k, l]) => `<button type="button" data-agnow="${k}" aria-pressed="${pressed(S.agency_now === k)}">${l}</button>`).join('')}</div></div>
+    ${asks.has('sales') ? `<div class="ask"><h3>عن مبيعاتك (اختياري)</h3><div class="grid2"><label class="fld"><span>كم طلب بالشهر تقريباً؟</span><input id="a_orders" inputmode="numeric" value="${esc(S.answers.orders || '')}"></label><label class="fld"><span>متوسط قيمة الطلب (د.أ)</span><input id="a_aov" inputmode="decimal" value="${esc(S.answers.aov || '')}"></label></div></div>` : ''}
+    ${asks.has('msgs') ? `<div class="ask"><h3>عن الرسائل</h3><div class="grid2"><label class="fld"><span>كم رسالة بتوصلك باليوم تقريباً؟</span><input id="a_msgs" inputmode="numeric" value="${esc(S.answers.msgs || '')}"></label><label class="fld"><span>ساعات الرد اللي بدك إياها</span><select id="a_hours">${['6','8','10','12','16'].map(h => `<option ${String(S.answers.hours || '8') === h ? 'selected' : ''} value="${h}">${h} ساعات</option>`).join('')}</select></label></div></div>` : ''}
+    ${asks.has('text') ? `<div class="ask"><h3>احكيلنا عن المنتج أو المشروع</h3><label class="fld"><span>شو بتبيع أو شو المشروع؟ وتكلفته التقريبية إذا بتعرفها</span><textarea id="a_text" rows="3" maxlength="300">${esc(S.answers.text || '')}</textarea></label></div>` : ''}</div>`;
+  }
+  if (st === 2) body = `<div class="step"><h2>قديش ميزانيتك الشهرية؟</h2><p class="m">حط الرقم اللي مرتاح فيه. منقسمه بين الإعلانات وأتعابنا، أو بتحدد كل واحد لحال.</p>
+    <div class="bigmoney"><input id="i_budget" type="number" inputmode="numeric" min="50" step="50" value="${N(S.budget)}" aria-label="الميزانية الشهرية بالدينار"><span>دينار بالشهر</span></div>
+    <input type="range" id="r_budget" min="100" max="5000" step="50" value="${Math.min(5000, N(S.budget))}" aria-label="الميزانية">
+    <label class="toggle"><input type="checkbox" id="i_inc" ${S.includes_ads ? 'checked' : ''}><span><b>الميزانية بتشمل صرف الإعلانات</b><br><small class="m">إذا شلت الإشارة، هالرقم بيكون لأتعابنا بس، وبتحدد ميزانية الإعلانات تحت.</small></span></label>
+    <label class="fld"><span>${S.includes_ads ? 'قديش منها للإعلانات؟' : 'ميزانية الإعلانات الشهرية (بتدفعها للمنصات)'}</span><input id="i_ad" type="number" inputmode="numeric" min="0" step="50" value="${N(S.ad)}"></label>
+    <div class="split"><div><small>للإعلانات</small><b>${jd(adBudget())}</b></div><div><small>لأتعابنا</small><b>${jd(feesBudget())}</b></div></div>
+    <div class="planbox"><div><b style="font-family:var(--f-d)">مش عارف شو تختار؟</b><p class="m" style="font-size:14px">منختارلك خدمات على قد ميزانية الأتعاب، حسب المشاكل اللي اخترتها.</p></div><button type="button" class="btn sun" id="doPlan">اقترحلي باقة</button></div>
+    <div id="planMsg"></div></div>`;
+  if (st === 3) {
+    const cats = ['مقترحة', ...new Set(SITE.services.map(s => s.category))];
+    let list = SITE.services;
+    if (S.cat === 'مقترحة') { list = list.filter(s => why(s) || S.items[s.id]); if (!list.length) list = SITE.services; }
+    else list = list.filter(s => s.category === S.cat);
+    body = `<div class="step"><h2>اختار الخدمات</h2><p class="m">المقترحة إلك حسب مشاكلك بتطلع أول. غيّر الكمية، والفاتورة بتتحدث لحالها.</p>
+    <div class="cats">${cats.map(x => `<button type="button" class="chip" data-cat="${esc(x)}" aria-pressed="${pressed(S.cat === x)}">${esc(x)}</button>`).join('')}</div>
+    <div class="svcs">${list.map(svcCard).join('')}</div></div>`;
+  }
+  if (st === 4) body = `<div class="step"><h2>وين منحكي معك؟</h2><p class="m">فريقنا بيراجع الباقة وبيرجعلك خلال يوم عمل بعرض رسمي.</p>
+    <div class="grid2"><label class="fld"><span>اسمك</span><input id="i_ct" value="${esc(S.contact)}" maxlength="80" autocomplete="name"></label>
+    <label class="fld"><span>رقم الهاتف</span><input id="i_ph" value="${esc(S.phone)}" inputmode="tel" autocomplete="tel" placeholder="07xxxxxxxx" required></label>
+    <label class="fld"><span>الإيميل <small>(اختياري)</small></span><input id="i_em" type="email" value="${esc(S.email)}" autocomplete="email"></label>
+    <label class="fld"><span>رابط صفحتك أو موقعك <small>(اختياري)</small></span><input id="i_web" value="${esc(S.website)}" inputmode="url"></label></div>
+    <label class="toggle"><input type="checkbox" id="i_cons" ${S.consent ? 'checked' : ''}><span>قرأت <a href="#" data-priv>سياسة الخصوصية</a> وبوافق تتواصلوا معي بخصوص هالطلب.</span></label>
+    <label class="toggle"><input type="checkbox" id="i_mk" ${S.marketing_ok ? 'checked' : ''}><span class="m">بوافق توصلني عروض ونصايح تسويق بين فترة وفترة (اختياري).</span></label></div>`;
+  const nav = `<p class="err" id="err" role="alert"></p><div class="nav">${st > 0 ? '<button type="button" class="btn ghost" data-back>رجوع</button>' : '<span></span>'}${st < 4 ? '<button type="button" class="btn pri" data-next>التالي</button>' : `<button type="button" class="btn pri" id="send" ${SITE.live ? '' : 'disabled'}>ابعت الطلب</button>`}</div>${!SITE.live && st === 4 ? '<p class="m" style="margin-top:8px">الإرسال مسكّر حالياً. شغّله من إعدادات موقع الوكالة.</p>' : ''}`;
+  return prog + body + nav;
+}
+function svcCard(s) {
+  const it = S.items[s.id], on = !!it, w = why(s);
+  let ctl = '';
+  if (on && s.ptype === 'unit') ctl = `<div class="stepper" aria-label="الكمية"><button type="button" data-qty="${s.id}" data-d="-1" aria-label="نقّص">−</button><output>${it.qty}</output><button type="button" data-qty="${s.id}" data-d="1" aria-label="زيد">+</button></div>`;
+  let team = '';
+  if (on && s.ptype === 'team') {
+    const p = s.params || {}, o = it.opts, pr = P.price(s, 1, adBudget(), o);
+    team = `<div class="ctl team">
+      <div class="row"><label class="l">عدد الموظفات</label><div class="stepper"><button type="button" data-team="agents" data-d="-1" aria-label="نقّص">−</button><output>${o.agents}</output><button type="button" data-team="agents" data-d="1" aria-label="زيد">+</button></div></div>
+      <div class="row"><label class="l" for="t_h">ساعات باليوم</label><select id="t_h" data-teamsel="hours">${[4,6,8,10,12,16].filter(h => h <= (p.max_hours || 16)).map(h => `<option value="${h}" ${o.hours === h ? 'selected' : ''}>${h} ساعات</option>`).join('')}</select>
+        <label class="l" for="t_d">أيام بالأسبوع</label><select id="t_d" data-teamsel="days">${[5,6,7].map(d => `<option value="${d}" ${o.days === d ? 'selected' : ''}>${d} أيام</option>`).join('')}</select></div>
+      <div class="row"><label class="l">القنوات</label><div class="chips">${(p.channels || []).map(ch => `<button type="button" class="chip" data-tch="${esc(ch)}" aria-pressed="${pressed(o.channels.includes(ch))}">${esc(ch)}</button>`).join('')}</div></div>
+      <div class="row"><label class="l">شو بيعملوا كمان</label><div class="chips">${Object.keys(p.tasks || {}).map(t => `<button type="button" class="chip" data-ttask="${esc(t)}" aria-pressed="${pressed(o.tasks.includes(t))}">${esc(t)}</button>`).join('')}</div></div>
+      <div class="row"><label class="l" for="t_m">رسائل باليوم تقريباً</label><input id="t_m" data-teamsel="msgs" type="number" inputmode="numeric" min="0" value="${N(o.msgs) || ''}" style="max-width:120px;border:1.5px solid var(--line);border-radius:10px;padding:8px;background:var(--card)"></div>
+      ${pr.need_agents && pr.need_agents > o.agents ? `<p class="warn">حجم الرسائل أكبر من طاقة ${o.agents} ${o.agents > 1 ? 'موظفات' : 'موظفة'} بهالساعات. بنقترح ${pr.need_agents}.</p>` : pr.need_agents ? '<p class="okk">العدد مناسب لحجم الرسائل اللي حطيته.</p>' : ''}
+      <p class="m" style="font-size:13px">تغطية ${pr.hours} ساعة بالشهر. العدد النهائي ومستوى الخدمة بيتأكدوا بعد ما نشوف رسائلك الفعلية.</p></div>`;
+  }
+  return `<div class="svc ${on ? 'on' : ''}"><div><div class="nm">${esc(s.name)}</div><div class="ds">${esc(s.description || '')}</div>${s.includes && on ? `<div class="ds" style="margin-top:4px">بيشمل: ${esc(s.includes)}</div>` : ''}</div>
+    <div class="act"><span class="pr">${priceLabel(s)}</span></div>
+    ${w ? `<div class="why">${esc(w)}</div>` : ''}
+    <div class="ctl" style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap">${ctl}<span></span><button type="button" class="add" data-add="${s.id}" aria-pressed="${pressed(on)}">${on ? 'مضافة ✓' : 'أضف'}</button></div>${team}</div>`;
+}
+function drawStep(focus) {
+  $('#wiz').innerHTML = stepHtml(); drawReceipt(); save();
+  if (focus) { $('#wiz h2')?.setAttribute('tabindex', '-1'); $('#wiz h2')?.focus({preventScroll: true}); const top = $('#build').getBoundingClientRect().top; if (top < -40 || top > innerHeight / 2) $('#build').scrollIntoView({behavior: 'smooth'}); }
+}
+function readStep() {
+  const v = id => $(id)?.value ?? undefined;
+  if (S.step === 0) S.problem_other = v('#i_po')?.trim() ?? S.problem_other;
+  if (S.step === 1) { S.company = v('#i_co')?.trim() ?? S.company; S.city = v('#i_city') ?? S.city;
+    ['orders','aov','msgs','text'].forEach(k => { const e = $('#a_' + k); if (e) S.answers[k] = e.value.trim(); }); if ($('#a_hours')) S.answers.hours = $('#a_hours').value; }
+  if (S.step === 2) { S.budget = Math.max(0, N(v('#i_budget'))); S.ad = Math.max(0, N(v('#i_ad'))); S.includes_ads = $('#i_inc')?.checked ?? S.includes_ads; }
+  if (S.step === 4) { S.contact = v('#i_ct')?.trim() ?? ''; S.phone = v('#i_ph')?.trim() ?? ''; S.email = v('#i_em')?.trim() ?? ''; S.website = v('#i_web')?.trim() ?? ''; S.consent = $('#i_cons')?.checked; S.marketing_ok = $('#i_mk')?.checked; }
+}
+function validate() {
+  if (S.step === 0 && !S.problems.length && !S.problem_other) return 'اختار مشكلة وحدة على الأقل، أو اكتبها';
+  if (S.step === 1 && !S.sector) return 'اختار نوع نشاطك';
+  if (S.step === 1 && !S.company) return 'اكتب اسم الشركة أو المحل';
+  if (S.step === 2 && N(S.budget) < 50) return 'حط ميزانية شهرية';
+  if (S.step === 2 && S.includes_ads && N(S.ad) > N(S.budget)) return 'ميزانية الإعلانات أكبر من الميزانية كلها';
+  if (S.step === 3 && !Object.keys(S.items).length) return 'أضف خدمة وحدة على الأقل، أو ارجع واضغط "اقترحلي باقة"';
+  return '';
+}
+const err = m => { const e = $('#err'); if (e) e.textContent = m || ''; };
+function teamDefaults(s) {
+  const p = s.params || {}; const msgs = N(S.answers.msgs); const hours = N(S.answers.hours) || 8;
+  const agents = msgs ? Math.min(p.max_agents || 6, Math.max(1, Math.ceil(msgs / (hours * (p.msgs_per_hour || 12))))) : 1;
+  return {agents, hours, days: 6, channels: (p.channels || []).slice(0, 2), tasks: [], msgs: msgs || ''};
+}
+function toggleItem(id) {
+  const s = svc(id); if (!s) return;
+  if (S.items[id]) delete S.items[id];
+  else S.items[id] = {qty: s.ptype === 'unit' ? N(s.def_qty) || N(s.min_qty) || 1 : 1, opts: s.ptype === 'team' ? teamDefaults(s) : undefined};
+}
+function runPlan() {
+  readStep();
+  const r = P.plan(SITE.services, S.problems, feesBudget(), adBudget());
+  S.items = {}; r.picked.forEach(x => { const s = svc(x.id); S.items[x.id] = {qty: x.qty || 1, opts: s.ptype === 'team' ? teamDefaults(s) : undefined}; });
+  // فريق الرد: الخطة بتحسبه بأقل إعدادات، منرجع نحسبه بالإعدادات الافتراضية ونتأكد إنه لسا داخل
+  const t = P.totals(lines(), adBudget());
+  if (t.fees + t.one_time > feesBudget()) Object.keys(S.items).forEach(id => { if (svc(id).ptype === 'team') { const s = svc(id); S.items[id].opts = {...S.items[id].opts, agents: 1, tasks: []}; if (P.totals(lines(), adBudget()).fees + P.totals(lines(), adBudget()).one_time > feesBudget()) delete S.items[id]; } });
+  S.cat = 'مقترحة';
+  const msg = r.picked.length ? `<p class="okk" style="margin-top:12px">اخترنالك ${nSvc(Object.keys(S.items).length)} على قد ${jd(feesBudget())}. ${r.nextAdd.length ? 'وإذا زدت ميزانية الأتعاب: ' + r.nextAdd.map(x => `<b>+${jd(Math.max(1, x.extra))}</b> بتضيف ${esc(x.name)}`).join('، ') + '.' : ''}</p>`
+    : `<p class="warn" style="margin-top:12px">ميزانية الأتعاب (${jd(feesBudget())}) أقل من أرخص خدمة مناسبة لمشاكلك. زيدها شوي، أو اختار خدمة بالمرة الوحدة مثل التدقيق أو خطة التسويق.</p>`;
+  if (r.picked.length || S.step === 2 && !$('#planMsg')?.innerHTML) { S.step = 3; S.cat = r.picked.length ? 'مقترحة' : (SITE.services[0]?.category || 'مقترحة'); drawStep(true); const w = $('#wiz .step > p.m'); if (w) w.insertAdjacentHTML('afterend', msg); }
+  else { $('#planMsg').innerHTML = msg; drawReceipt(); save(); }
+  track('ViewContent', {content_name: 'budget_plan'});
+}
+async function send() {
+  readStep();
+  const phone = S.phone.replace(/[^\d+]/g, '');
+  if (!S.contact) return err('اكتب اسمك');
+  if (!/^(\+?962|0)?7[789]\d{7}$/.test(phone) && !/^\+[1-9]\d{7,14}$/.test(phone)) return err('رقم الهاتف لازم يكون مثل 0791234567');
+  if (!S.consent) return err('لازم توافق على سياسة الخصوصية عشان نقدر نتواصل معك');
+  const b = $('#send'); b.disabled = true; b.textContent = 'جاري الإرسال…'; err('');
+  const items = Object.entries(S.items).map(([id, it]) => ({id, qty: it.qty, opts: it.opts || {}}));
+  try {
+    const {data, error} = await sb.rpc('oops_submit', {p: {company: S.company, contact: S.contact, phone, email: S.email, website: S.website, sector: S.sector, city: S.city,
+      stage: (STAGES.find(x => x[0] === S.stage) || [])[1] || '', agency_now: (AGENCY_NOW.find(x => x[0] === S.agency_now) || [])[1] || '', problems: S.problems, problem_other: S.problem_other, answers: S.answers,
+      budget: {total: N(S.budget), ad: adBudget(), includes_ads: S.includes_ads}, items, consent: true, marketing_ok: !!S.marketing_ok, utm: utm()}});
+    if (error) throw error;
+    track('Lead', {value: N(data.fees_monthly), currency: 'JOD'});
+    ls.del('oops-draft'); const tok = data.token;
+    $('#wiz').innerHTML = `<div class="done"><p class="m">وصلنا طلبك. رقمه</p><div class="no">#${data.no}</div>
+      <p>أتعاب شهرية تقديرية <b>${jd(data.fees_monthly)}</b>${N(data.one_time) ? ' ورسوم بداية ' + jd(data.one_time) : ''}، وميزانية إعلانات ${jd(data.ad)}.</p>
+      <ol><li>فريقنا بيراجع الباقة واحتياجك.</li><li>بنتصل فيك خلال يوم عمل لجلسة تعارف قصيرة.</li><li>بيوصلك عرض السعر الرسمي على نفس رابط المتابعة، وبتقدر توافق عليه من هناك.</li></ol>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><a class="btn pri" href="?q=${encodeURIComponent(tok)}">رابط متابعة طلبك</a><button class="btn ghost" type="button" id="copyLink">انسخ الرابط</button></div>
+      <p class="m" style="font-size:13px;margin-top:10px">احفظ الرابط، منه بتشوف العرض لما يجهز.</p></div>`;
+    $('#copyLink').onclick = () => { const u = location.origin + location.pathname + '?q=' + tok; navigator.clipboard?.writeText(u).then(() => { $('#copyLink').textContent = 'انسخ ✓'; }, () => prompt('انسخ الرابط', u)); };
+    S = blank(); drawReceipt();
+  } catch (x) {
+    err(/fetch|network/i.test(x.message || '') ? 'ما في اتصال بالإنترنت. جرّب مرة ثانية' : (x.message || 'صار خطأ، جرّب مرة ثانية'));
+    b.disabled = false; b.textContent = 'ابعت الطلب';
+  }
+}
+
+/* ---------- الحاسبات ---------- */
+let TOOL = 'cac';
+const tv = ls.get('oops-tools') || {aov: 25, cost: 10, del: 2.5, ret: 10, profit: 3, msgs: 8, fb: 300, sector: '', cpl: '', conv: 10, faov: 25};
+function toolHtml() {
+  const num = (k, l, step = 'any', hint = '') => `<label class="fld"><span>${l}</span><input data-tv="${k}" type="number" inputmode="decimal" step="${step}" min="0" value="${esc(tv[k])}">${hint ? `<small>${hint}</small>` : ''}</label>`;
+  if (TOOL === 'cac') return `<div class="calc"><div class="panel"><h3>أرقام الطلب الواحد</h3>
+      <div class="grid2">${num('aov', 'سعر البيع (د.أ)')}${num('cost', 'تكلفة المنتج (د.أ)')}${num('del', 'توصيل وتغليف عليك (د.أ)')}${num('ret', 'نسبة المرتجع (%)')}${num('profit', 'الربح اللي بدك يضل بالطلب (د.أ)')}${num('msgs', 'كل كم رسالة بيطلع طلب؟', '1')}</div></div>
+    <div class="out" id="cacOut"></div></div>`;
+  const sectors = SITE.config.sectors || [];
+  return `<div class="calc"><div class="panel"><h3>ميزانيتك ونشاطك</h3>
+      <label class="fld"><span>نوع النشاط</span><select data-tv="sector"><option value="">اختار</option>${sectors.map(s => `<option ${tv.sector === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select></label>
+      <div class="grid2">${num('fb', 'ميزانية الإعلانات بالشهر (د.أ)')}${num('cpl', 'تكلفة الرسالة أو العميل المحتمل (د.أ)', 'any', '<span id="cplSrc"></span>')}${num('conv', 'من كل 100 رسالة كم بيشتري؟')}${num('faov', 'متوسط قيمة البيع (د.أ)')}</div></div>
+    <div class="out" id="fcOut"></div></div>`;
+}
+function calcTools() {
+  if (TOOL === 'cac') {
+    const aov = N(tv.aov), cost = N(tv.cost), del = N(tv.del), r = Math.min(95, N(tv.ret)) / 100, tgt = N(tv.profit), per = Math.max(1, N(tv.msgs));
+    const gross = aov - cost, contrib = aov - cost - del;
+    const net = (1 - r) * contrib - r * del * 2; // الطلب الراجع بيخسرك التوصيل رايح وجاي
+    const maxCac = net - tgt;
+    const be = net > 0 ? aov * (1 - r) / net : null;
+    $('#cacOut').innerHTML = `<p>أقصى مبلغ بتدفعه على الإعلان عشان تجيب طلب واحد</p><div class="big">${maxCac > 0 ? jd(maxCac) : 'ما في مجال'}</div>
+      ${maxCac > 0 ? `<div class="kv"><span>يعني أقصى تكلفة للرسالة</span><b>${jd(maxCac / per)}</b></div>` : `<p class="warn" style="margin:8px 0">بهالسعر والتكاليف، أي إعلان رح يخسّرك. ارفع السعر، أو خفف التكلفة، أو قلل المرتجع.</p>`}
+      <div class="kv"><span>هامش الربح الإجمالي (السعر − تكلفة المنتج)</span><b>${jd(gross)}</b></div>
+      <div class="kv"><span>هامش المساهمة (بعد التوصيل والتغليف)</span><b>${jd(contrib)}</b></div>
+      <div class="kv"><span>بعد أثر المرتجع</span><b>${jd(net)}</b></div>
+      <div class="kv"><span>أقل ROAS لازم تحققه عشان ما تخسر</span><b>${be ? be.toFixed(2) + 'x' : '—'}</b></div>
+      <p class="note">صافي الربح الحقيقي بيطلع بعد الرواتب والإيجار والمصاريف الثابتة. هاد حساب للطلب الواحد بس، وعلى الأرقام اللي دخلتها.</p>`;
+  } else {
+    const act = (SITE.actual || []).find(a => a.sector === tv.sector), bench = (SITE.bench || []).find(b => b.sector === tv.sector);
+    const src = $('#cplSrc');
+    if (src) src.innerHTML = act ? `<span class="src">من حملاتنا الفعلية (${act.n} حملات): ${jd(act.cpl)}</span>` : bench?.cpl ? `<span class="src">تقدير لهالقطاع: ${jd(bench.cpl)}</span>` : 'إذا ما بتعرف، اسأل حساباتك الإعلانية أو حط تقدير';
+    const cpl = N(tv.cpl) || N(act?.cpl) || N(bench?.cpl), conv = N(tv.conv) / 100, aov = N(tv.faov) || N(bench?.aov), sp = N(bench?.spread || 30) / 100, fb = N(tv.fb);
+    if (!cpl) { $('#fcOut').innerHTML = '<p>حط تكلفة الرسالة أو العميل المحتمل عشان نحسب.</p><p class="note">ما منحط أرقام من عنا إذا ما عنا بيانات حقيقية لقطاعك.</p>'; return; }
+    const leads = fb / cpl, sales = leads * conv, rev = sales * aov;
+    const r3 = (x, f) => `<div><small>${f}</small><b>${Math.round(x)}</b></div>`;
+    $('#fcOut').innerHTML = `<p>رسائل أو عملاء محتملين بالشهر</p><div class="range3">${r3(leads * (1 - sp), 'متحفظ')}${r3(leads, 'متوسط')}${r3(leads * (1 + sp), 'متفائل')}</div>
+      <div class="kv"><span>زباين فعليين (متوسط)</span><b>${fmt(Math.round(sales))}</b></div>
+      <div class="kv"><span>قيمة المبيعات (مش ربح)</span><b>${jd(rev)}</b></div>
+      <div class="kv"><span>تكلفة الزبون الواحد</span><b>${sales ? jd(fb / sales) : '—'}</b></div>
+      <div class="kv"><span>العائد على الإعلان ROAS (مش ربح صافي)</span><b>${fb ? (rev / fb).toFixed(2) + 'x' : '—'}</b></div>
+      <p class="note">حساب افتراضي على الأرقام اللي فوق، مش وعد بنتائج. المعادلة: الميزانية ÷ تكلفة الرسالة × نسبة الشراء × قيمة البيع. النطاق ±${Math.round(sp * 100)}%.</p>`;
+  }
+}
+function drawTools() { $('#toolBody').innerHTML = toolHtml(); $$('[data-tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === TOOL)); calcTools(); }
+
+/* ---------- عرض السعر (رابط المتابعة) ---------- */
+async function quotePage(tok) {
+  const {data, error} = await sb.rpc('oops_quote', {tok});
+  if (error || !data) { $('#app').innerHTML = '<div class="center"><div><h2>الرابط مش صحيح</h2><p class="m" style="margin-top:8px">تأكد إنك نسخت الرابط كامل، أو تواصل معنا.</p><a class="btn pri" style="margin-top:16px" href="./o.html">ارجع للرئيسية</a></div></div>'; return; }
+  const q = data, ready = q.ready, total = N(q.fees_monthly) - N(q.discount);
+  const stamp = {'مقبول': ['وافقت على العرض', 'good'], 'مرفوض': ['رفضت العرض', 'bad'], 'منتهي': ['انتهت صلاحية العرض', 'bad'], 'عرض مرسل': ['بانتظار ردك', '']}[q.status] || ['فريقنا بيجهز العرض', ''];
+  document.title = (ready ? 'عرض سعر' : 'طلب') + ' #' + q.no;
+  $('#app').innerHTML = `<div class="qt"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+    <div>${q.logo ? `<img src="${esc(q.logo)}" alt="${esc(q.brand)}" style="height:44px;max-width:160px;object-fit:contain">` : `<b style="font:800 24px var(--f-d)">${esc(q.brand)}</b>`}<h2 style="margin-top:12px">${ready ? 'عرض سعر' : 'طلبك'} #${q.no}</h2><p class="m">${esc(q.company)}${q.contact ? ' · ' + esc(q.contact) : ''}</p></div>
+    <span class="stamp ${stamp[1]}">${stamp[0]}</span></div>
+    ${!ready ? '<p style="margin-top:14px">وصلنا طلبك وفريقنا بيراجعه. هاد ملخص اللي اخترته، والعرض الرسمي بيطلع هون لما يجهز.</p>' : q.notes ? `<p style="margin-top:14px;white-space:pre-line">${esc(q.notes)}</p>` : ''}
+    <table><thead><tr><th>الخدمة</th><th>الكمية</th><th>شهري</th><th>مرة وحدة</th></tr></thead><tbody>
+    ${(q.items || []).map(i => `<tr><td>${esc(i.name)}${i.includes ? `<br><small class="m">${esc(i.includes)}</small>` : ''}${i.note ? `<br><small class="m">${esc(i.note)}</small>` : ''}</td><td class="n">${i.ptype === 'team' ? i.qty + ' موظفة' : i.qty}</td><td class="n">${i.quote ? 'بعد الجلسة' : N(i.monthly) ? jd(i.monthly) : '—'}</td><td class="n">${N(i.one_time) ? jd(i.one_time) : '—'}</td></tr>`).join('')}</tbody></table>
+    <div class="rsum" style="max-width:380px;margin-inline-start:auto"><div><span>أتعاب شهرية</span><b>${jd(q.fees_monthly)}</b></div>${N(q.discount) ? `<div><span>خصم شهري</span><b>−${jd(q.discount)}</b></div>` : ''}
+      ${N(q.one_time) ? `<div><span>رسوم لمرة وحدة</span><b>${jd(q.one_time)}</b></div>` : ''}<div class="ads"><span>ميزانية الإعلانات (للمنصات مباشرة)</span><b>${jd(q.ad_budget)}</b></div>
+      <div class="tot"><span>صرفك الشهري كامل</span><b>${jd(total + N(q.ad_budget))}</b></div></div>
+    ${ready && q.terms ? `<h3 style="margin-top:20px">الشروط</h3><p class="m" style="white-space:pre-line;margin-top:6px">${esc(q.terms)}</p>` : ''}
+    ${ready && q.valid_until ? `<p class="m" style="margin-top:8px">العرض صالح لـ ${esc(q.valid_until)}</p>` : ''}
+    <div class="noprint" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px">${q.status === 'عرض مرسل' ? '<button class="btn pri" id="qOk">موافق على العرض</button><button class="btn ghost" id="qNo">بدي تعديل أو برفض</button>' : ''}<button class="btn ghost" onclick="print()">احفظ PDF أو اطبع</button></div>
+    <p class="err" id="qErr"></p></div>`;
+  const answer = async (ok) => {
+    let note = null;
+    if (!ok) { const box = $('#qNote'); if (!box) { $('#qErr').insertAdjacentHTML('beforebegin', '<label class="fld noprint" id="qNoteW"><span>شو التعديل اللي بدك إياه، أو ليش مش مناسب؟</span><textarea id="qNote" rows="3" maxlength="500"></textarea></label><button class="btn pri noprint" id="qNoSend" style="margin-top:10px">ابعت الرد</button>'); $('#qNote').focus(); $('#qNoSend').onclick = () => answer(false, true); return; } note = box.value.trim(); }
+    const {error: e} = await sb.rpc('oops_quote_answer', {tok, ok, note});
+    if (e) { $('#qErr').textContent = e.message; return; }
+    if (ok) track('Schedule', {}); quotePage(tok);
+  };
+  $('#qOk') && ($('#qOk').onclick = () => answer(true));
+  $('#qNo') && ($('#qNo').onclick = () => answer(false));
+}
+
+/* ---------- ربط الأحداث ---------- */
+function bind() {
+  document.addEventListener('click', e => {
+    const t = e.target.closest('button,a'); if (!t) return;
+    if (t.matches('[data-priv]') || t.id === 'privLink') { e.preventDefault(); $('#dlgT').textContent = 'سياسة الخصوصية'; $('#dlgB').textContent = SITE?.config?.privacy || ''; $('#dlg').showModal(); return; }
+    if (t.matches('[data-start]') && !S.started) { S.started = true; save(); track('ViewContent', {content_name: 'builder'}); }
+    if (t.dataset.tab) { TOOL = t.dataset.tab; drawTools(); return; }
+    if (!$('#wiz')?.contains(t)) { if (t.id === 'mOpen') { document.body.classList.add('rshow'); } if (t.id === 'rClose') document.body.classList.remove('rshow'); return; }
+    if (t.dataset.prob) { const k = t.dataset.prob; S.problems = S.problems.includes(k) ? S.problems.filter(x => x !== k) : [...S.problems, k]; t.setAttribute('aria-pressed', pressed(S.problems.includes(k))); save(); err(''); return; }
+    if (t.dataset.sector != null) { readStep(); S.sector = t.dataset.sector; drawStep(); return; }
+    if (t.dataset.stage) { readStep(); S.stage = t.dataset.stage; drawStep(); return; }
+    if (t.dataset.agnow) { readStep(); S.agency_now = t.dataset.agnow; drawStep(); return; }
+    if (t.dataset.cat) { S.cat = t.dataset.cat; drawStep(); return; }
+    if (t.dataset.add) { toggleItem(t.dataset.add); if (!S.started) { S.started = true; track('ViewContent', {content_name: 'builder'}); } drawStep(); return; }
+    if (t.dataset.qty) { const s = svc(t.dataset.qty), it = S.items[s.id]; it.qty = Math.max(N(s.min_qty), Math.min(N(s.max_qty), N(it.qty) + N(t.dataset.d))); drawStep(); return; }
+    const team = () => Object.keys(S.items).map(svc).find(s => s.ptype === 'team');
+    if (t.dataset.team) { const s = team(), o = S.items[s.id].opts; o.agents = Math.max(1, Math.min(s.params?.max_agents || 6, o.agents + N(t.dataset.d))); drawStep(); return; }
+    if (t.dataset.tch) { const o = S.items[team().id].opts, c = t.dataset.tch; o.channels = o.channels.includes(c) ? o.channels.filter(x => x !== c) : [...o.channels, c]; drawStep(); return; }
+    if (t.dataset.ttask) { const o = S.items[team().id].opts, c = t.dataset.ttask; o.tasks = o.tasks.includes(c) ? o.tasks.filter(x => x !== c) : [...o.tasks, c]; drawStep(); return; }
+    if (t.dataset.go != null) { readStep(); S.step = N(t.dataset.go); drawStep(true); return; }
+    if (t.matches('[data-back]')) { readStep(); S.step = Math.max(0, S.step - 1); drawStep(true); return; }
+    if (t.matches('[data-next]')) { readStep(); const m = validate(); if (m) return err(m); if (S.step === 2 && !Object.keys(S.items).length) { runPlan(); return; } S.step++; if (S.step === 3) track('InitiateCheckout', {}); drawStep(true); return; }
+    if (t.id === 'doPlan') { const m = (readStep(), validate()); if (m) return err(m); runPlan(); return; }
+    if (t.id === 'send') { send(); return; }
+  });
+  document.addEventListener('input', e => {
+    const t = e.target;
+    if (t.dataset.tv) { tv[t.dataset.tv] = t.value; ls.set('oops-tools', tv); if (t.dataset.tv === 'sector') { tv.cpl = ''; drawTools(); } else calcTools(); return; }
+    if (!$('#wiz')?.contains(t)) return;
+    if (t.id === 'r_budget') { $('#i_budget').value = t.value; }
+    if (t.id === 'i_budget') { $('#r_budget').value = t.value; }
+    if (['r_budget','i_budget','i_ad'].includes(t.id)) { readStep(); const sp = $$('.split b'); if (sp.length) { sp[0].textContent = jd(adBudget()); sp[1].textContent = jd(feesBudget()); } drawReceipt(); save(); }
+    if (t.dataset.teamsel) { const s = Object.keys(S.items).map(svc).find(x => x.ptype === 'team'); S.items[s.id].opts[t.dataset.teamsel] = t.dataset.teamsel === 'msgs' ? t.value : N(t.value); if (t.dataset.teamsel !== 'msgs') drawStep(); else { drawReceipt(); save(); clearTimeout(bind.t); bind.t = setTimeout(() => { drawStep(); const m = $('#t_m'); if (m) { m.focus(); m.setSelectionRange?.(99, 99); } }, 700); } }
+  });
+  document.addEventListener('change', e => { if (e.target.id === 'i_inc') { readStep(); drawStep(); } });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') document.body.classList.remove('rshow'); });
+}
+
+/* ---------- التشغيل ---------- */
+async function boot() {
+  if (!cfg.url || !cfg.key || !window.supabase?.createClient) { $('#app').innerHTML = '<div class="center"><p>الصفحة مش مجهزة. تأكد من config.js</p></div>'; return; }
+  sb = window.supabase.createClient(cfg.url, cfg.key, {auth: {persistSession: false}});
+  const {data, error} = await sb.rpc('oops_site_data');
+  if (error || !data) { $('#app').innerHTML = '<div class="center"><div><h2>ما قدرنا نحمّل الصفحة</h2><p class="m">تأكد من الإنترنت وحدّث الصفحة.</p></div></div>'; return; }
+  SITE = data;
+  const brand = SITE.brand || 'OOPSIDE';
+  $('#brandName').textContent = brand; $('#fBrand').textContent = brand;
+  if (SITE.logo) { $('#brand').innerHTML = `<img src="${esc(SITE.logo)}" alt="${esc(brand)}">`; document.querySelector('link[rel=icon]').href = SITE.logo; }
+  document.title = brand + ' · ابنِ باقتك التسويقية';
+  const c = SITE.config || {};
+  $('#fContact').innerHTML = [c.phone ? `<a href="tel:${esc(c.phone)}">${esc(c.phone)}</a>` : '', c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : '', c.address ? `<span style="opacity:.8">${esc(c.address)}</span>` : ''].filter(Boolean).join('<br>');
+  loadTracking(SITE);
+  bind();
+  const tok = qs.get('q');
+  if (tok) { await quotePage(tok); return; }
+  if (!SITE.live && !qs.has('preview')) { $('#app').innerHTML = `<div class="center"><div><h1>${esc(brand)}</h1><p class="m" style="margin-top:10px">الموقع بيتجهز. ارجعلنا قريب.</p></div></div>`; return; }
+  $('#app').innerHTML = home();
+  S.step = Math.min(N(S.step), 4);
+  Object.keys(S.items).forEach(id => { if (!svc(id)) delete S.items[id]; });
+  drawStep(); drawTools();
+  if (!SITE.live) $('#build .sechead p').insertAdjacentHTML('beforeend', ' <b style="color:var(--coral)">(معاينة: الموقع مطفي، والإرسال مسكّر)</b>');
+}
+window.OopsApp = {state: () => S, site: () => SITE};
+boot();
+})();
+</script>
+</body>
+</html>

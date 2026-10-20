@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>اطلب الآن</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Readex+Pro:wght@600;700&display=swap">
+<style>
+:root{--c:#0f4c45;--ink:#1a1d1c;--muted:#5f6b67;--line:#dfe4e1;--bg:#f4f6f5;--card:#fff;--ok:#1d7f47;--bad:#b4400f;
+  --fd:"Readex Pro","IBM Plex Sans Arabic",Tahoma,sans-serif;--fb:"IBM Plex Sans Arabic",Tahoma,sans-serif}
+*{box-sizing:border-box}html,body{margin:0}[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font:16px/1.65 var(--fb);-webkit-text-size-adjust:100%}
+.page{max-width:560px;margin:0 auto;background:var(--card);min-height:100vh;padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+.top{background:var(--c);color:#fff;padding:22px max(18px,env(safe-area-inset-left,0px)) 24px max(18px,env(safe-area-inset-right,0px));text-align:center}
+.brand{font:600 13px var(--fb);opacity:.85;margin-bottom:12px}
+.img{width:100%;aspect-ratio:1;border-radius:16px;background:rgba(255,255,255,.14) center/cover no-repeat;display:grid;place-items:center;font:700 72px var(--fd);margin-bottom:16px}
+h1{font:700 25px/1.35 var(--fd);margin:0 0 6px;text-wrap:balance}
+.sub{margin:0;opacity:.92;font-size:15px}
+.price{display:flex;justify-content:center;align-items:baseline;gap:12px;margin-top:14px}
+.price b{font:700 34px var(--fd)}.price s{opacity:.7;font-size:18px}
+.save{display:inline-block;background:#ffd34d;color:#3a2b00;font-weight:700;font-size:13px;border-radius:20px;padding:2px 12px;margin-top:6px}
+.badge{display:inline-block;margin-top:12px;background:#fff;color:var(--ink);font-size:13px;font-weight:600;border-radius:20px;padding:4px 14px}
+.feat{list-style:none;margin:0;padding:18px max(20px,env(safe-area-inset-right,0px)) 6px max(20px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:10px}
+.feat li{display:flex;gap:10px;align-items:flex-start}
+.feat li:before{content:"✓";color:#fff;background:var(--c);border-radius:50%;width:22px;height:22px;flex:none;display:grid;place-items:center;font-size:13px;font-weight:700;margin-top:2px}
+.trust{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 18px;text-align:center;font-size:12.5px;color:var(--muted)}
+.trust div{background:var(--bg);border-radius:10px;padding:10px 6px}.trust b{display:block;color:var(--ink);font-size:14px}
+form{padding:10px max(18px,env(safe-area-inset-right,0px)) 24px max(18px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:10px}
+form h2{font:700 20px var(--fd);margin:8px 0 4px;text-align:center}
+label{display:flex;flex-direction:column;gap:4px;font-size:13.5px;color:var(--muted)}
+input,select{min-height:50px;font:inherit;font-size:16px;color:var(--ink);background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:12px;width:100%}
+input:focus,select:focus{outline:none;border-color:var(--c)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.qty{display:flex;gap:8px}.qty button{flex:1;font:600 15px var(--fb);border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:10px;cursor:pointer;color:var(--ink)}
+.qty button.on{border-color:var(--c);background:var(--c);color:#fff}
+.sum{background:var(--bg);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px;font-size:14.5px}
+.sum div{display:flex;justify-content:space-between}.sum .t{font:700 18px var(--fd);border-top:1px dashed var(--line);padding-top:6px;margin-top:2px}
+.go{font:700 18px var(--fd);background:var(--c);color:#fff;border:0;border-radius:12px;padding:15px;cursor:pointer}
+.go:disabled{opacity:.6}
+.err{color:var(--bad);font-size:14px;min-height:1em;margin:0;text-align:center}
+.sticky{position:fixed;left:0;right:0;bottom:0;padding:10px max(14px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-left,0px));background:rgba(255,255,255,.96);border-top:1px solid var(--line);display:flex;justify-content:center}
+.sticky a{max-width:528px;width:100%;text-align:center;text-decoration:none;font:700 17px var(--fd);background:var(--c);color:#fff;border-radius:12px;padding:13px}
+.done{padding:40px 22px;text-align:center}.done .ic{width:72px;height:72px;border-radius:50%;background:var(--ok);color:#fff;display:grid;place-items:center;font-size:38px;margin:0 auto 16px}
+.done h2{font:700 24px var(--fd);margin:0 0 8px}.done p{color:var(--muted);margin:0 0 6px}
+.msg{padding:60px 22px;text-align:center;color:var(--muted)}
+:focus-visible{outline:2px solid var(--c);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="page" id="page"><div class="msg">جاري التحميل…</div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script>
+(async () => {
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmt = n => (Math.round(Number(n || 0) * 100) / 100).toLocaleString('en-US');
+  const q = new URLSearchParams(location.search);
+  const slug = q.get('s') || location.hash.replace('#', '');
+  const ad = q.get('ad') || q.get('ad_id') || q.get('utm_content') || '';
+  const page = $('#page');
+  const cfg = window.SABER_CONFIG || {};
+  if (!slug || !cfg.url || !window.supabase) { page.innerHTML = '<div class="msg">الصفحة مش موجودة.</div>'; return; }
+  const sb = window.supabase.createClient(cfg.url, cfg.key, {auth: {persistSession: false, autoRefreshToken: false}});
+  // Meta Pixel: من الإعدادات بالنظام (البكسل والتتبع)، وإذا فاضي من config.js
+  try { const {data: st} = await sb.from('settings').select('tracking,logo').eq('id', 1).maybeSingle(); if (st?.logo) document.querySelector('link[rel=icon]').href = st.logo; const px = String(st?.tracking?.store_pixel || '').replace(/\D/g, ''); if (px) cfg.pixel = px; } catch (e) {}
+  if (cfg.pixel) {
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', cfg.pixel); fbq('track', 'PageView');
+  }
+  const {data: p, error} = await sb.rpc('public_product', {s: slug});
+  if (error || !p) { page.innerHTML = '<div class="msg">المنتج مش متوفر حالياً.</div>'; return; }
+  const L = p.landing || {}, price = Number(p.price), old = Number(L.old_price || 0);
+  document.title = (L.headline || p.name) + ' | ' + (p.company || '');
+  document.documentElement.style.setProperty('--c', p.color || '#0f4c45');
+  if (cfg.pixel) fbq('track', 'ViewContent', {content_name: p.name, value: price, currency: 'JOD'});
+  const cities = Object.keys(p.cities || {}).sort((a, b) => (b === 'عمان') - (a === 'عمان') || a.localeCompare(b, 'ar'));
+  const fee = c => Number(p.cities?.[c] ?? 3);
+  page.innerHTML = `
+    <div class="top"><div class="brand">${esc(p.company || '')}</div>
+      <div class="img" style="${p.image ? `background-image:url('${p.image}')` : ''}">${p.image ? '' : esc((p.name || '؟')[0])}</div>
+      <h1>${esc(L.headline || p.name)}</h1>${L.sub ? `<p class="sub">${esc(L.sub)}</p>` : ''}
+      <div class="price">${old > price ? `<s>${fmt(old)} د.أ</s>` : ''}<b>${fmt(price)} د.أ</b></div>
+      ${old > price ? `<span class="save">وفّر ${fmt(old - price)} دينار</span><br>` : ''}
+      <span class="badge">${esc(L.badge || 'توصيل لكل المملكة · الدفع عند الاستلام')}</span></div>
+    ${(L.features || []).length ? `<ul class="feat">${L.features.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : ''}
+    <div class="trust"><div><b>الدفع</b>عند الاستلام</div><div><b>التوصيل</b>لكل المحافظات</div><div><b>افحصه</b>قبل ما تدفع</div></div>
+    ${p.in_stock ? '' : '<p class="err">الكمية محدودة، بنتواصل معك لتأكيد الموعد.</p>'}
+    <form id="f" novalidate><h2 id="order">اطلب الآن</h2>
+      <label for="n">الاسم<input id="n" autocomplete="name" required></label>
+      <label for="ph">رقم الهاتف<input id="ph" inputmode="tel" autocomplete="tel" placeholder="07xxxxxxxx" required></label>
+      <div class="row2"><label for="c">المدينة<select id="c">${cities.map(c => `<option>${esc(c)}</option>`).join('')}</select></label>
+        <label for="a">المنطقة<input id="a" list="al" required><datalist id="al"></datalist></label></div>
+      <label for="ad">العنوان بالتفصيل<input id="ad" placeholder="الشارع، البناية، علامة مميزة" required></label>
+      <div><span style="font-size:13.5px;color:var(--muted)">الكمية</span><div class="qty" id="qty">${[1, 2, 3].map(n => `<button type="button" data-q="${n}" class="${n === 1 ? 'on' : ''}">${n === 1 ? 'قطعة' : n === 2 ? 'قطعتين' : '3 قطع'}</button>`).join('')}</div></div>
+      <div class="sum" id="sum"></div>
+      <p class="err" id="e"></p>
+      <button class="go" id="go" type="submit">${esc(L.cta || 'اطلب الآن والدفع عند الاستلام')}</button>
+    </form>`;
+  document.body.insertAdjacentHTML('beforeend', '<div class="sticky" id="st"><a href="#order">اطلب الآن · ' + fmt(price) + ' د.أ</a></div>');
+  let qty = 1;
+  const areas = () => { $('#al').innerHTML = (p.areas?.[$('#c').value] || []).map(a => `<option value="${esc(a)}">`).join(''); };
+  const sum = () => { const f = fee($('#c').value), g = price * qty; $('#sum').innerHTML = `<div><span>${esc(p.name)} × ${qty}</span><b>${fmt(g)} د.أ</b></div><div><span>التوصيل</span><b>${fmt(f)} د.أ</b></div><div class="t"><span>المجموع عند الاستلام</span><b>${fmt(g + f)} د.أ</b></div>`; };
+  areas(); sum();
+  $('#c').addEventListener('change', () => { areas(); sum(); });
+  $('#qty').addEventListener('click', e => { const b = e.target.closest('[data-q]'); if (!b) return; qty = +b.dataset.q; document.querySelectorAll('#qty button').forEach(x => x.classList.toggle('on', x === b)); sum(); });
+  const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => { const st = $('#st'); if (st) st.hidden = es.some(x => x.isIntersecting); }) : null; io?.observe($('#f'));
+  $('#f').addEventListener('submit', async e => {
+    e.preventDefault();
+    const phone = $('#ph').value.replace(/[\s\-()]/g, '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+    const err = m => { $('#e').textContent = m; };
+    if ($('#n').value.trim().length < 2) return err('اكتب اسمك');
+    if (!/^(\+?962|0)?7[789]\d{7}$/.test(phone)) return err('اكتب رقم هاتف أردني صحيح، مثل 0791234567');
+    if (!$('#a').value.trim() || !$('#ad').value.trim()) return err('اكتب المنطقة والعنوان عشان يوصلك المندوب');
+    $('#go').disabled = true; err('');
+    const {data, error} = await sb.rpc('public_order', {s: slug, p: {customer: $('#n').value.trim(), phone, city: $('#c').value, area: $('#a').value.trim(), address: $('#ad').value.trim(), qty, ad_id: ad}});
+    if (error) { err(error.message || 'صار خطأ، جرّب مرة ثانية'); $('#go').disabled = false; return; }
+    if (cfg.pixel) fbq('track', 'Purchase', {value: price * qty, currency: 'JOD', content_name: p.name, num_items: qty});
+    io?.disconnect(); $('#st')?.remove();
+    page.innerHTML = `<div class="done"><div class="ic">✓</div><h2>وصلنا طلبك</h2><p>رقم الطلب <b>#${data.no}</b></p><p>رح نتصل فيك قريباً لتأكيد الطلب، والدفع عند الاستلام.</p>${data.total ? `<p>المجموع: <b>${fmt(data.total)} د.أ</b></p>` : ''}</div>`;
+    window.scrollTo(0, 0);
+  });
+})();
+</script>
+</body>
+</html>
