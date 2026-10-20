@@ -64,7 +64,8 @@ input:focus,select:focus{outline:none;border-color:var(--c)}
   const cfg = window.SABER_CONFIG || {};
   if (!slug || !cfg.url || !window.supabase) { page.innerHTML = '<div class="msg">الصفحة مش موجودة.</div>'; return; }
   const sb = window.supabase.createClient(cfg.url, cfg.key, {auth: {persistSession: false, autoRefreshToken: false}});
-  // Meta Pixel (اختياري): حط رقم البكسل بـ config.js باسم pixel
+  // Meta Pixel: من الإعدادات بالنظام (البكسل والتتبع)، وإذا فاضي من config.js
+  try { const {data: st} = await sb.from('settings').select('tracking').eq('id', 1).maybeSingle(); const px = String(st?.tracking?.store_pixel || '').replace(/\D/g, ''); if (px) cfg.pixel = px; } catch (e) {}
   if (cfg.pixel) {
     !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
     fbq('init', cfg.pixel); fbq('track', 'PageView');

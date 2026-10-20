@@ -35,22 +35,22 @@ const SECTIONS = [['dash','لوحة التحكم'],['orders','الطلبات و�
   ['products','المنتجات'],['inventory','المستودع'],['purchases','المشتريات'],
   ['agency','الوكالة وعملاءها'],['leads','العملاء المحتملين'],
   ['accounting','المحاسبة'],['expenses','المصاريف'],['staff','الموظفين والرواتب'],
-  ['ai','المساعد الذكي'],['users','المستخدمين والصلاحيات'],['settings','الإعدادات']];
-const SEC_NAME = Object.fromEntries(SECTIONS.concat([['myday','دوامي'],['mytasks','مهامي'],['portal','متابعة الشغل'],['client','ملف العميل'],['agdash','لوحة الوكالة'],['pagesrep','أداء صفحات البيع']]));
+  ['oops','موقع الوكالة والأسعار'],['ai','المساعد الذكي'],['users','المستخدمين والصلاحيات'],['settings','الإعدادات']];
+const SEC_NAME = Object.fromEntries(SECTIONS.concat([['myday','دوامي'],['mytasks','مهامي'],['portal','متابعة الشغل'],['client','ملف العميل'],['agdash','لوحة الوكالة'],['pagesrep','أداء صفحات البيع'],['oreq','طلبات الموقع'],['oreqd','طلب من الموقع'],['funnel','من الإعلان للإيراد']]));
 const PERSONAL = new Set(['myday','mytasks']);
 /* مساحتين شغل منفصلات: المتجر الأونلاين ووكالة التسويق. كل وحدة إلها قوائمها وحساباتها */
 const NAVS = {
   store: [['اليومي', ['dash','orders','delivery']], ['شغلي', ['myday','mytasks']], ['الرسائل والفريق', ['inbox','control','team','tasks']],
     ['التسويق', ['ads','pagesrep','landing','page']], ['المخزون', ['products','inventory','purchases']],
     ['المالية', ['accounting','expenses','staff']], ['الإدارة', ['ai','users','settings']]],
-  agency: [['الوكالة', ['agdash','agency','leads']], ['شغلي', ['myday','mytasks']], ['الفريق', ['tasks','team']],
+  agency: [['الوكالة', ['agdash','oreq','leads','agency']], ['النمو', ['funnel','oops']], ['شغلي', ['myday','mytasks']], ['الفريق', ['tasks','team']],
     ['المالية', ['accounting','expenses','staff']], ['الإدارة', ['ai','users','settings']]]
 };
 const NAV = NAVS.store;
 const WS = {store: {name: 'المتجر الأونلاين', mark: 'م', sub: 'الطلبات والتوصيل والمستودع والرسائل والإعلانات'},
   agency: {name: 'وكالة التسويق', mark: 'و', sub: 'العملاء والحملات والتسليمات والعملاء المحتملين'}};
 const STORE_ONLY = ['dash','orders','delivery','inbox','control','ads','landing','page','products','inventory','purchases'];
-const ALIAS = {agdash: 'agency', pagesrep: 'dash'};
+const ALIAS = {agdash: 'agency', pagesrep: 'dash', oreq: 'leads', oreqd: 'leads', funnel: 'leads'};
 const lsGet = k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
 const TEMPLATES = {
@@ -62,7 +62,7 @@ const TEMPLATES = {
   'محاسب': {dash:'view', orders:'view', delivery:'view', inventory:'view', purchases:'view', expenses:'edit', accounting:'view', staff:'view'},
   'ميديا باير': {dash:'view', ads:'edit', landing:'edit', page:'edit', products:'view', ai:'edit'},
   'تسويق ومبيعات للشركات': {leads:'edit', agency:'view'},
-  'مدير الوكالة': {agency:'edit', leads:'edit', tasks:'edit', team:'view', ai:'edit'},
+  'مدير الوكالة': {agency:'edit', leads:'edit', oops:'edit', tasks:'edit', team:'view', ai:'edit'},
   'فريق إنتاج وتصميم': {},
   'مخصص': {}
 };
@@ -75,7 +75,7 @@ const TPL_DESC = {
   'محاسب': 'المصاريف تعديل، والمحاسبة والرواتب والطلبات عرض فقط',
   'ميديا باير': 'الحسابات الإعلانية وصفحات الهبوط وتقوية الصفحة والمساعد الذكي',
   'تسويق ومبيعات للشركات': 'بيجيب شركات ومطاعم للوكالة وبيتابعهم لحد التعاقد',
-  'مدير الوكالة': 'عملاء الوكالة والحملات والتسليمات والمهام',
+  'مدير الوكالة': 'عملاء الوكالة، وطلبات الموقع وعروض الأسعار، والخدمات والأسعار، والمهام',
   'فريق إنتاج وتصميم': 'مهامه وتسليماته (صور، فيديو، تصاميم) بس',
   'مخصص': 'إنت بتحدد كل قسم لحال'
 };
@@ -222,6 +222,7 @@ function openForm(title, fields, init, onSave, submitLabel = 'حفظ') {
     for (const f of fields) {
       if (f.t === 'image') { v[f.k] = formImg; continue; }
       if (f.t === 'color') { v[f.k] = $(`input[name="${f.k}"]:checked`)?.value || COLORS[0]; continue; }
+      if (f.t === 'checks') { v[f.k] = $$(`input[name="${f.k}"]:checked`).map(x => x.value); continue; }
       const el = $('#f_' + f.k); v[f.k] = f.t === 'number' ? (el.value === '' ? null : Number(el.value)) : el.value.trim();
     }
     const btn = $('#fsave'); btn.disabled = true; $('#ferr').textContent = '';
@@ -235,11 +236,12 @@ let formImg = null;
 function fieldHtml(f, v) {
   const id = 'f_' + f.k; let inp; const val = v ?? f.def ?? '';
   if (f.t === 'select') inp = `<select id="${id}">${f.opts.map(o => { const [ov, ol] = Array.isArray(o) ? o : [o, o]; return `<option value="${esc(ov)}" ${String(ov) === String(val) ? 'selected' : ''}>${esc(ol)}</option>`; }).join('')}</select>`;
-  else if (f.t === 'textarea') inp = `<textarea id="${id}" rows="3">${esc(val)}</textarea>`;
+  else if (f.t === 'checks') inp = `<div class="checks">${f.opts.map((o, i) => { const [ov, ol] = Array.isArray(o) ? o : [o, o]; return `<label class="ck"><input type="checkbox" id="${id}-${i}" name="${f.k}" value="${esc(ov)}" ${(v || []).includes(ov) ? 'checked' : ''}><span>${esc(ol)}</span></label>`; }).join('')}</div>`;
+  else if (f.t === 'textarea') inp = `<textarea id="${id}" rows="${f.rows || 3}">${esc(val)}</textarea>`;
   else if (f.t === 'image') inp = `<input id="${id}" type="file" accept="image/*" data-img="1">${v ? `<img src="${esc(v)}" alt="" style="max-height:70px;border-radius:6px;margin-top:6px">` : ''}`;
   else if (f.t === 'color') inp = `<div class="checks">${COLORS.map((c, i) => `<label><input type="radio" id="${id}-${i}" name="${f.k}" value="${c}" ${c === (v || COLORS[0]) ? 'checked' : ''}><span class="sw" style="background:${c}"></span></label>`).join('')}</div>`;
   else inp = `<input id="${id}" type="${f.t || 'text'}" ${f.t === 'number' ? 'step="any" inputmode="decimal"' : ''} ${f.min != null ? `min="${f.min}"` : ''} value="${esc(val)}" ${f.req ? 'required' : ''} ${f.ph ? `placeholder="${esc(f.ph)}"` : ''}>`;
-  return `<label class="fld ${f.wide || f.t === 'textarea' ? 'wide' : ''}" for="${id}"><span>${f.l}</span>${inp}</label>`;
+  return `<label class="fld ${f.wide || f.t === 'textarea' || f.t === 'checks' ? 'wide' : ''}" ${f.t === 'checks' ? '' : `for="${id}"`}><span>${f.l}</span>${inp}${f.hint ? `<small class="m">${f.hint}</small>` : ''}</label>`;
 }
 function shrink(file) {
   return new Promise((res, rej) => { const fr = new FileReader(); fr.onerror = rej; fr.onload = () => { const im = new Image(); im.onerror = rej; im.onload = () => { const k = Math.min(1, 480 / Math.max(im.width, im.height)); const c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); res(c.toDataURL('image/jpeg', .8)); }; im.src = fr.result; }; fr.readAsDataURL(file); });
@@ -262,8 +264,8 @@ const areasFor = c => ST.settings?.areas?.[c] || [];
 async function showLogin(msg) {
   $('.app').hidden = true; const el = $('#login'); el.hidden = false;
   let setup = false; try { setup = await db.rpc('needs_setup'); } catch (e) {}
-  let company = 'صابر أونلاين'; try { company = (await db.q('settings', {eq: {id: 1}}))[0]?.company || company; } catch (e) {}
-  el.innerHTML = `<div class="lwrap"><div class="lside"><div class="logo" style="padding:0"><i>ص</i><div>${esc(company)}<small>نظام إدارة الشركة</small></div></div>
+  let company = 'صابر أونلاين', logo = ''; try { const st = (await db.q('settings', {eq: {id: 1}, select: 'company,logo'}))[0]; company = st?.company || company; logo = st?.logo || ''; } catch (e) { try { company = (await db.q('settings', {eq: {id: 1}}))[0]?.company || company; } catch (e2) {} }
+  el.innerHTML = `<div class="lwrap"><div class="lside"><div class="logo" style="padding:0"><i class="${logo ? 'img' : ''}">${logo ? `<img src="${esc(logo)}" alt="">` : 'ص'}</i><div>${esc(company)}<small>نظام إدارة الشركة</small></div></div>
     <h1>${setup ? 'أهلين، خلينا نجهز حساب المدير' : 'أهلين، سجّل دخولك'}</h1>
     <p>${setup ? 'هاد أول تشغيل للنظام. اعمل حساب المدير العام بنفس الإيميل اللي كتبته بملف قاعدة البيانات.' : 'كل موظف إله حساب خاص، وبيشوف بس الأقسام اللي إله صلاحية عليها.'}</p>
     <ul><li>كل عملية بتنسجل باسم اللي عملها</li><li>الصلاحيات محمية من قاعدة البيانات نفسها</li><li>بيشتغل على الجوال والكمبيوتر</li></ul></div>
@@ -343,12 +345,14 @@ async function enter(user, fresh) {
   goWs(ui.ws || wl[0] || 'store', true);
 }
 /* ---------- اختيار مساحة الشغل ---------- */
-const wsList = () => isClient() ? [] : [...(STORE_ONLY.some(k => can(k)) ? ['store'] : []), ...(can('agency') || can('leads') ? ['agency'] : [])];
+const wsList = () => isClient() ? [] : [...(STORE_ONLY.some(k => can(k)) ? ['store'] : []), ...(can('agency') || can('leads') || can('oops') ? ['agency'] : [])];
+const logoOf = w => (w === 'agency' ? ST.settings?.agency_logo : ST.settings?.logo) || '';
+const markHtml = (w, letter) => logoOf(w) ? `<img src="${esc(logoOf(w))}" alt="">` : esc(letter);
 const wsName = w => w === 'agency' ? (ST.settings?.agency_name || WS.agency.name) : (ST.settings?.company || WS.store.name);
 function showWsChooser(wl) {
   $('.app').hidden = true; const el = $('#login'); el.hidden = false;
   el.innerHTML = `<div class="wspick"><h1>أهلين ${esc(me?.name || '')}، وين بدك تشتغل هلأ؟</h1><p class="m">كل قسم إله شاشاته وحساباته لحال. بتقدر تبدّل بأي وقت من الزر اللي فوق.</p>
-    <div class="wscards">${wl.map(w => `<button class="wscard" data-ws="${w}" type="button"><i>${WS[w].mark}</i><b>${esc(wsName(w))}</b><span>${WS[w].sub}</span></button>`).join('')}</div>
+    <div class="wscards">${wl.map(w => `<button class="wscard" data-ws="${w}" type="button"><i class="${logoOf(w) ? 'img' : ''}">${markHtml(w, WS[w].mark)}</i><b>${esc(wsName(w))}</b><span>${WS[w].sub}</span></button>`).join('')}</div>
     <button class="btn ghost" type="button" id="wsout">خروج</button></div>`;
   el.querySelectorAll('.wscard').forEach(b => b.onclick = () => goWs(b.dataset.ws));
   $('#wsout').onclick = logout;
@@ -385,12 +389,14 @@ async function render() {
   const seq = ++renderSeq;
   const ws = ui.ws || 'store', wl = wsList();
   $('#coName').textContent = isClient() ? (ST.settings?.agency_name || ST.settings?.company || 'صابر أونلاين') : wsName(ws);
+  const lw = isClient() ? 'agency' : ws, li = $('.app .logo i'); if (li) { li.className = logoOf(lw) ? 'img' : ''; li.innerHTML = markHtml(lw, lw === 'agency' ? 'و' : 'ص'); }
+  document.title = (isClient() ? (ST.settings?.agency_name || '') : wsName(ws)) || 'صابر أونلاين';
   const bar = $('#wsbar');
   if (bar) { bar.hidden = isClient(); const other = wl.find(w => w !== ws);
-    bar.innerHTML = `<div class="wsin"><i>${WS[ws].mark}</i><div><small>إنت هلأ بـ</small><b>${esc(wsName(ws))}</b></div></div>${other ? `<button class="btn sm wsbtn" data-act="switchWs" type="button"><span aria-hidden="true">⇄</span> روح لـ${esc(wsName(other))}</button>` : ''}`; }
+    bar.innerHTML = `<div class="wsin"><i class="${logoOf(ws) ? 'img' : ''}">${markHtml(ws, WS[ws].mark)}</i><div><small>إنت هلأ بـ</small><b>${esc(wsName(ws))}</b></div></div>${other ? `<button class="btn sm wsbtn" data-act="switchWs" type="button"><span aria-hidden="true">⇄</span> روح لـ${esc(wsName(other))}</button>` : ''}`; }
   $('#me').innerHTML = `<div><b>${esc(me.name || me.email)}</b><small>${esc(me.role)}${K.statusLine ? ' · ' + K.statusLine : ''}</small></div><div class="row" style="gap:4px"><button data-act="myPw">كلمة السر</button><button data-act="logout">خروج</button></div>`;
   const nav = isClient() ? [['', ['portal']]] : NAVS[ws].map(([g, ks]) => [g, ks.filter(k => can(k))]).filter(g => g[1].length);
-  $('#nav').innerHTML = nav.map(([g, ks]) => `<div class="grp">${g}</div>` + ks.map(k => `<button class="${ui.view === k || (k === 'agency' && ui.view === 'client') ? 'on' : ''}" data-act="go" data-id="${k}"><span>${SEC_NAME[k]}</span>${K.badges[k] ? `<em class="${K.badgeRed[k] ? 'red' : ''}">${K.badges[k]}</em>` : ''}</button>`).join('')).join('');
+  $('#nav').innerHTML = nav.map(([g, ks]) => `<div class="grp">${g}</div>` + ks.map(k => `<button class="${ui.view === k || (k === 'agency' && ui.view === 'client') || (k === 'oreq' && ui.view === 'oreqd') ? 'on' : ''}" data-act="go" data-id="${k}"><span>${SEC_NAME[k]}</span>${K.badges[k] ? `<em class="${K.badgeRed[k] ? 'red' : ''}">${K.badges[k]}</em>` : ''}</button>`).join('')).join('');
   if (!nav.length) { $('#main').innerHTML = '<p class="note">ما إلك صلاحية على أي قسم. راجع المدير.</p>'; return; }
   const slow = setTimeout(() => { if (seq === renderSeq) $('#main').classList.add('loading'); }, 180);
   try {
@@ -871,7 +877,7 @@ function boot() {
   start(impl, link).then(() => { if (location.hash || /type=|error_code=/.test(location.search)) history.replaceState(null, '', location.pathname); });
 }
 Object.assign(K, {$, $$, esc, N, fmt, jd, pct, sum, today, addDays, monthOf, monthEnd, fmtDT, dayName, cleanPhone, PHONE_RE,
-  STATUSES, ST_CLS, SOURCES, COLORS, SECTIONS, SEC_NAME, NAV, NAVS, WS, wsList, wsName, goWs, lsGet, lsSet, pageName, TEMPLATES, TPL_DESC, PERSONAL, ACT_SEC, V, A, ST, ui,
+  STATUSES, ST_CLS, SOURCES, COLORS, SECTIONS, SEC_NAME, NAV, NAVS, WS, wsList, wsName, logoOf, goWs, lsGet, lsSet, pageName, TEMPLATES, TPL_DESC, PERSONAL, ACT_SEC, V, A, ST, ui,
   pill, kpi, head, table, chips, toast, openForm, openInfo, closeM, copyText, can, perm, isAdmin, isClient, render, softRender,
   openOrderForm, arabicErr, P, cities, feeFor, shrink, applyPerms,
   setModalCancel: f => { modalCancel = f; } });
