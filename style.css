@@ -313,3 +313,5 @@ body[data-ws="agency"]{--brand:#2f3b82;--brand-ink:#ffffff;--brand-soft:#e2e6f7}
 .reqinfo .kv span{min-width:120px}
 .kpi.kbtn{font:inherit;color:inherit;text-align:start;cursor:pointer;width:100%}
 .kpi.kbtn:hover{border-color:var(--brand)}
+.pxok{margin-top:6px;background:var(--good-bg);color:var(--good);border-radius:8px;padding:6px 10px;font-size:13px;font-weight:600}
+.pxwait{margin-top:6px;background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:6px 10px;font-size:13px}

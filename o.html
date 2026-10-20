@@ -215,6 +215,16 @@ footer{background:var(--ink);color:var(--paper);padding:34px 0 40px;margin-top:4
 footer .wrap{display:flex;flex-wrap:wrap;gap:20px;justify-content:space-between}
 footer a{color:var(--sun)}
 footer .brand{color:var(--paper)}
+.fcol{display:flex;flex-direction:column;gap:4px}
+.fsoc{display:flex;gap:10px;flex-wrap:wrap}
+.fsoc a{color:var(--paper);opacity:.85;text-decoration:none;border:1px solid color-mix(in srgb,var(--paper) 30%,transparent);border-radius:8px;padding:2px 10px;font-size:14px}
+.wa{position:fixed;z-index:26;inset-inline-start:16px;bottom:calc(18px + env(safe-area-inset-bottom,0px));display:inline-flex;align-items:center;gap:8px;background:#25d366;color:#06301a;border-radius:999px;padding:10px 16px 10px 14px;font:700 15px var(--f-d);text-decoration:none;box-shadow:0 6px 20px rgba(0,0,0,.22)}
+.wa[hidden]{display:none}
+@media (max-width:980px){.wa{bottom:calc(84px + env(safe-area-inset-bottom,0px));padding:12px}.wa span{display:none}}
+.cinfo{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.cinfo div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.cinfo small{display:block;color:var(--muted);font-size:13px}
+.cinfo b{font-family:var(--f-d)}
 dialog{border:0;border-radius:18px;max-width:560px;width:calc(100% - 32px);padding:24px;background:var(--card);color:var(--ink)}
 dialog::backdrop{background:rgba(10,12,40,.5)}
 
@@ -237,6 +247,8 @@ dialog::backdrop{background:rgba(10,12,40,.5)}
   body{background:#fff;color:#000;padding:0}
   .qt{border:0;margin:0;max-width:none}
 }
+.adsplit{margin-top:14px;border:1.5px solid var(--line);border-radius:14px;padding:10px 14px}
+.adsplit summary{cursor:pointer;font-weight:600}
 </style>
 </head>
 <body>
@@ -247,9 +259,10 @@ dialog::backdrop{background:rgba(10,12,40,.5)}
 <main id="app"><div class="center"><p class="m">جاري التحميل…</p></div></main>
 <footer><div class="wrap">
   <div><a class="brand" href="#"><span id="fBrand">OOPSIDE</span></a><p style="opacity:.75;margin-top:6px;max-width:40ch" id="fAbout">تسويق بأرقام واضحة.</p></div>
-  <div id="fContact"></div>
-  <div><a href="#" id="privLink">سياسة الخصوصية</a></div>
+  <div id="fContact" class="fcol"></div>
+  <div class="fcol"><div id="fSocial" class="fsoc"></div><a href="#" id="privLink">سياسة الخصوصية</a><small id="fLegal" style="opacity:.6"></small></div>
 </div></footer>
+<a id="wa" class="wa noprint" hidden target="_blank" rel="noopener" aria-label="احكينا على واتساب"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><path fill="currentColor" d="M16 3a13 13 0 0 0-11.2 19.6L3 29l6.6-1.7A13 13 0 1 0 16 3zm0 23.6c-2 0-3.9-.5-5.6-1.5l-.4-.2-3.9 1 1-3.8-.3-.4A10.6 10.6 0 1 1 16 26.6zm5.8-7.9c-.3-.2-1.9-.9-2.2-1-.3-.1-.5-.2-.7.2-.2.3-.8 1-1 1.2-.2.2-.4.2-.7.1a8.7 8.7 0 0 1-4.3-3.8c-.3-.6.3-.5.9-1.7.1-.2 0-.4 0-.6l-1-2.4c-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.2 1.1-1.2 2.8s1.2 3.2 1.4 3.5c.2.2 2.4 3.6 5.7 5 2.1.9 2.9 1 4 .8.6-.1 1.9-.8 2.2-1.5.3-.8.3-1.4.2-1.5l-.7-.4z"/></svg><span>واتساب</span></a>
 <dialog id="dlg"><h3 id="dlgT"></h3><p id="dlgB" style="margin-top:10px;white-space:pre-line"></p><form method="dialog" style="margin-top:16px"><button class="btn pri sm">تمام</button></form></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -264,6 +277,10 @@ const N = x => Number(x) || 0;
 const fmt = n => { n = Math.round(N(n) * 100) / 100; return n.toLocaleString('en-US', {maximumFractionDigits: 2}); };
 const jd = n => fmt(n) + ' د.أ';
 const P = window.OopsPrice;
+const SOCIAL = [['instagram', 'إنستغرام'], ['facebook', 'فيسبوك'], ['tiktok', 'تيك توك'], ['linkedin', 'لينكد إن'], ['youtube', 'يوتيوب']];
+const safeUrl = u => { u = String(u || '').trim(); if (!/^https?:\/\//i.test(u)) u = 'https://' + u; return /^https?:\/\/[^\s<>"]+$/i.test(u) ? u : '#'; };
+const waNum = t => { const d = String(t || '').replace(/\D/g, ''); return /^07[789]\d{7}$/.test(d) ? '962' + d.slice(1) : /^7[789]\d{7}$/.test(d) ? '962' + d : /^00/.test(d) ? d.slice(2) : d.length >= 10 ? d : ''; };
+const waLink = msg => 'https://wa.me/' + waNum(SITE?.config?.whatsapp) + '?text=' + encodeURIComponent(msg);
 const nSvc = n => n === 1 ? 'خدمة وحدة' : n === 2 ? 'خدمتين' : n <= 10 ? n + ' خدمات' : n + ' خدمة';
 const cfg = window.SABER_CONFIG || {};
 const qs = new URLSearchParams(location.search);
@@ -273,6 +290,20 @@ const CITIES = ['عمّان','الزرقاء','إربد','العقبة','الس�
 const STAGES = [['new','جديدة'], ['grow','بتكبر'], ['est','ثابتة بالسوق']];
 const AGENCY_NOW = [['no','لا'], ['yes','نعم، هلأ'], ['before','اشتغلت قبل']];
 const STEPS = ['المشكلة','شغلك','الميزانية','الخدمات','التواصل'];
+const SLUGS = ['1-problem','2-business','3-budget','4-services','5-contact'];
+const PLATFORMS = [['meta','فيسبوك وإنستغرام'], ['tiktok','تيك توك'], ['google','جوجل ويوتيوب'], ['snap','سناب شات'], ['other','غيرها']];
+/* رسائل الأخطاء: ما منوري الزبون أي رسالة تقنية */
+const friendly = m => { m = String(m || ''); if (/fetch|network|failed to|load failed/i.test(m)) return 'ما في اتصال بالإنترنت. جرّب مرة ثانية';
+  if (/[\u0600-\u06FF]/.test(m)) return m; console.error(m); return 'صار خطأ عندنا وما انبعت الطلب. جرّب مرة ثانية، أو احكينا واتساب'; };
+/* قمع الموقع: كل زائر لوين وصل، بدون أي بيانات شخصية */
+const VID = (() => { let v = null; try { v = localStorage.getItem('oops-vid'); } catch (e) {} if (!v || !/^[0-9a-f-]{36}$/.test(v)) { v = (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-8xxx-xxxxxxxxxxxx'.replace(/x/g, () => (Math.random() * 16 | 0).toString(16))); try { localStorage.setItem('oops-vid', v); } catch (e) {} } return v; })();
+let tracked = -1;
+const funnel = st => { if (!sb || st <= tracked || !SITE?.live) return; tracked = st; sb.rpc('oops_track', {vid: VID, step: st, utm: utm(), dev: innerWidth < 760 ? 'جوال' : 'كمبيوتر'}).then(() => {}, () => {}); };
+function stepUrl(push) {
+  const u = location.pathname + '?step=' + SLUGS[S.step] + '#build';
+  if (location.pathname + location.search + location.hash === u) return;
+  try { history[push ? 'pushState' : 'replaceState']({step: S.step}, '', u); } catch (e) {}
+}
 
 /* ---------- utm: بنحفظ مصدر الزيارة أول ما يفوت ---------- */
 const UTM_KEYS = ['utm_source','utm_medium','utm_campaign','utm_content','utm_term','ad','fbclid','gclid','ref'];
@@ -284,8 +315,9 @@ const UTM_KEYS = ['utm_source','utm_medium','utm_campaign','utm_content','utm_te
 const utm = () => { try { return JSON.parse(sessionStorage.getItem('oops-utm') || '{}'); } catch (e) { return {}; } };
 
 /* ---------- التتبع (بدون أي بيانات شخصية) ---------- */
+const CUSTOM = new Set(['OopsStep']);
 const track = (ev, data) => {
-  try { if (window.fbq) fbq('track', ev, data || {}); } catch (e) {}
+  try { if (window.fbq) fbq(CUSTOM.has(ev) ? 'trackCustom' : 'track', ev, data || {}); } catch (e) {}
   try { if (window.gtag) gtag('event', {Lead: 'generate_lead', ViewContent: 'view_item_list', InitiateCheckout: 'begin_checkout'}[ev] || ev, data || {}); } catch (e) {}
   try { (window.dataLayer = window.dataLayer || []).push({event: 'oops_' + ev, ...(data || {})}); } catch (e) {}
 };
@@ -294,13 +326,14 @@ function loadTracking(s) {
   if (px) {
     !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
     fbq('init', px); fbq('track', 'PageView');
+    const fs = document.querySelector('script[src*="fbevents.js"]'); if (fs) fs.addEventListener('load', () => { try { sb.rpc('pixel_seen', {kind: 'agency', pid: px}).then(() => {}, () => {}); } catch (e) {} });
   }
   if (ga) { const t = document.createElement('script'); t.async = true; t.src = 'https://www.googletagmanager.com/gtag/js?id=' + ga; document.head.appendChild(t); window.dataLayer = window.dataLayer || []; window.gtag = function () { dataLayer.push(arguments); }; gtag('js', new Date()); gtag('config', ga); }
   if (gtm) { window.dataLayer = window.dataLayer || []; dataLayer.push({'gtm.start': Date.now(), event: 'gtm.js'}); const t = document.createElement('script'); t.async = true; t.src = 'https://www.googletagmanager.com/gtm.js?id=' + gtm; document.head.appendChild(t); }
 }
 
 /* ---------- حالة الباني ---------- */
-const blank = () => ({step: 0, problems: [], problem_other: '', sector: '', company: '', city: 'عمّان', stage: '', agency_now: '', answers: {}, about: '',
+const blank = () => ({step: 0, maxStep: 0, split: {}, problems: [], problem_other: '', sector: '', company: '', city: 'عمّان', stage: '', agency_now: '', answers: {}, about: '',
   budget: 600, includes_ads: true, ad: 300, items: {}, contact: '', phone: '', email: '', website: '', social: '', consent: false, marketing_ok: false, cat: 'مقترحة', started: false});
 let S = Object.assign(blank(), ls.get('oops-draft') || {});
 const save = () => ls.set('oops-draft', S);
@@ -345,6 +378,7 @@ function home() {
     <div class="tabs" role="tablist"><button role="tab" aria-selected="true" data-tab="cac">أقصى تكلفة للزبون</button><button role="tab" aria-selected="false" data-tab="fc">شو بتجيب ميزانيتك</button></div>
     <div id="toolBody"></div>
   </div></section>
+  ${contactSec()}
   <section class="sec" id="faq"><div class="wrap" style="max-width:820px">
     <h2 style="margin-bottom:10px">أسئلة بتتكرر</h2>
     <details><summary>ميزانية الإعلانات بتدفعها إلنا؟</summary><p>لا. ميزانية الإعلانات بتندفع لفيسبوك وجوجل وتيك توك مباشرة من بطاقتك، وأتعابنا منفصلة وواضحة بالفاتورة.</p></details>
@@ -353,6 +387,15 @@ function home() {
     <details><summary>بتطلبوا كلمة سر حساباتي؟</summary><p>أبداً. الربط بيصير بصلاحيات من حسابك الإعلاني بدون ما تعطينا كلمة السر.</p></details>
     <details><summary>بقدر أغير الباقة بعدين؟</summary><p>أكيد. بتقدر تزيد أو تنقص الخدمات من شهر لشهر.</p></details>
   </div></section>`;
+}
+function contactSec() {
+  const c = SITE.config || {}, w = waNum(c.whatsapp);
+  const cards = [w ? `<div><small>واتساب</small><a href="${esc(waLink(c.whatsapp_msg || 'مرحبا، بدي أستفسر عن خدماتكم'))}" target="_blank" rel="noopener"><b dir="ltr">${esc(c.whatsapp)}</b></a></div>` : '',
+    c.phone ? `<div><small>اتصل فينا</small><a href="tel:${esc(c.phone)}"><b dir="ltr">${esc(c.phone)}</b></a></div>` : '',
+    c.email ? `<div><small>الإيميل</small><a href="mailto:${esc(c.email)}"><b>${esc(c.email)}</b></a></div>` : '',
+    c.address ? `<div><small>العنوان</small>${c.maps_url ? `<a href="${esc(safeUrl(c.maps_url))}" target="_blank" rel="noopener"><b>${esc(c.address)}</b></a>` : `<b>${esc(c.address)}</b>`}</div>` : '',
+    c.hours ? `<div><small>ساعات الدوام</small><b>${esc(c.hours)}</b></div>` : ''].filter(Boolean);
+  return cards.length ? `<section class="sec" id="contact"><div class="wrap"><h2 style="margin-bottom:14px">تواصل معنا</h2><div class="cinfo">${cards.join('')}</div></div></section>` : '';
 }
 function receiptShell() {
   return `<aside class="receipt" id="receipt" aria-label="الفاتورة الحية"><div class="rhead"><b>الفاتورة الحية</b><button class="btn ghost sm rclose" type="button" id="rClose">سكّر</button><small class="m" id="rCount"></small></div>
@@ -388,6 +431,7 @@ function stepHtml() {
     <span style="font-weight:600;font-size:14px">شو نوع نشاطك؟</span>
     <div class="tiles" style="margin-top:8px">${(c.sectors || []).map(x => `<button type="button" class="tile" data-sector="${esc(x)}" aria-pressed="${pressed(S.sector === x)}">${esc(x)}</button>`).join('')}</div>
     <div class="grid2"><label class="fld"><span>اسم الشركة أو المحل</span><input id="i_co" value="${esc(S.company)}" maxlength="120" autocomplete="organization" required></label>
+    <label class="fld" style="grid-column:1/-1"><span>شو بتبيع أو شو الخدمات اللي بتقدمها؟</span><textarea id="i_about" rows="2" maxlength="500" placeholder="مثلاً: مطعم شاورما وبرغر، عنا توصيل لكل عمّان">${esc(S.about)}</textarea></label>
     <label class="fld"><span>المدينة</span><select id="i_city">${CITIES.map(x => `<option ${x === S.city ? 'selected' : ''}>${x}</option>`).join('')}</select></label></div>
     <div class="fld"><span>الشركة</span><div class="seg">${STAGES.map(([k, l]) => `<button type="button" data-stage="${k}" aria-pressed="${pressed(S.stage === k)}">${l}</button>`).join('')}</div></div>
     <div class="fld"><span>بتشتغل مع شركة تسويق؟</span><div class="seg">${AGENCY_NOW.map(([k, l]) => `<button type="button" data-agnow="${k}" aria-pressed="${pressed(S.agency_now === k)}">${l}</button>`).join('')}</div></div>
@@ -400,6 +444,9 @@ function stepHtml() {
     <input type="range" id="r_budget" min="100" max="5000" step="50" value="${Math.min(5000, N(S.budget))}" aria-label="الميزانية">
     <label class="toggle"><input type="checkbox" id="i_inc" ${S.includes_ads ? 'checked' : ''}><span><b>الميزانية بتشمل صرف الإعلانات</b><br><small class="m">إذا شلت الإشارة، هالرقم بيكون لأتعابنا بس، وبتحدد ميزانية الإعلانات تحت.</small></span></label>
     <label class="fld"><span>${S.includes_ads ? 'قديش منها للإعلانات؟' : 'ميزانية الإعلانات الشهرية (بتدفعها للمنصات)'}</span><input id="i_ad" type="number" inputmode="numeric" min="0" step="50" value="${N(S.ad)}"></label>
+    <details class="adsplit" ${Object.values(S.split || {}).some(x => N(x)) ? 'open' : ''}><summary>وين بتعلن؟ وزّع ميزانية الإعلانات على المنصات <small class="m">(اختياري)</small></summary>
+      <div class="grid2">${PLATFORMS.map(([k, l]) => `<label class="fld"><span>${l}</span><input data-split="${k}" type="number" inputmode="numeric" min="0" step="10" value="${N((S.split || {})[k]) || ''}" placeholder="0"></label>`).join('')}</div>
+      <p class="m" style="font-size:13px;margin-top:6px">لما توزّع، ميزانية الإعلانات بتصير مجموعهم.</p></details>
     <div class="split"><div><small>للإعلانات</small><b>${jd(adBudget())}</b></div><div><small>لأتعابنا</small><b>${jd(feesBudget())}</b></div></div>
     <div class="planbox"><div><b style="font-family:var(--f-d)">مش عارف شو تختار؟</b><p class="m" style="font-size:14px">منختارلك خدمات على قد ميزانية الأتعاب، حسب المشاكل اللي اخترتها.</p></div><button type="button" class="btn sun" id="doPlan">اقترحلي باقة</button></div>
     <div id="planMsg"></div></div>`;
@@ -415,10 +462,11 @@ function stepHtml() {
   if (st === 4) body = `<div class="step"><h2>وين منحكي معك؟</h2><p class="m">فريقنا بيراجع الباقة وبيرجعلك خلال يوم عمل بعرض رسمي.</p>
     <div class="grid2"><label class="fld"><span>اسمك</span><input id="i_ct" value="${esc(S.contact)}" maxlength="80" autocomplete="name"></label>
     <label class="fld"><span>رقم الهاتف</span><input id="i_ph" value="${esc(S.phone)}" inputmode="tel" autocomplete="tel" placeholder="07xxxxxxxx" required></label>
-    <label class="fld"><span>الإيميل <small>(اختياري)</small></span><input id="i_em" type="email" value="${esc(S.email)}" autocomplete="email"></label>
+    <label class="fld"><span>الإيميل ${vmode() === 'email' ? (vneed('email') ? '<small>(بيوصلك عليه كود التأكيد)</small>' : '<small>(اختياري، وإذا كتبته بيوصلك عليه كود تأكيد)</small>') : '<small>(اختياري)</small>'}</span><input id="i_em" type="email" value="${esc(S.email)}" autocomplete="email"></label>
     <label class="fld"><span>رابط صفحتك أو موقعك <small>(اختياري)</small></span><input id="i_web" value="${esc(S.website)}" inputmode="url"></label></div>
     <label class="toggle"><input type="checkbox" id="i_cons" ${S.consent ? 'checked' : ''}><span>قرأت <a href="#" data-priv>سياسة الخصوصية</a> وبوافق تتواصلوا معي بخصوص هالطلب.</span></label>
-    <label class="toggle"><input type="checkbox" id="i_mk" ${S.marketing_ok ? 'checked' : ''}><span class="m">بوافق توصلني عروض ونصايح تسويق بين فترة وفترة (اختياري).</span></label></div>`;
+    <label class="toggle"><input type="checkbox" id="i_mk" ${S.marketing_ok ? 'checked' : ''}><span class="m">بوافق توصلني عروض ونصايح تسويق بين فترة وفترة (اختياري).</span></label>${vmode() === 'either' ? `<div class="fld"><span>ابعتلي كود التأكيد على</span><div class="seg"><button type="button" data-vch="whatsapp" aria-pressed="${pressed(vch() === 'whatsapp')}">واتساب</button><button type="button" data-vch="email" aria-pressed="${pressed(vch() === 'email')}">الإيميل</button></div></div>` : ''}
+    <div id="vbox"></div></div>`;
   const nav = `<p class="err" id="err" role="alert"></p><div class="nav">${st > 0 ? '<button type="button" class="btn ghost" data-back>رجوع</button>' : '<span></span>'}${st < 4 ? '<button type="button" class="btn pri" data-next>التالي</button>' : `<button type="button" class="btn pri" id="send" ${SITE.live ? '' : 'disabled'}>ابعت الطلب</button>`}</div>${!SITE.live && st === 4 ? '<p class="m" style="margin-top:8px">الإرسال مسكّر حالياً. شغّله من إعدادات موقع الوكالة.</p>' : ''}`;
   return prog + body + nav;
 }
@@ -446,20 +494,28 @@ function svcCard(s) {
 }
 function drawStep(focus) {
   $('#wiz').innerHTML = stepHtml(); drawReceipt(); save();
+  if (S.started) {
+    S.maxStep = Math.max(N(S.maxStep), S.step);
+    if (focus || !/[?&]step=/.test(location.search)) { stepUrl(!!focus); track('OopsStep', {step: SLUGS[S.step]}); }
+    funnel(S.step + 1);
+  }
   if (focus) { $('#wiz h2')?.setAttribute('tabindex', '-1'); $('#wiz h2')?.focus({preventScroll: true}); const top = $('#build').getBoundingClientRect().top; if (top < -40 || top > innerHeight / 2) $('#build').scrollIntoView({behavior: 'smooth'}); }
 }
 function readStep() {
   const v = id => $(id)?.value ?? undefined;
   if (S.step === 0) S.problem_other = v('#i_po')?.trim() ?? S.problem_other;
-  if (S.step === 1) { S.company = v('#i_co')?.trim() ?? S.company; S.city = v('#i_city') ?? S.city;
+  if (S.step === 1) { S.company = v('#i_co')?.trim() ?? S.company; S.city = v('#i_city') ?? S.city; S.about = v('#i_about')?.trim() ?? S.about;
     ['orders','aov','msgs','text'].forEach(k => { const e = $('#a_' + k); if (e) S.answers[k] = e.value.trim(); }); if ($('#a_hours')) S.answers.hours = $('#a_hours').value; }
-  if (S.step === 2) { S.budget = Math.max(0, N(v('#i_budget'))); S.ad = Math.max(0, N(v('#i_ad'))); S.includes_ads = $('#i_inc')?.checked ?? S.includes_ads; }
+  if (S.step === 2) { S.budget = Math.max(0, N(v('#i_budget'))); S.ad = Math.max(0, N(v('#i_ad'))); S.includes_ads = $('#i_inc')?.checked ?? S.includes_ads;
+    const sp = {}; $$('[data-split]').forEach(i => { if (N(i.value) > 0) sp[i.dataset.split] = N(i.value); }); S.split = sp;
+    const tot = Object.values(sp).reduce((a, b) => a + b, 0); if (tot > 0) { S.ad = tot; const ia = $('#i_ad'); if (ia) ia.value = tot; } }
   if (S.step === 4) { S.contact = v('#i_ct')?.trim() ?? ''; S.phone = v('#i_ph')?.trim() ?? ''; S.email = v('#i_em')?.trim() ?? ''; S.website = v('#i_web')?.trim() ?? ''; S.consent = $('#i_cons')?.checked; S.marketing_ok = $('#i_mk')?.checked; }
 }
 function validate() {
   if (S.step === 0 && !S.problems.length && !S.problem_other) return 'اختار مشكلة وحدة على الأقل، أو اكتبها';
   if (S.step === 1 && !S.sector) return 'اختار نوع نشاطك';
   if (S.step === 1 && !S.company) return 'اكتب اسم الشركة أو المحل';
+  if (S.step === 1 && (S.about || '').length < 3) return 'احكيلنا شو بتبيع أو شو خدماتك';
   if (S.step === 2 && N(S.budget) < 50) return 'حط ميزانية شهرية';
   if (S.step === 2 && S.includes_ads && N(S.ad) > N(S.budget)) return 'ميزانية الإعلانات أكبر من الميزانية كلها';
   if (S.step === 3 && !Object.keys(S.items).length) return 'أضف خدمة وحدة على الأقل، أو ارجع واضغط "اقترحلي باقة"';
@@ -469,7 +525,7 @@ const err = m => { const e = $('#err'); if (e) e.textContent = m || ''; };
 function teamDefaults(s) {
   const p = s.params || {}; const msgs = N(S.answers.msgs); const hours = N(S.answers.hours) || 8;
   const agents = msgs ? Math.min(p.max_agents || 6, Math.max(1, Math.ceil(msgs / (hours * (p.msgs_per_hour || 12))))) : 1;
-  return {agents, hours, days: 6, channels: (p.channels || []).slice(0, 2), tasks: [], msgs: msgs || ''};
+  return {agents, hours, days: 6, channels: (p.channels || []).slice(0, 2), tasks: [], msgs: msgs || 0};
 }
 function toggleItem(id) {
   const s = svc(id); if (!s) return;
@@ -490,30 +546,72 @@ function runPlan() {
   else { $('#planMsg').innerHTML = msg; drawReceipt(); save(); }
   track('ViewContent', {content_name: 'budget_plan'});
 }
+/* ---------- تأكيد الرقم بكود ---------- */
+const vmode = () => SITE?.config?.verify || 'off';
+const vch = () => vmode() === 'email' ? 'email' : vmode() === 'whatsapp' ? 'whatsapp' : (S.vch || 'whatsapp');
+const vreq = () => SITE?.config?.verify_required || 'whatsapp';
+const vneed = ch => vreq() === 'all' || (vreq() === 'whatsapp' && ch === 'whatsapp');
+const skipBtn = () => vneed(vch()) ? '' : '<button type="button" class="btn ghost sm" id="otpSkip">ابعت بدون تأكيد</button>';
+const vtarget = () => vch() === 'email' ? S.email.trim().toLowerCase() : S.phone.replace(/[^\d+]/g, '');
+async function requestCode() {
+  const ch = vch(), to = vtarget(), box = $('#vbox');
+  if (ch === 'email' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) return err('اكتب إيميل صحيح عشان نبعتلك عليه الكود');
+  err(''); box.innerHTML = '<p class="m" style="margin-top:14px">جاري إرسال الكود…</p>';
+  try {
+    const r = await fetch(cfg.url.replace(/\/$/, '') + '/functions/v1/oops-otp', {method: 'POST', headers: {'Content-Type': 'application/json', apikey: cfg.key, Authorization: 'Bearer ' + cfg.key}, body: JSON.stringify({channel: ch, to})});
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.id) throw new Error(j.error || 'ما قدرنا نبعت الكود. جرّب بعد شوي');
+    S.otp = {id: j.id, key: ch + ':' + to, ok: false, to: j.to, ch, at: Date.now()};
+    drawVerify();
+  } catch (x) { box.innerHTML = vneed(ch) ? '' : `<div class="nav" style="margin-top:10px">${skipBtn()}</div>`; err(friendly(x.message) + (vneed(ch) ? '' : '. بتقدر تبعت الطلب بدون تأكيد')); }
+}
+function drawVerify(msg) {
+  const o = S.otp, box = $('#vbox'); if (!o || !box) return;
+  const sendBtn = $('#send'); if (sendBtn) sendBtn.hidden = true;
+  const wait = Math.max(0, 60 - Math.floor((Date.now() - o.at) / 1000));
+  box.innerHTML = `<div class="ask" style="margin-top:18px"><h3>أكّد ${o.ch === 'email' ? 'إيميلك' : 'رقمك'}</h3><p class="m" style="font-size:14px">بعتنالك كود من 6 أرقام على ${o.ch === 'email' ? 'الإيميل' : 'واتساب'} <b dir="ltr">${esc(o.to)}</b></p>
+    <label class="fld"><span>الكود</span><input id="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr" style="font:800 26px var(--f-d);letter-spacing:.4em;text-align:center;max-width:240px"></label>
+    ${msg ? `<p class="err" style="min-height:0">${esc(msg)}</p>` : ''}
+    <div class="nav" style="margin-top:12px"><button type="button" class="btn pri" id="otpGo">أكّد وابعت الطلب</button><button type="button" class="btn ghost sm" id="otpRe" ${wait ? 'disabled' : ''}>${wait ? 'ابعت الكود مرة ثانية بعد ' + wait + ' ث' : 'ابعت الكود مرة ثانية'}</button>${skipBtn()}</div></div>`;
+  $('#otp').focus();
+  clearTimeout(drawVerify.t); if (wait) drawVerify.t = setTimeout(() => { const b = $('#otpRe'); if (b && S.otp === o) { const w = Math.max(0, 60 - Math.floor((Date.now() - o.at) / 1000)); b.disabled = !!w; b.textContent = w ? 'ابعت الكود مرة ثانية بعد ' + w + ' ث' : 'ابعت الكود مرة ثانية'; if (w) drawVerify.t = setTimeout(arguments.callee, 1000); } }, 1000);
+}
+async function checkCode() {
+  const code = ($('#otp')?.value || '').replace(/\D/g, ''); if (code.length !== 6) return drawVerify('الكود 6 أرقام');
+  const b = $('#otpGo'); b.disabled = true; b.textContent = 'جاري التأكيد…';
+  const {data, error} = await sb.rpc('oops_otp_verify', {oid: S.otp.id, code});
+  if (error || !data?.ok) { drawVerify(error?.message || data?.msg || 'الكود غلط'); if (/جديد/.test(data?.msg || '')) S.otp = null; return; }
+  S.otp.ok = true; send();
+}
+
 async function send() {
   readStep();
   const phone = S.phone.replace(/[^\d+]/g, '');
   if (!S.contact) return err('اكتب اسمك');
   if (!/^(\+?962|0)?7[789]\d{7}$/.test(phone) && !/^\+[1-9]\d{7,14}$/.test(phone)) return err('رقم الهاتف لازم يكون مثل 0791234567');
   if (!S.consent) return err('لازم توافق على سياسة الخصوصية عشان نقدر نتواصل معك');
+  const verified = S.otp && S.otp.ok && S.otp.key === vch() + ':' + vtarget();
+  const canSkip = !vneed(vch()) && (S.vskip || (vch() === 'email' && !vtarget()));
+  if (vmode() !== 'off' && !verified && !canSkip) { if (S.otp && !S.otp.ok && S.otp.key === vch() + ':' + vtarget() && $('#otp')) return checkCode(); return requestCode(); }
   const b = $('#send'); b.disabled = true; b.textContent = 'جاري الإرسال…'; err('');
   const items = Object.entries(S.items).map(([id, it]) => ({id, qty: it.qty, opts: it.opts || {}}));
   try {
     const {data, error} = await sb.rpc('oops_submit', {p: {company: S.company, contact: S.contact, phone, email: S.email, website: S.website, sector: S.sector, city: S.city,
       stage: (STAGES.find(x => x[0] === S.stage) || [])[1] || '', agency_now: (AGENCY_NOW.find(x => x[0] === S.agency_now) || [])[1] || '', problems: S.problems, problem_other: S.problem_other, answers: S.answers,
-      budget: {total: N(S.budget), ad: adBudget(), includes_ads: S.includes_ads}, items, consent: true, marketing_ok: !!S.marketing_ok, utm: utm()}});
+      about: S.about, budget: {total: N(S.budget), ad: adBudget(), includes_ads: S.includes_ads, split: S.split || {}}, items, consent: true, marketing_ok: !!S.marketing_ok, utm: utm(), otp_id: S.otp?.ok ? S.otp.id : null, vch: vch(), vid: VID}});
     if (error) throw error;
-    track('Lead', {value: N(data.fees_monthly), currency: 'JOD'});
+    try { history.pushState({done: true}, '', location.pathname + '?step=6-done#build'); } catch (e) {}
+    track('Lead', {value: N(data.fees_monthly), currency: 'JOD'}); track('OopsStep', {step: '6-done'});
     ls.del('oops-draft'); const tok = data.token;
     $('#wiz').innerHTML = `<div class="done"><p class="m">وصلنا طلبك. رقمه</p><div class="no">#${data.no}</div>
       <p>أتعاب شهرية تقديرية <b>${jd(data.fees_monthly)}</b>${N(data.one_time) ? ' ورسوم بداية ' + jd(data.one_time) : ''}، وميزانية إعلانات ${jd(data.ad)}.</p>
       <ol><li>فريقنا بيراجع الباقة واحتياجك.</li><li>بنتصل فيك خلال يوم عمل لجلسة تعارف قصيرة.</li><li>بيوصلك عرض السعر الرسمي على نفس رابط المتابعة، وبتقدر توافق عليه من هناك.</li></ol>
-      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><a class="btn pri" href="?q=${encodeURIComponent(tok)}">رابط متابعة طلبك</a><button class="btn ghost" type="button" id="copyLink">انسخ الرابط</button></div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><a class="btn pri" href="?q=${encodeURIComponent(tok)}">رابط متابعة طلبك</a>${waNum(SITE.config.whatsapp) ? `<a class="btn ghost" target="_blank" rel="noopener" href="${esc(waLink('مرحبا، بعتلكم طلب رقم #' + data.no + ' من الموقع'))}">احكينا واتساب</a>` : ''}<button class="btn ghost" type="button" id="copyLink">انسخ الرابط</button></div>
       <p class="m" style="font-size:13px;margin-top:10px">احفظ الرابط، منه بتشوف العرض لما يجهز.</p></div>`;
     $('#copyLink').onclick = () => { const u = location.origin + location.pathname + '?q=' + tok; navigator.clipboard?.writeText(u).then(() => { $('#copyLink').textContent = 'انسخ ✓'; }, () => prompt('انسخ الرابط', u)); };
     S = blank(); drawReceipt();
   } catch (x) {
-    err(/fetch|network/i.test(x.message || '') ? 'ما في اتصال بالإنترنت. جرّب مرة ثانية' : (x.message || 'صار خطأ، جرّب مرة ثانية'));
+    err(friendly(x.message));
     b.disabled = false; b.textContent = 'ابعت الطلب';
   }
 }
@@ -566,6 +664,8 @@ function drawTools() { $('#toolBody').innerHTML = toolHtml(); $$('[data-tab]').f
 
 /* ---------- عرض السعر (رابط المتابعة) ---------- */
 async function quotePage(tok) {
+  // بصفحة العرض ما في باني، فروابط فوق لازم ترجع للصفحة الرئيسية
+  $$('header.top a[href^="#"], footer a.brand').forEach(a => { a.setAttribute('href', location.pathname + (a.getAttribute('href') === '#' ? '' : a.getAttribute('href'))); });
   const {data, error} = await sb.rpc('oops_quote', {tok});
   if (error || !data) { $('#app').innerHTML = '<div class="center"><div><h2>الرابط مش صحيح</h2><p class="m" style="margin-top:8px">تأكد إنك نسخت الرابط كامل، أو تواصل معنا.</p><a class="btn pri" style="margin-top:16px" href="./o.html">ارجع للرئيسية</a></div></div>'; return; }
   const q = data, ready = q.ready, total = N(q.fees_monthly) - N(q.discount);
@@ -583,12 +683,12 @@ async function quotePage(tok) {
     ${ready && q.terms ? `<h3 style="margin-top:20px">الشروط</h3><p class="m" style="white-space:pre-line;margin-top:6px">${esc(q.terms)}</p>` : ''}
     ${ready && q.valid_until ? `<p class="m" style="margin-top:8px">العرض صالح لـ ${esc(q.valid_until)}</p>` : ''}
     <div class="noprint" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px">${q.status === 'عرض مرسل' ? '<button class="btn pri" id="qOk">موافق على العرض</button><button class="btn ghost" id="qNo">بدي تعديل أو برفض</button>' : ''}<button class="btn ghost" onclick="print()">احفظ PDF أو اطبع</button></div>
-    <p class="err" id="qErr"></p></div>`;
+    <p class="err" id="qErr"></p>${(() => { const c = SITE.config || {}; const x = [c.legal_name, c.address, c.phone, c.email].filter(Boolean); return x.length ? `<p class="m" style="margin-top:18px;font-size:13px;border-top:1px solid var(--line);padding-top:10px">${x.map(esc).join(' · ')}</p>` : ''; })()}</div>`;
   const answer = async (ok) => {
     let note = null;
     if (!ok) { const box = $('#qNote'); if (!box) { $('#qErr').insertAdjacentHTML('beforebegin', '<label class="fld noprint" id="qNoteW"><span>شو التعديل اللي بدك إياه، أو ليش مش مناسب؟</span><textarea id="qNote" rows="3" maxlength="500"></textarea></label><button class="btn pri noprint" id="qNoSend" style="margin-top:10px">ابعت الرد</button>'); $('#qNote').focus(); $('#qNoSend').onclick = () => answer(false, true); return; } note = box.value.trim(); }
     const {error: e} = await sb.rpc('oops_quote_answer', {tok, ok, note});
-    if (e) { $('#qErr').textContent = e.message; return; }
+    if (e) { $('#qErr').textContent = friendly(e.message); return; }
     if (ok) track('Schedule', {}); quotePage(tok);
   };
   $('#qOk') && ($('#qOk').onclick = () => answer(true));
@@ -603,11 +703,13 @@ function bind() {
     if (t.matches('[data-start]') && !S.started) { S.started = true; save(); track('ViewContent', {content_name: 'builder'}); }
     if (t.dataset.tab) { TOOL = t.dataset.tab; drawTools(); return; }
     if (!$('#wiz')?.contains(t)) { if (t.id === 'mOpen') { document.body.classList.add('rshow'); } if (t.id === 'rClose') document.body.classList.remove('rshow'); return; }
+    if (t.dataset.prob && !S.started) { S.started = true; track('ViewContent', {content_name: 'builder'}); funnel(1); stepUrl(false); }
     if (t.dataset.prob) { const k = t.dataset.prob; S.problems = S.problems.includes(k) ? S.problems.filter(x => x !== k) : [...S.problems, k]; t.setAttribute('aria-pressed', pressed(S.problems.includes(k))); save(); err(''); return; }
     if (t.dataset.sector != null) { readStep(); S.sector = t.dataset.sector; drawStep(); return; }
     if (t.dataset.stage) { readStep(); S.stage = t.dataset.stage; drawStep(); return; }
     if (t.dataset.agnow) { readStep(); S.agency_now = t.dataset.agnow; drawStep(); return; }
     if (t.dataset.cat) { S.cat = t.dataset.cat; drawStep(); return; }
+    if (t.dataset.add && !S.items[t.dataset.add] && !Object.keys(S.items).length) track('AddToCart', {content_name: svc(t.dataset.add)?.name || ''});
     if (t.dataset.add) { toggleItem(t.dataset.add); if (!S.started) { S.started = true; track('ViewContent', {content_name: 'builder'}); } drawStep(); return; }
     if (t.dataset.qty) { const s = svc(t.dataset.qty), it = S.items[s.id]; it.qty = Math.max(N(s.min_qty), Math.min(N(s.max_qty), N(it.qty) + N(t.dataset.d))); drawStep(); return; }
     const team = () => Object.keys(S.items).map(svc).find(s => s.ptype === 'team');
@@ -616,18 +718,23 @@ function bind() {
     if (t.dataset.ttask) { const o = S.items[team().id].opts, c = t.dataset.ttask; o.tasks = o.tasks.includes(c) ? o.tasks.filter(x => x !== c) : [...o.tasks, c]; drawStep(); return; }
     if (t.dataset.go != null) { readStep(); S.step = N(t.dataset.go); drawStep(true); return; }
     if (t.matches('[data-back]')) { readStep(); S.step = Math.max(0, S.step - 1); drawStep(true); return; }
-    if (t.matches('[data-next]')) { readStep(); const m = validate(); if (m) return err(m); if (S.step === 2 && !Object.keys(S.items).length) { runPlan(); return; } S.step++; if (S.step === 3) track('InitiateCheckout', {}); drawStep(true); return; }
+    if (t.matches('[data-next]')) { readStep(); const m = validate(); if (m) return err(m); if (S.step === 2 && !Object.keys(S.items).length) { runPlan(); return; } S.started = true; S.step++; if (S.step === 4) track('InitiateCheckout', {}); drawStep(true); return; }
     if (t.id === 'doPlan') { const m = (readStep(), validate()); if (m) return err(m); runPlan(); return; }
     if (t.id === 'send') { send(); return; }
+    if (t.id === 'otpGo') { checkCode(); return; }
+    if (t.id === 'otpSkip') { S.vskip = true; const vb = $('#vbox'); if (vb) vb.innerHTML = ''; const sb2 = $('#send'); if (sb2) sb2.hidden = false; send(); return; }
+    if (t.id === 'otpRe') { readStep(); requestCode(); return; }
+    if (t.dataset.vch) { readStep(); S.vch = t.dataset.vch; drawStep(); return; }
   });
   document.addEventListener('input', e => {
     const t = e.target;
     if (t.dataset.tv) { tv[t.dataset.tv] = t.value; ls.set('oops-tools', tv); if (t.dataset.tv === 'sector') { tv.cpl = ''; drawTools(); } else calcTools(); return; }
     if (!$('#wiz')?.contains(t)) return;
+    if (t.id === 'otp' && t.value.replace(/\D/g, '').length === 6) { checkCode(); return; }
     if (t.id === 'r_budget') { $('#i_budget').value = t.value; }
     if (t.id === 'i_budget') { $('#r_budget').value = t.value; }
-    if (['r_budget','i_budget','i_ad'].includes(t.id)) { readStep(); const sp = $$('.split b'); if (sp.length) { sp[0].textContent = jd(adBudget()); sp[1].textContent = jd(feesBudget()); } drawReceipt(); save(); }
-    if (t.dataset.teamsel) { const s = Object.keys(S.items).map(svc).find(x => x.ptype === 'team'); S.items[s.id].opts[t.dataset.teamsel] = t.dataset.teamsel === 'msgs' ? t.value : N(t.value); if (t.dataset.teamsel !== 'msgs') drawStep(); else { drawReceipt(); save(); clearTimeout(bind.t); bind.t = setTimeout(() => { drawStep(); const m = $('#t_m'); if (m) { m.focus(); m.setSelectionRange?.(99, 99); } }, 700); } }
+    if (['r_budget','i_budget','i_ad'].includes(t.id) || t.dataset.split) { readStep(); const sp = $$('.split b'); if (sp.length) { sp[0].textContent = jd(adBudget()); sp[1].textContent = jd(feesBudget()); } drawReceipt(); save(); }
+    if (t.dataset.teamsel) { const s = Object.keys(S.items).map(svc).find(x => x.ptype === 'team'); S.items[s.id].opts[t.dataset.teamsel] = N(t.value); if (t.dataset.teamsel !== 'msgs') drawStep(); else { drawReceipt(); save(); clearTimeout(bind.t); bind.t = setTimeout(() => { drawStep(); const m = $('#t_m'); if (m) { m.focus(); m.setSelectionRange?.(99, 99); } }, 700); } }
   });
   document.addEventListener('change', e => { if (e.target.id === 'i_inc') { readStep(); drawStep(); } });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') document.body.classList.remove('rshow'); });
@@ -645,16 +752,23 @@ async function boot() {
   if (SITE.logo) { $('#brand').innerHTML = `<img src="${esc(SITE.logo)}" alt="${esc(brand)}">`; document.querySelector('link[rel=icon]').href = SITE.logo; }
   document.title = brand + ' · ابنِ باقتك التسويقية';
   const c = SITE.config || {};
-  $('#fContact').innerHTML = [c.phone ? `<a href="tel:${esc(c.phone)}">${esc(c.phone)}</a>` : '', c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : '', c.address ? `<span style="opacity:.8">${esc(c.address)}</span>` : ''].filter(Boolean).join('<br>');
+  $('#fContact').innerHTML = [c.phone ? `<a href="tel:${esc(c.phone)}">${esc(c.phone)}</a>` : '', c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : '',
+    c.address ? (c.maps_url ? `<a href="${esc(safeUrl(c.maps_url))}" target="_blank" rel="noopener">${esc(c.address)}</a>` : `<span style="opacity:.8">${esc(c.address)}</span>`) : '', c.hours ? `<span style="opacity:.8">${esc(c.hours)}</span>` : ''].filter(Boolean).join('');
+  $('#fSocial').innerHTML = SOCIAL.filter(([k]) => c[k]).map(([k, l]) => `<a href="${esc(safeUrl(c[k]))}" target="_blank" rel="noopener">${l}</a>`).join('');
+  if (c.about) $('#fAbout').textContent = c.about;
+  $('#fLegal').textContent = [c.legal_name, c.cr ? 'سجل تجاري ' + c.cr : ''].filter(Boolean).join(' · ');
+  const wn = waNum(c.whatsapp);
+  if (wn) { const wa = $('#wa'); wa.hidden = false; wa.href = waLink(c.whatsapp_msg || 'مرحبا، بدي أستفسر عن خدماتكم'); wa.addEventListener('click', () => track('Contact', {})); }
   loadTracking(SITE);
   bind();
   const tok = qs.get('q');
-  if (tok) { await quotePage(tok); return; }
+  if (tok) { $$('header a[href^="#"], footer a.brand').forEach(a => a.setAttribute('href', location.pathname + (a.getAttribute('href') === '#' ? '' : a.getAttribute('href')))); await quotePage(tok); return; }
   if (!SITE.live && !qs.has('preview')) { $('#app').innerHTML = `<div class="center"><div><h1>${esc(brand)}</h1><p class="m" style="margin-top:10px">الموقع بيتجهز. ارجعلنا قريب.</p></div></div>`; return; }
   $('#app').innerHTML = home();
   S.step = Math.min(N(S.step), 4);
   Object.keys(S.items).forEach(id => { if (!svc(id)) delete S.items[id]; });
-  drawStep(); drawTools();
+  drawStep(); drawTools(); funnel(0);
+  addEventListener('popstate', () => { const m = /[?&]step=(\d)/.exec(location.search); if (!m) return; const st = N(m[1]) - 1; if (st >= 0 && st <= 4 && st <= N(S.maxStep) && $('#wiz .prog')) { readStep(); S.step = st; $('#wiz').innerHTML = stepHtml(); drawReceipt(); save(); } });
   if (!SITE.live) $('#build .sechead p').insertAdjacentHTML('beforeend', ' <b style="color:var(--coral)">(معاينة: الموقع مطفي، والإرسال مسكّر)</b>');
 }
 window.OopsApp = {state: () => S, site: () => SITE};

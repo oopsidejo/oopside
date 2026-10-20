@@ -9,7 +9,8 @@ const me = () => K.me;
 const PT = {monthly: 'شهري ثابت', unit: 'بالقطعة', one_time: 'مرة وحدة', pct_spend: 'نسبة من صرف الإعلانات', team: 'فريق الرد (بالساعات)', quote: 'بعد جلسة (عرض مخصص)'};
 const RS_CLS = {'جديد': 'warn', 'مسودة عرض': 'info', 'عرض مرسل': 'brand', 'مقبول': 'good', 'مرفوض': 'bad', 'منتهي': ''};
 const ASK = [['', 'بدون سؤال إضافي'], ['sales', 'يسأل عن المبيعات'], ['msgs', 'يسأل عن الرسائل'], ['text', 'يطلب وصف']];
-const siteUrl = () => location.href.split(/[?#]/)[0].replace(/[^/]*$/, '') + 'o.html';
+const siteUrl = () => { const u = String(ST.oSite?.config?.site_url || '').trim(); return /^https?:\/\//.test(u) ? u.split(/[?#]/)[0] : location.href.split(/[?#]/)[0].replace(/[^/]*$/, '') + 'o.html'; };
+const storeLandingBase = () => location.href.split(/[?#]/)[0].replace(/[^/]*$/, '') + 'p.html';
 const quoteUrl = tok => siteUrl() + '?q=' + tok;
 const margin = (rev, cost) => rev > 0 ? (rev - cost) / rev : null;
 const sel = (id, list, cur, attrs = '') => `<select id="${id}" class="inl" ${attrs}>${list.map(([v, l]) => `<option value="${esc(v)}" ${String(v) === String(cur ?? '') ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
@@ -50,9 +51,9 @@ V.oreq = async () => {
       ${kpi('وافقوا هالشهر', all.filter(r => r.status === 'مقبول' && String(r.created_at).slice(0, 7) === m0).length, '', 'hl')}${kpi('قيمة العروض المفتوحة', jd(sum(all.filter(r => ['جديد','مسودة عرض','عرض مرسل'].includes(r.status)), r => N(r.fees_monthly) - N(r.discount))), 'شهرياً')}</div>` +
     chips([['مفتوحة','المفتوحة'], ['جديد','جديدة'], ['عرض مرسل','بانتظار الرد'], ['مقبول','مقبولة'], ['مرفوض','مرفوضة'], ['الكل','الكل']], f, 'oreqF') +
     table([{h:'رقم', f:r => `<button class="btn sm" data-act="oreqOpen" data-id="${r.id}">#${r.no}</button>`}, {h:'التاريخ', f:r => fmtDT(r.created_at)},
-      {h:'الشركة', f:r => `<b>${esc(r.company)}</b><br><small class="m">${esc(r.contact || '')} ${esc(r.phone)}</small>`}, {h:'القطاع', f:r => esc(r.sector || '—')},
+      {h:'الشركة', f:r => `<b>${esc(r.company)}</b><br><small class="m">${esc(r.contact || '')} ${esc(r.phone)}</small>${r.verified_via ? ' ' + pill('مؤكد ' + r.verified_via, 'good') : ''}`}, {h:'القطاع', f:r => esc(r.sector || '—')},
       {h:'المشاكل', f:r => esc((r.data?.problems || []).slice(0, 2).map(probLabel).join('، ') + ((r.data?.problems || []).length > 2 ? ' +' + ((r.data.problems.length) - 2) : '')), c: 'wrap'},
-      {h:'أتعاب شهرية', f:r => `<b>${jd(N(r.fees_monthly) - N(r.discount))}</b>${N(r.one_time) ? `<br><small class="m">+ ${jd(r.one_time)} مرة وحدة</small>` : ''}`}, {h:'إعلانات', f:r => jd(r.ad_budget)},
+      {h:'أتعاب شهرية', f:r => `<b>${jd(N(r.fees_monthly) - N(r.discount))}</b>${N(r.one_time) ? `<br><small class="m">+ ${jd(r.one_time)} مرة وحدة</small>` : ''}`}, {h:'ميزانية الإعلانات', f:r => jd(r.ad_budget) + (r.data?.ad_split && Object.keys(r.data.ad_split).length ? `<br><small class="m">${esc(Object.entries(r.data.ad_split).map(([k, v]) => ({meta:'فيسبوك وإنستغرام', tiktok:'تيك توك', google:'جوجل', snap:'سناب', other:'غيرها'})[k] + ' ' + fmt(v)).join(' · '))}</small>` : '') + (N(r.data?.budget_total) ? `<br><small class="m">كل الميزانية ${jd(r.data.budget_total)}</small>` : '')},
       {h:'الهامش', f:r => { const g = margin(rev(r), N(r.cost_total)); return g == null ? '—' : `<span class="${g < mm ? 'margin-bad' : ''}">${pct(g)}</span>`; }},
       {h:'المصدر', f:r => esc(r.utm?.utm_source || r.utm?.ref || 'مباشر') + (r.utm?.utm_campaign ? `<br><small class="m">${esc(r.utm.utm_campaign)}</small>` : '')},
       {h:'الحالة', f:r => pill(r.status, RS_CLS[r.status]) + (r.status === 'عرض مرسل' ? `<br><small class="m">${r.viewed_at ? 'شافه ' + fmtDT(r.viewed_at) : 'لسا ما فتحه'}</small>` : '')}], list, 'ما في طلبات هون. شارك رابط الموقع بإعلاناتك عشان تبلش توصل');
@@ -69,12 +70,12 @@ V.oreqd = async () => {
   return head(`طلب #${r.no} · ${esc(r.company)}`, `وصل ${fmtDT(r.created_at)}. ${r.status === 'عرض مرسل' ? (r.viewed_at ? 'العميل فتح العرض ' + fmtDT(r.viewed_at) : 'العميل لسا ما فتح العرض') : ''}`,
       `<button class="btn" data-act="go" data-id="oreq">رجوع</button><button class="btn" data-act="oCopyQuote" data-id="${esc(r.token)}">انسخ رابط العميل</button><a class="btn" href="${esc(quoteUrl(r.token))}" target="_blank" rel="noopener">شوف اللي بيشوفه العميل</a>${r.lead_id ? '<button class="btn" data-act="go" data-id="leads">العملاء المحتملين</button>' : ''}`) +
     `<div class="row">${pill(r.status, RS_CLS[r.status])}${r.answer_note ? `<span class="note" style="margin:0">رد العميل: <b>${esc(r.answer_note)}</b></span>` : ''}</div>
-    <div class="cols reqinfo"><div class="card"><h2>عن الشركة</h2>${kv('المسؤول', esc(r.contact || ''))}${kv('الهاتف', `<a href="tel:${esc(r.phone)}">${esc(r.phone)}</a>`)}${kv('الإيميل', r.email ? `<a href="mailto:${esc(r.email)}">${esc(r.email)}</a>` : '')}
-      ${kv('القطاع', esc(r.sector || ''))}${kv('المدينة', esc(d.city || ''))}${kv('الشركة', esc(d.stage || ''))}${kv('شركة تسويق؟', esc(d.agency_now || ''))}${kv('الصفحة أو الموقع', d.website ? `<a href="${esc(/^https?:/.test(d.website) ? d.website : 'https://' + d.website)}" target="_blank" rel="noopener nofollow">${esc(d.website)}</a>` : '')}
+    <div class="cols reqinfo"><div class="card"><h2>عن الشركة</h2>${kv('المسؤول', esc(r.contact || ''))}${kv('الهاتف', `<a href="tel:${esc(r.phone)}">${esc(r.phone)}</a> <a href="https://wa.me/${esc(String(r.phone).replace(/\D/g, '').replace(/^0(7)/, '962$1'))}" target="_blank" rel="noopener">واتساب</a>${r.verified_via ? ' ' + pill('مؤكد ' + r.verified_via, 'good') : ''}`)}${kv('الإيميل', r.email ? `<a href="mailto:${esc(r.email)}">${esc(r.email)}</a>` : '')}
+      ${kv('شو بيبيع', esc(d.about || ''))}${kv('القطاع', esc(r.sector || ''))}${kv('المدينة', esc(d.city || ''))}${kv('الشركة', esc(d.stage || ''))}${kv('شركة تسويق؟', esc(d.agency_now || ''))}${kv('الصفحة أو الموقع', d.website ? `<a href="${esc(/^https?:/.test(d.website) ? d.website : 'https://' + d.website)}" target="_blank" rel="noopener nofollow">${esc(d.website)}</a>` : '')}
       ${kv('موافق على عروض', d.marketing_ok ? 'نعم' : '')}${kv('المصدر', esc([u.utm_source || u.ref, u.utm_campaign, u.utm_content].filter(Boolean).join(' · ')))}</div>
      <div class="card"><h2>المشكلة والميزانية</h2><ul class="todo" style="margin:0 0 10px">${(d.problems || []).map(k => `<li><span>${esc(probLabel(k))}</span></li>`).join('')}${d.problem_other ? `<li><span>${esc(d.problem_other)}</span></li>` : ''}</ul>
       ${kv('طلبات بالشهر', esc(a.orders || ''))}${kv('متوسط الطلب', a.aov ? jd(a.aov) : '')}${kv('رسائل باليوم', esc(a.msgs || ''))}${kv('ساعات الرد', a.hours ? esc(a.hours) + ' ساعات' : '')}${kv('عن المنتج أو المشروع', esc(a.text || ''))}
-      ${kv('الميزانية الشهرية', jd(d.budget_total) + (d.includes_ads ? ' (بتشمل الإعلانات)' : ' (أتعاب بس)'))}${kv('للإعلانات', jd(r.ad_budget))}</div></div>
+      ${kv('الميزانية الشهرية كاملة', jd(d.budget_total) + (d.includes_ads ? ' (بتشمل الإعلانات)' : ' (أتعاب بس)'))}${kv('للخدمات (أتعاب)', jd(d.includes_ads ? Math.max(0, N(d.budget_total) - N(r.ad_budget)) : d.budget_total))}${Object.keys(d.ad_split || {}).length ? kv('توزيع الإعلانات', Object.entries(d.ad_split).map(([k, v]) => esc(({meta: 'فيسبوك وإنستغرام', tiktok: 'تيك توك', google: 'جوجل ويوتيوب', snap: 'سناب شات', other: 'غيرها'})[k] || k) + ' ' + jd(v)).join('، ')) : ''}${kv('للإعلانات', jd(r.ad_budget))}${Object.entries(d.ad_split || {}).map(([k, v]) => kv('— ' + ({meta:'فيسبوك وإنستغرام', tiktok:'تيك توك', google:'جوجل', snap:'سناب', other:'غيرها'})[k], jd(v))).join('')}${kv('لأتعابنا (تقريباً)', d.includes_ads ? jd(Math.max(0, N(d.budget_total) - N(r.ad_budget))) : jd(d.budget_total))}</div></div>
     <div class="card"><div class="head" style="margin-bottom:10px"><h2>عرض السعر</h2>${locked ? '' : `<div class="row">${sel('qAddSel', [['', 'أضف خدمة من القائمة'], ...svcs.map(s => [s.id, s.name]), ['__free', 'سطر حر']], '')}<button class="btn sm" data-act="qAdd">أضف</button></div>`}</div>
       <div class="tw"><table class="qedit"><thead><tr><th>الخدمة</th><th>الكمية</th><th>شهري</th><th>مرة وحدة</th><th>تكلفتنا (داخلي)</th><th>ملاحظة للعميل</th><th></th></tr></thead><tbody>
       ${ui.qL.map((l, i) => `<tr><td><input class="inl" data-ql="${i}" data-k="name" value="${esc(l.name)}" aria-label="الخدمة" ${locked ? 'disabled' : ''}></td><td><input class="inl" style="width:64px" type="number" min="1" data-ql="${i}" data-k="qty" value="${N(l.qty) || 1}" aria-label="الكمية" ${locked ? 'disabled' : ''}></td>
@@ -153,6 +154,21 @@ V.funnel = async () => {
 };
 A.fnDays = k => { ui.fnDays = N(k); K.render(); };
 
+/* قمع الموقع: الزوار لوين وصلوا */
+const baseFunnel = V.funnel;
+V.funnel = async () => {
+  const html = await baseFunnel(), d = ui.fnDays || 90;
+  let rows = []; try { rows = await db.rpc('oops_funnel', {d_from: addDays(today(), -(d - 1)), d_to: today()}) || []; } catch (e) { return html; }
+  const K5 = ['visits','started','business','budget','services','contact','sent'], L5 = ['زاروا الموقع','بلّشوا الباقة','عرّفوا بشغلهم','حددوا الميزانية','اختاروا خدمات','وصلوا للتواصل','بعتوا الطلب'];
+  const T = {}; K5.forEach(k => T[k] = sum(rows, r => N(r[k])));
+  const mx = Math.max(1, T.visits);
+  const card = `<div class="card"><h2>قمع موقع الوكالة (آخر ${d} يوم)</h2><p class="m">كل زائر لوين وصل بالخطوات. بيبيّنلك وين الناس بتطلع، وأي حملة بتجيب ناس بتكمّل.</p>
+    <div class="bars" style="margin-top:10px">${K5.map((k, i) => `<div class="bar"><span>${L5[i]}</span><span class="tr"><i style="width:${T[k] / mx * 100}%"></i></span><b>${T[k]}${i ? ` <small class="m">${T[K5[i - 1]] ? pct(T[k] / T[K5[i - 1]]) : ''}</small>` : ''}</b></div>`).join('')}</div>
+    ${rows.length ? table([{h:'المصدر', f:r => `<b>${esc(r.source)}</b>`}, {h:'الحملة', f:r => esc(r.campaign)}, ...K5.map((k, i) => ({h: L5[i], f:r => N(r[k])})), {h:'نسبة الإرسال', f:r => N(r.visits) ? pct(N(r.sent) / N(r.visits)) : '—'}], rows.slice(0, 15)) : ''}
+    <p class="note" style="margin-top:8px">رابط كل خطوة بيتغيّر: <b dir="ltr">?step=1-problem</b> لحد <b dir="ltr">?step=5-contact</b>، وبعد الإرسال <b dir="ltr">?step=6-done</b>. بـ Events Manager اعمل Custom Conversion: "URL contains step=6-done" للي بعتوا، أو استخدم أحداث البكسل: OopsStep و InitiateCheckout و Lead.</p></div>`;
+  return html.replace('<div class="kpis">', card + '<div class="kpis">');
+};
+
 /* ================= موقع الوكالة والأسعار ================= */
 const priceText = s => ({monthly: jd(s.price) + ' شهرياً', unit: jd(s.price) + ' / ' + (s.unit || 'وحدة') + ` (${s.min_qty}–${s.max_qty})`, one_time: jd(s.price) + ' مرة وحدة',
   pct_spend: N(s.pct) + '% من الإعلانات، أقل إشي ' + jd(s.min_fee) + (N(s.max_fee) ? '، أكثر إشي ' + jd(s.max_fee) : ''), team: jd(s.params?.hour_rate) + ' للساعة + ' + jd(s.params?.channel_fee) + ' لكل قناة إضافية، أقل إشي ' + jd(s.min_fee), quote: 'بعد جلسة'})[s.ptype] + (N(s.setup_fee) ? ' + إعداد ' + jd(s.setup_fee) + (s.ptype === 'team' ? ' للموظفة' : '') : '');
@@ -175,7 +191,14 @@ V.oops = async () => {
     ui.probs = ui.probsFor === site.updated_at ? ui.probs : (c.problems || []).map(p => ({...p})); ui.probsFor = site.updated_at;
     const fi = (k, l, v, t = 'text') => `<label class="fld" for="sc_${k}"><span>${l}</span><input id="sc_${k}" type="${t}" value="${esc(v ?? '')}"></label>`;
     const ta = (k, l, v, rows = 3, hint = '') => `<label class="fld wide" for="sc_${k}"><span>${l}</span><textarea id="sc_${k}" rows="${rows}">${esc(v ?? '')}</textarea>${hint ? `<small class="m">${hint}</small>` : ''}</label>`;
-    body = `<div class="card"><h2>النصوص والتواصل</h2><div class="fgrid">${ta('headline', 'العنوان الرئيسي', c.headline, 2)}${ta('sub', 'السطر تحت العنوان', c.sub, 2)}${fi('phone', 'هاتف التواصل', c.phone)}${fi('email', 'الإيميل', c.email, 'email')}${fi('address', 'العنوان', c.address)}${fi('min_margin', 'أقل هامش مقبول (%)', c.min_margin ?? 30, 'number')}
+    const vs = `<label class="fld" for="sc_verify"><span>تأكيد الزبون قبل ما يبعت الطلب</span>${sel('sc_verify', [['off', 'بدون تأكيد'], ['whatsapp', 'كود على واتساب'], ['email', 'كود على الإيميل'], ['either', 'واتساب أو إيميل (الزبون بيختار)']], c.verify || 'off')}</label><label class="fld" for="sc_vreq"><span>الكود إجباري؟</span>${sel('sc_vreq', [['whatsapp', 'إجباري على واتساب، والإيميل اختياري'], ['none', 'اختياري دايماً (الزبون بيقدر يتخطاه)'], ['all', 'إجباري دايماً']], c.verify_required || 'whatsapp')}<small class="m">الطلب المؤكد بيطلع جنبه "مؤكد"، وغير المؤكد بيوصلك عادي.</small><small class="m">شغّله بس بعد ما تجهز إرسال الكود (دليل-تأكيد-الزبون.md)، وإلا الزبون ما رح يقدر يبعت.</small></label>`;
+    body = `<div class="card"><h2>بيانات الشركة والتواصل</h2><p class="m">بتطلع بموقع الوكالة (قسم "تواصل معنا" وتحت الصفحة) وبعروض الأسعار.</p><div class="fgrid">
+      ${fi('legal_name', 'الاسم الرسمي للشركة', c.legal_name)}${fi('cr', 'رقم السجل التجاري (اختياري)', c.cr)}${ta('about', 'سطر تعريفي تحت الشعار', c.about, 2)}
+      ${fi('whatsapp', 'رقم واتساب (بيطلع زر واتساب عالموقع)', c.whatsapp)}${fi('whatsapp_msg', 'الرسالة الجاهزة لما يضغط الزر', c.whatsapp_msg || 'مرحبا، بدي أستفسر عن خدماتكم')}
+      ${fi('phone', 'هاتف للاتصال', c.phone)}${fi('email', 'الإيميل', c.email, 'email')}${fi('address', 'العنوان', c.address)}${fi('maps_url', 'رابط الموقع على Google Maps', c.maps_url, 'url')}${fi('hours', 'ساعات الدوام', c.hours)}
+      ${fi('instagram', 'رابط إنستغرام', c.instagram, 'url')}${fi('facebook', 'رابط فيسبوك', c.facebook, 'url')}${fi('tiktok', 'رابط تيك توك', c.tiktok, 'url')}${fi('linkedin', 'رابط لينكد إن', c.linkedin, 'url')}${fi('youtube', 'رابط يوتيوب', c.youtube, 'url')}
+      ${vs}</div></div>
+      <div class="card"><h2>النصوص والإعدادات</h2><div class="fgrid">${ta('headline', 'العنوان الرئيسي', c.headline, 2)}${ta('sub', 'السطر تحت العنوان', c.sub, 2)}${fi('site_url', 'رابط موقع الوكالة (إذا مرفوع على رابط ثاني)', c.site_url || '', 'url')}${fi('min_margin', 'أقل هامش مقبول (%)', c.min_margin ?? 30, 'number')}
       ${ta('privacy', 'سياسة الخصوصية', c.privacy, 4)}${ta('terms', 'الشروط الافتراضية للعروض', c.terms, 3)}${ta('sectors', 'أنواع النشاط (كل نوع بسطر)', (c.sectors || []).join('\n'), 6, 'نفس الأسماء بتنستخدم بأرقام التوقعات وبنوع العميل لما يتعاقد')}</div></div>
       <div class="card"><div class="head" style="margin-bottom:10px"><h2>المشاكل اللي بيختار منها العميل</h2><button class="btn sm" data-act="probAdd">+ مشكلة</button></div>
       <div class="tw"><table><thead><tr><th>النص اللي بيشوفه العميل</th><th>سؤال إضافي</th><th></th></tr></thead><tbody>${ui.probs.map((p, i) => `<tr><td><input class="inl" style="width:100%" data-pr="${i}" data-k="l" value="${esc(p.l)}" aria-label="المشكلة"></td><td>${sel('pa_' + i, ASK, p.ask || '', `data-pr="${i}" data-k="ask" aria-label="سؤال إضافي"`)}</td><td><button class="btn sm ghost" data-act="probDel" data-id="${i}">حذف</button></td></tr>`).join('')}</tbody></table></div>
@@ -247,7 +270,10 @@ Object.assign(A, {
   siteSave: async () => {
     const s = await loadSite(), g = k => $('#sc_' + k)?.value.trim() ?? '';
     const probs = ui.probs.filter(p => p.l.trim()).map(p => ({k: p.k, l: p.l.trim(), ...(p.ask ? {ask: p.ask} : {})}));
-    const config = {...s.config, headline: g('headline'), sub: g('sub'), phone: g('phone'), email: g('email'), address: g('address'), min_margin: N(g('min_margin')) || 30,
+    const su = g('site_url'); if (su && !/^https:\/\/[^\s]+$/.test(su)) return toast('رابط الموقع لازم يبلش بـ https://', true);
+    const wa = g('whatsapp').replace(/[^\d+]/g, ''); if (wa && wa.replace(/\D/g, '').length < 9) return toast('رقم الواتساب مش صحيح', true);
+    const ex = Object.fromEntries(['legal_name','cr','about','whatsapp_msg','maps_url','hours','instagram','facebook','tiktok','linkedin','youtube'].map(k => [k, g(k)]));
+    const config = {...s.config, ...ex, whatsapp: wa, verify: $('#sc_verify')?.value || 'off', verify_required: $('#sc_vreq')?.value || 'whatsapp', site_url: su, headline: g('headline'), sub: g('sub'), phone: g('phone'), email: g('email'), address: g('address'), min_margin: N(g('min_margin')) || 30,
       privacy: g('privacy'), terms: g('terms'), sectors: g('sectors').split('\n').map(x => x.trim()).filter(Boolean), problems: probs};
     await db.upd('oops_site', {id: 1}, {config, updated_at: new Date().toISOString()}); ui.probsFor = null; toast('انحفظت إعدادات الموقع'); K.render();
   },
@@ -274,6 +300,24 @@ V.agdash = async () => {
 };
 
 /* ================= الإعدادات: الهوية والشعار والبكسل ================= */
+async function checkPixel(say) {
+  try {
+    const [st] = await db.q('settings', {eq: {id: 1}, select: 'tracking,tracking_seen'}); if (!st) return false;
+    const tr = st.tracking || {}, seen = st.tracking_seen || {};
+    const ok = k => !tr[k + (k === 'store' ? '_pixel' : '_pixel')] ? null : (seen[k]?.pid === tr[k + '_pixel']);
+    const wasOk = {store: (ST.settings?.tracking_seen || {}).store?.pid === tr.store_pixel, agency: (ST.settings?.tracking_seen || {}).agency?.pid === tr.agency_pixel};
+    ST.settings.tracking_seen = seen;
+    let any = false;
+    for (const k of ['agency', 'store']) if (ok(k) && !wasOk[k]) { toast('✓ تم ربط بكسل ' + (k === 'agency' ? 'الوكالة' : 'المتجر') + '، والصفحة بتبعت أحداث لفيسبوك'); any = true; }
+    if (say && !any) { const pend = ['agency', 'store'].filter(k => ok(k) === false); toast(pend.length ? 'لسا ما وصلنا إنه اشتغل. افتح الصفحة وارجع اضغط تحقق' : 'البكسل شغّال'); }
+    if (any || say) { if (K.ui.view === 'settings') K.render(); }
+    return ['agency', 'store'].every(k => ok(k) !== false);
+  } catch (e) { if (say) toast('ما قدرت أتحقق. تأكد إنك شغّلت 06_pixel_check.sql', true); return true; }
+}
+function watchPixel() {
+  clearInterval(watchPixel.t); let n = 0;
+  watchPixel.t = setInterval(async () => { if (++n > 60 || !K.me) return clearInterval(watchPixel.t); if (await checkPixel(false)) clearInterval(watchPixel.t); }, 5000);
+}
 function readLogo(file) {
   return new Promise((res, rej) => { if (!/^image\//.test(file.type)) return rej(new Error('اختار صورة')); if (file.size > 5e6) return rej(new Error('الصورة كبيرة، أقصى إشي 5 ميغا'));
     const fr = new FileReader(); fr.onerror = rej; fr.onload = () => { const im = new Image(); im.onerror = () => rej(new Error('ما قدرت أقرأ الصورة')); im.onload = () => {
@@ -285,7 +329,13 @@ V.settings = async () => {
   const html = await baseSettings3(), s = ST.settings || {}, tr = s.tracking || {}, ed = can('settings', 'edit');
   const logoBox = (k, l, name) => `<div class="fld"><span>${l}</span><div class="logoprev">${s[k] ? `<img src="${esc(s[k])}" alt="شعار ${esc(name)}">` : '<small class="m">ما في شعار، بيطلع الحرف الأول</small>'}
     ${ed ? `<label class="btn sm" for="lg_${k}">${s[k] ? 'تغيير' : 'ارفع شعار'}<input id="lg_${k}" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" data-logo="${k}" hidden></label>${s[k] ? `<button class="btn sm ghost" data-act="logoDel" data-id="${k}">شيل</button>` : ''}` : ''}</div></div>`;
-  const ti = (k, l, ph, hint) => `<label class="fld" for="tr_${k}"><span>${l}</span><input id="tr_${k}" class="inl" dir="ltr" value="${esc(tr[k] || '')}" placeholder="${ph}" ${ed ? '' : 'disabled'}><small class="m">${hint}</small></label>`;
+  await loadSite();
+  const pxStatus = k => { const kind = k === 'store_pixel' ? 'store' : k === 'agency_pixel' ? 'agency' : null; if (!kind || !tr[k]) return '';
+    const seen = (s.tracking_seen || {})[kind], ok = seen && seen.pid === tr[k];
+    const open = kind === 'agency' ? `<a class="btn sm" href="${esc(siteUrl())}" target="_blank" rel="noopener">افتح موقع الوكالة</a>` : '<button class="btn sm" type="button" data-act="go" data-id="landing">افتح صفحات الهبوط</button>';
+    return ok ? `<div class="pxok">✓ تم الربط. البكسل اشتغل على الصفحة، آخر مرة ${fmtDT(seen.at)}</div>`
+      : `<div class="pxwait">انحفظ الرقم، بس لسا ما تأكدنا إنه اشتغل. افتح الصفحة مرة وحدة، وبنحكيلك هون أول ما يشتغل. <span class="row" style="margin-top:6px">${open}<button class="btn sm ghost" type="button" data-act="pxCheck">تحقق هلأ</button></span></div>`; };
+  const ti = (k, l, ph, hint) => `<label class="fld" for="tr_${k}"><span>${l}</span><input id="tr_${k}" class="inl" dir="ltr" value="${esc(tr[k] || '')}" placeholder="${ph}" ${ed ? '' : 'disabled'}><small class="m">${hint}</small>${pxStatus(k)}</label>`;
   return html + `<div class="cols"><div class="card"><h2>الهوية والشعار</h2><p class="m">الشعار بيطلع بالقائمة الجانبية، وشاشة الدخول، وشاشة اختيار القسم، وموقع الوكالة وعروض الأسعار. الأفضل PNG بخلفية شفافة.</p>
       ${logoBox('logo', 'شعار ' + (s.company || 'المتجر'), s.company || 'المتجر')}${logoBox('agency_logo', 'شعار ' + (s.agency_name || 'الوكالة'), s.agency_name || 'الوكالة')}
       <p class="note" style="margin-top:8px">اسم المتجر من "اسم الشركة" فوق، واسم الوكالة من خانة "اسم الوكالة".</p></div>
@@ -304,10 +354,15 @@ Object.assign(A, {
   logoDel: async k => { await db.upd('settings', {id: 1}, {[k]: null}); ST.settings[k] = null; toast('انشال الشعار'); K.render(); },
   trackSave: async () => {
     const clean = (k, re) => ($('#tr_' + k)?.value || '').trim().replace(re, '');
-    const tracking = {...(ST.settings?.tracking || {}), store_pixel: clean('store_pixel', /\D/g), agency_pixel: clean('agency_pixel', /\D/g), agency_ga4: clean('agency_ga4', /[^A-Za-z0-9-]/g).toUpperCase(), agency_gtm: clean('agency_gtm', /[^A-Za-z0-9-]/g).toUpperCase()};
+    // لو انلصق كود البكسل كامل، منطلع الرقم منه
+    const pxOf = k => { const t = ($('#tr_' + k)?.value || '').trim(); if (!t) return ''; const m = t.match(/init['"]?\s*,\s*['"]?(\d{6,20})/) || t.match(/[?&]id=(\d{6,20})/); if (m) return m[1]; const d = t.replace(/\D/g, ''); return /^[\d\s-]+$/.test(t) ? d : null; };
+    const sp = pxOf('store_pixel'), ap = pxOf('agency_pixel');
+    if (sp === null || ap === null || (sp && sp.length < 10) || (ap && ap.length < 10)) return toast('حط رقم البكسل بس (15 أو 16 رقم)، أو الصق كود البكسل كامل', true);
+    const tracking = {...(ST.settings?.tracking || {}), store_pixel: sp, agency_pixel: ap, agency_ga4: clean('agency_ga4', /[^A-Za-z0-9-]/g).toUpperCase(), agency_gtm: clean('agency_gtm', /[^A-Za-z0-9-]/g).toUpperCase()};
     if (tracking.agency_ga4 && !/^G-/.test(tracking.agency_ga4)) return toast('رقم Google Analytics بيبلش بـ G-', true);
     if (tracking.agency_gtm && !/^GTM-/.test(tracking.agency_gtm)) return toast('رقم Tag Manager بيبلش بـ GTM-', true);
-    await db.upd('settings', {id: 1}, {tracking}); ST.settings.tracking = tracking; toast('انحفظ التتبع'); K.render();
-  }
+    await db.upd('settings', {id: 1}, {tracking}); ST.settings.tracking = tracking; toast('انحفظ. افتح الصفحة مرة وحدة، وبنحكيلك أول ما البكسل يشتغل'); K.render(); watchPixel();
+  },
+  pxCheck: async () => { await checkPixel(true); }
 });
 })();
