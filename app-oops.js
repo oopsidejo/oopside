@@ -118,7 +118,7 @@ Object.assign(A, {
     const v = $('#qAddSel')?.value; if (!v) return toast('اختار خدمة', true);
     if (v === '__free') { ui.qL.push({name: 'خدمة إضافية', qty: 1, monthly: 0, one_time: 0, cost: 0}); K.render(); return; }
     const s = ST.oSvcs.find(x => x.id === v); const pr = window.OopsPrice ? window.OopsPrice.price(s, null, N(ui.qD.ad_budget), {}) : {qty: 1, monthly: N(s.price), one_time: 0, cost: N(s.cost)};
-    ui.qL.push({service_id: s.id, name: s.name, category: s.category, ptype: s.ptype, unit: s.unit, qty: pr.qty, monthly: pr.monthly, one_time: pr.one_time, cost: pr.cost, quote: pr.quote, includes: s.includes});
+    ui.qL.push({service_id: s.id, name: s.name, category: s.category, ptype: s.ptype, unit: s.unit, qty: pr.qty, monthly: pr.monthly, one_time: pr.one_time, cost: pr.cost, quote: pr.quote, includes: s.includes, duration: s.duration});
     K.render();
   },
   qDel: i => { ui.qL.splice(N(i), 1); K.render(); },
@@ -170,9 +170,12 @@ V.funnel = async () => {
 };
 
 /* ================= موقع الوكالة والأسعار ================= */
-const priceText = s => ({monthly: jd(s.price) + ' شهرياً', unit: jd(s.price) + ' / ' + (s.unit || 'وحدة') + ` (${s.min_qty}–${s.max_qty})`, one_time: jd(s.price) + ' مرة وحدة',
-  pct_spend: N(s.pct) + '% من الإعلانات، أقل إشي ' + jd(s.min_fee) + (N(s.max_fee) ? '، أكثر إشي ' + jd(s.max_fee) : ''), team: jd(s.params?.hour_rate) + ' للساعة + ' + jd(s.params?.channel_fee) + ' لكل قناة إضافية، أقل إشي ' + jd(s.min_fee), quote: 'بعد جلسة'})[s.ptype] + (N(s.setup_fee) ? ' + إعداد ' + jd(s.setup_fee) + (s.ptype === 'team' ? ' للموظفة' : '') : '');
-const svcMargin = s => ['monthly','unit','one_time'].includes(s.ptype) && N(s.price) ? (N(s.price) - N(s.cost)) / N(s.price) : s.ptype === 'team' && N(s.params?.hour_rate) ? (N(s.params.hour_rate) - N(s.cost)) / N(s.params.hour_rate) : null;
+const PTS = [['monthly', 'اشتراك شهري', 'سعر ثابت كل شهر'], ['unit', 'بالعدد', 'سعر للقطعة، والعميل بيختار كم بدو'], ['one_time', 'مرة وحدة', 'بتندفع مرة وحدة بس'],
+  ['pct_spend', 'نسبة من الإعلانات', 'نسبة من صرف إعلانات العميل'], ['team', 'فريق الرد', 'بالساعات والقنوات'], ['quote', 'بعد جلسة', 'بدون سعر، بتسعّرها بعد ما تحكي معه']];
+const setupTxt = s => N(s.setup_fee) ? ' + ' + jd(s.setup_fee) + (s.ptype === 'team' ? ' إعداد لكل موظفة' : ' إعداد أول مرة') : '';
+const priceText = s => ({monthly: jd(s.price) + ' بالشهر', unit: jd(s.price) + ' لكل ' + (s.unit || 'قطعة') + ` (من ${s.min_qty} لـ ${s.max_qty})`, one_time: jd(s.price) + ' مرة وحدة',
+  pct_spend: N(s.pct) + '% من الإعلانات (أقل إشي ' + jd(s.min_fee) + ' بالشهر)', team: jd(s.params?.hour_rate) + ' للساعة (أقل إشي ' + jd(s.min_fee) + ' بالشهر)', quote: 'بيتسعّر بعد جلسة'})[s.ptype] + setupTxt(s);
+const svcMargin = s => ['monthly','unit','one_time'].includes(s.ptype) && N(s.price) ? (N(s.price) - N(s.cost)) / N(s.price) : s.ptype === 'team' && N(s.params?.hour_rate) ? (N(s.params.hour_rate) - N(s.cost)) / N(s.params.hour_rate) : s.ptype === 'pct_spend' && N(s.min_fee) && N(s.cost) ? (N(s.min_fee) - N(s.cost)) / N(s.min_fee) : null;
 V.oops = async () => {
   const tab = ui.oTab || 'svc', site = await loadSite(), c = site.config || {};
   const top = `<div class="row"><a class="btn" href="${esc(siteUrl())}${site.live ? '' : '?preview=1'}" target="_blank" rel="noopener">${site.live ? 'افتح الموقع' : 'معاينة الموقع'}</a><button class="btn" data-act="oCopySite">انسخ الرابط</button>
@@ -181,11 +184,16 @@ V.oops = async () => {
   if (tab === 'svc') {
     const list = await db.q('services', {order: ['sort', true], order2: ['name', true]}); ui.svcCache = list;
     const mm = N(c.min_margin ?? 30) / 100;
-    body = `<div class="row" style="justify-content:space-between"><p class="note" style="margin:0">العميل بيشوف بس الخدمات اللي "ظاهرة بالموقع" و"فعّالة". السعر بينحسب من هون، وأي تعديل بيطلع عالموقع فوراً. العروض اللي انبعتت قبل ما بتتغير.</p>${can('oops', 'edit') ? '<button class="btn pri" data-act="svcForm">+ خدمة</button>' : ''}</div>` +
-      table([{h:'الخدمة', f:s => `<b>${esc(s.name)}</b><br><small class="m">${esc(s.category)}</small>`}, {h:'طريقة التسعير', f:s => pill(PT[s.ptype] || s.ptype, 'info')}, {h:'السعر', f:s => esc(priceText(s)), c: 'wrap'},
-        {h:'تكلفتنا', f:s => N(s.cost) ? jd(s.cost) + (s.ptype === 'team' ? '/ساعة' : s.ptype === 'unit' ? '/وحدة' : '') : '—'}, {h:'الهامش', f:s => { const g = svcMargin(s); return g == null ? '—' : `<span class="${g < mm ? 'margin-bad' : ''}">${pct(g)}</span>`; }},
-        {h:'مقترحة لـ', f:s => { const n = (s.problems || []).length; return n === 0 ? '—' : n === 1 ? 'مشكلة وحدة' : n === 2 ? 'مشكلتين' : n + ' مشاكل'; }}, {h:'بالموقع', f:s => pill(s.public && s.active ? 'ظاهرة' : !s.active ? 'موقوفة' : 'مخفية', s.public && s.active ? 'good' : '')}, {h:'ترتيب', f:s => s.sort},
-        {h:'', f:s => `<div class="row" style="flex-wrap:nowrap"><button class="btn sm" data-act="svcForm" data-id="${s.id}">تعديل</button><button class="btn sm ghost" data-act="svcPub" data-id="${s.id}">${s.public ? 'إخفاء' : 'إظهار'}</button></div>`}], list);
+    const cats = [...new Set(list.map(x => x.category))];
+    body = `<div class="row" style="justify-content:space-between"><p class="note" style="margin:0">اللي عليها "ظاهرة" بتطلع للعميل بالموقع، وأي تعديل بيطلع فوراً. عروض الأسعار اللي انبعتت قبل ما بتتغيّر.</p>${can('oops', 'edit') ? '<button class="btn pri" data-act="svcForm">+ خدمة</button>' : ''}</div>` +
+      cats.map(cat => `<div class="card"><h2 style="margin-bottom:10px">${esc(cat)}</h2>` + table([
+        {h:'الخدمة', f:s => `<b>${esc(s.name)}</b>${s.duration ? `<br><small class="m">المدة: ${esc(s.duration)}</small>` : ''}`},
+        {h:'السعر', f:s => esc(priceText(s)), c: 'wrap'},
+        {h:'ربحك', f:s => { const g = svcMargin(s); return g == null ? '<small class="m">—</small>' : `<span class="${g < mm ? 'margin-bad' : 'pos'}">${pct(g)}</span>`; }},
+        {h:'بالموقع', f:s => pill(s.public && s.active ? 'ظاهرة' : !s.active ? 'موقوفة' : 'مخفية', s.public && s.active ? 'good' : '')},
+        {h:'', f:s => `<div class="row" style="flex-wrap:nowrap;justify-content:flex-end"><button class="btn sm" data-act="svcForm" data-id="${s.id}">تعديل</button><button class="btn sm ghost" data-act="svcPub" data-id="${s.id}">${s.public ? 'إخفاء' : 'إظهار'}</button></div>`}],
+        list.filter(x => x.category === cat)) + '</div>').join('') +
+      `<p class="note">"ربحك" = السعر ناقص تكلفتك عليها. حط تكلفتك من تعديل الخدمة عشان تشوفه، وبيطلع أحمر إذا أقل من ${pct(mm)}.</p>`;
   }
   if (tab === 'site') {
     ui.probs = ui.probsFor === site.updated_at ? ui.probs : (c.problems || []).map(p => ({...p})); ui.probsFor = site.updated_at;
@@ -223,46 +231,81 @@ document.addEventListener('input', e => { const t = e.target; if (t.dataset.pr !
 document.addEventListener('change', e => { const t = e.target; if (t.dataset.pr != null && ui.probs?.[N(t.dataset.pr)]) ui.probs[N(t.dataset.pr)][t.dataset.k] = t.value; });
 const parseTiers = t => String(t || '').split(/[,،\n]/).map(x => x.split('=').map(y => N(y.trim()))).filter(([a, b]) => a > 0 && b > 0).map(([from, off]) => ({from, off}));
 const parseTasks = t => Object.fromEntries(String(t || '').split('\n').map(x => x.split('=')).filter(x => x[0]?.trim()).map(([k, v]) => [k.trim(), N(v)]));
+function svcEditor(id) {
+  const s = id ? (ui.svcCache || []).find(x => x.id === id) : null, p = s?.params || {};
+  const v = s || {category: (ui.svcCache || [])[0]?.category || 'إدارة الإعلانات', ptype: 'monthly', price: 0, min_qty: 1, max_qty: 10, def_qty: 1, public: true, active: true, sort: 100, problems: []};
+  const cats = [...new Set((ui.svcCache || []).map(x => x.category))];
+  const probs = ST.oSite?.config?.problems || [];
+  const f = (id, label, val, attrs = '', hint = '') => `<label class="fld" for="${id}"><span>${label}</span><input id="${id}" value="${esc(val ?? '')}" ${attrs}>${hint ? `<small class="m">${hint}</small>` : ''}</label>`;
+  const n = (id, label, val, hint = '') => f(id, label, val === 0 || val ? val : '', 'type="number" step="any" min="0" inputmode="decimal"', hint);
+  const box = (pt, html) => `<div class="svbox fgrid" data-pt="${pt}" ${v.ptype === pt ? '' : 'hidden'}>${html}</div>`;
+  $('#mtitle').textContent = s ? 'تعديل الخدمة' : 'خدمة جديدة';
+  $('#mform').innerHTML = `<div class="fgrid">
+      ${f('sv_name', 'اسم الخدمة', v.name, 'required maxlength="120"')}
+      <label class="fld" for="sv_cat"><span>التصنيف</span><select id="sv_cat">${cats.map(c => `<option ${c === v.category ? 'selected' : ''}>${esc(c)}</option>`).join('')}<option value="__new">+ تصنيف جديد</option></select><input id="sv_catnew" placeholder="اسم التصنيف الجديد" hidden style="margin-top:6px"></label>
+      <label class="fld wide" for="sv_desc"><span>وصف قصير بيشوفه العميل</span><textarea id="sv_desc" rows="2" maxlength="300">${esc(v.description || '')}</textarea></label></div>
+    <h3 style="margin:16px 0 8px">كيف بتنحسب؟</h3>
+    <div class="ptpick">${PTS.map(([k, l, d]) => `<label class="ptc"><input type="radio" name="sv_pt" value="${k}" ${v.ptype === k ? 'checked' : ''}><span><b>${l}</b><small>${d}</small></span></label>`).join('')}</div>
+    ${box('monthly', n('sv_price_m', 'السعر بالشهر (د.أ)', v.ptype === 'monthly' ? v.price : ''))}
+    ${box('unit', n('sv_price_u', 'سعر القطعة (د.أ)', v.ptype === 'unit' ? v.price : '') + f('sv_unit', 'شو القطعة؟', v.unit, 'placeholder="تصميم، فيديو، بوست"') +
+      n('sv_min', 'أقل عدد', v.min_qty) + n('sv_def', 'العدد المقترح', v.def_qty) + n('sv_max', 'أكثر عدد', v.max_qty))}
+    ${box('one_time', n('sv_price_o', 'السعر (د.أ)', v.ptype === 'one_time' ? v.price : ''))}
+    ${box('pct_spend', n('sv_pct', 'النسبة من صرف الإعلانات (%)', v.pct) + n('sv_minfee', 'أقل مبلغ بالشهر (د.أ)', v.ptype === 'pct_spend' ? v.min_fee : '', 'إذا الإعلانات قليلة، هاد أقل إشي بتاخذه'))}
+    ${box('team', n('sv_hour', 'سعر الساعة (د.أ)', p.hour_rate) + n('sv_chfee', 'كل قناة زيادة (د.أ بالشهر)', p.channel_fee) + n('sv_minfee_t', 'أقل مبلغ بالشهر (د.أ)', v.ptype === 'team' ? v.min_fee : ''))}
+    ${box('quote', '<p class="note wide">العميل بيشوف "بيتسعّر بعد جلسة"، وإنت بتحط السعر بعرض السعر.</p>')}
+    <div class="fgrid" style="margin-top:6px">
+      ${f('sv_dur', 'مدة الخدمة', v.duration, 'placeholder="مثلاً: شهر، 7 أيام تسليم، أسبوعين"', 'بتطلع للعميل جنب الخدمة')}
+      ${n('sv_cost', 'تكلفتك عليها (اختياري)', v.cost, 'ما بتطلع للعميل. ' + 'للشهر، أو للقطعة، أو للساعة بفريق الرد')}
+      <label class="fld wide" for="sv_inc"><span>شو بتشمل؟</span><textarea id="sv_inc" rows="2" maxlength="400" placeholder="مثلاً: 3 اقتراحات، تعديلين، تسليم الملفات">${esc(v.includes || '')}</textarea></label>
+      <label class="toggle wide" style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="sv_pub" ${v.public ? 'checked' : ''}><span><b>ظاهرة للعملاء بالموقع</b></span></label></div>
+    <details class="adv"><summary>إعدادات زيادة (اختياري)</summary><div class="fgrid" style="margin-top:10px">
+      ${n('sv_setup', v.ptype === 'team' ? 'رسوم إعداد لكل موظفة' : 'رسوم إعداد أول مرة (د.أ)', v.setup_fee)}
+      ${f('sv_tiers', 'خصم إذا طلب عدد أكبر (للعدد بس)', (p.tiers || []).map(t => t.from + '=' + t.off).join('، '), 'placeholder="12=10، 20=15"', 'يعني من 12 قطعة خصم 10%، ومن 20 خصم 15%')}
+      ${n('sv_maxfee', 'أكثر مبلغ بالشهر (للنسبة من الإعلانات، فاضي = بدون سقف)', N(v.max_fee) || '')}
+      ${f('sv_ch', 'قنوات فريق الرد', (p.channels || []).join('، '), 'placeholder="فيسبوك، إنستغرام، واتساب"')}
+      <label class="fld" for="sv_tasks"><span>مهام زيادة لفريق الرد</span><textarea id="sv_tasks" rows="3" placeholder="تأكيد الطلبات=15">${esc(Object.entries(p.tasks || {}).map(([k, x]) => k + '=' + x).join('\n'))}</textarea><small class="m">كل مهمة بسطر: اسمها=سعرها لكل موظفة بالشهر</small></label>
+      ${n('sv_mph', 'رسائل بالساعة للموظفة', p.msgs_per_hour || 12)}${n('sv_maxag', 'أكثر عدد موظفات', p.max_agents || 6)}${n('sv_maxh', 'أكثر ساعات باليوم', p.max_hours || 16)}
+      <label class="fld wide" for="sv_exc"><span>ما بتشمل</span><textarea id="sv_exc" rows="2">${esc(v.excludes || '')}</textarea></label>
+      <div class="fld wide"><span>بتنقترح للعميل لما يختار</span><div class="checks">${probs.map(x => `<label class="ck"><input type="checkbox" name="sv_prob" value="${esc(x.k)}" ${(v.problems || []).includes(x.k) ? 'checked' : ''}><span>${esc(x.l)}</span></label>`).join('')}</div></div>
+      ${n('sv_sort', 'ترتيبها بالقائمة (الأصغر أول)', v.sort)}
+      <label class="toggle" style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="sv_act" ${v.active !== false ? 'checked' : ''}><span>فعّالة</span></label></div></details>
+    <p class="lerr" id="ferr"></p><div class="fact"><button class="btn pri" type="submit" id="fsave">حفظ</button><button class="btn" type="button" data-act="closeM">إلغاء</button></div>`;
+  const form = $('#mform');
+  form.oninput = form.onchange = e => {
+    if (e.target.name === 'sv_pt') $$('.svbox').forEach(b => b.hidden = b.dataset.pt !== e.target.value);
+    if (e.target.id === 'sv_cat') $('#sv_catnew').hidden = e.target.value !== '__new';
+  };
+  form.onsubmit = async e => {
+    e.preventDefault();
+    const g = id => ($('#' + id)?.value || '').trim(), num = id => N(g(id)), err = m => { $('#ferr').textContent = m; $('#fsave').disabled = false; };
+    const pt = $('input[name=sv_pt]:checked')?.value || 'monthly';
+    const cat = g('sv_cat') === '__new' ? g('sv_catnew') : g('sv_cat');
+    if (!g('sv_name')) return err('اكتب اسم الخدمة');
+    if (!cat) return err('اكتب اسم التصنيف');
+    const price = pt === 'monthly' ? num('sv_price_m') : pt === 'unit' ? num('sv_price_u') : pt === 'one_time' ? num('sv_price_o') : 0;
+    if (['monthly','unit','one_time'].includes(pt) && !(price > 0)) return err('حط السعر');
+    if (pt === 'unit' && !(num('sv_max') >= num('sv_min') && num('sv_min') >= 1)) return err('أقل عدد لازم 1 أو أكثر، وأكثر عدد أكبر منه');
+    if (pt === 'pct_spend' && !(num('sv_pct') > 0)) return err('حط النسبة من صرف الإعلانات');
+    if (pt === 'team' && !(num('sv_hour') > 0)) return err('حط سعر الساعة');
+    $('#fsave').disabled = true;
+    const params = {...p, tiers: parseTiers(g('sv_tiers'))};
+    if (pt === 'team') Object.assign(params, {hour_rate: num('sv_hour'), channel_fee: num('sv_chfee'), msgs_per_hour: num('sv_mph') || 12, max_agents: num('sv_maxag') || 6, max_hours: num('sv_maxh') || 16,
+      channels: g('sv_ch').split(/[,،]/).map(x => x.trim()).filter(Boolean), tasks: parseTasks($('#sv_tasks').value)});
+    const unit = pt === 'unit';
+    const row = {name: g('sv_name'), category: cat, ptype: pt, description: g('sv_desc') || null, price, unit: unit ? (g('sv_unit') || null) : s?.unit || null,
+      min_qty: unit ? Math.max(1, num('sv_min')) : 1, max_qty: unit ? Math.max(1, num('sv_max')) : 1, def_qty: unit ? Math.min(Math.max(num('sv_def'), num('sv_min'), 1), num('sv_max')) : 1,
+      pct: pt === 'pct_spend' ? num('sv_pct') : N(s?.pct), min_fee: pt === 'pct_spend' ? num('sv_minfee') : pt === 'team' ? num('sv_minfee_t') : 0, max_fee: num('sv_maxfee'),
+      setup_fee: num('sv_setup'), cost: num('sv_cost'), duration: g('sv_dur') || null, params, includes: g('sv_inc') || null, excludes: g('sv_exc') || null,
+      problems: $$('input[name=sv_prob]:checked').map(x => x.value), public: $('#sv_pub').checked, active: $('#sv_act').checked, sort: num('sv_sort')};
+    try { if (s) await db.upd('services', {id}, row); else await db.ins('services', row); }
+    catch (x) { if (/duplicate|unique/i.test(x.message)) return err('في خدمة بنفس الاسم'); if (/duration/i.test(x.message)) return err('شغّل ملف 08_services_simple.sql على Supabase أول'); return err(K.arabicErr(x)); }
+    closeM(true); toast('انحفظت الخدمة'); K.render();
+  };
+  $('#modal').hidden = false; setTimeout(() => $('#sv_name')?.focus(), 30);
+}
 Object.assign(A, {
   oTab: k => { ui.oTab = k; K.render(); },
-  svcForm: id => {
-    const s = id ? (ui.svcCache || []).find(x => x.id === id) : null, p = s?.params || {};
-    const cats = [...new Set((ui.svcCache || []).map(x => x.category))].join('، ');
-    const probs = (ST.oSite?.config?.problems || []).map(x => [x.k, x.l]);
-    openForm(s ? 'تعديل ' + s.name : 'خدمة جديدة', [
-      {k:'name', l:'اسم الخدمة', req: 1, wide: 1}, {k:'category', l:'التصنيف', req: 1, hint: 'الموجودة: ' + esc(cats)}, {k:'ptype', l:'طريقة التسعير', t:'select', opts: Object.entries(PT)},
-      {k:'description', l:'وصف قصير للعميل', t:'textarea', rows: 2},
-      {k:'price', l:'السعر (شهري، أو للقطعة، أو للمرة الوحدة)', t:'number'}, {k:'unit', l:'اسم الوحدة (للقطعة)', ph: 'تصميم، فيديو'}, {k:'setup_fee', l:'رسوم إعداد لمرة وحدة', t:'number'},
-      {k:'min_qty', l:'أقل كمية', t:'number'}, {k:'max_qty', l:'أكثر كمية', t:'number'}, {k:'def_qty', l:'الكمية المقترحة', t:'number'},
-      {k:'tiers', l:'خصم الكمية', ph: '12=10، 20=15', hint: 'من 12 قطعة خصم 10%، من 20 خصم 15%'},
-      {k:'pct', l:'النسبة من صرف الإعلانات (%)', t:'number'}, {k:'min_fee', l:'أقل أتعاب شهرية', t:'number'}, {k:'max_fee', l:'أكثر أتعاب (0 = بدون سقف)', t:'number'},
-      {k:'cost', l:'تكلفتنا الداخلية', t:'number', hint: 'للشهر، أو للقطعة، أو للساعة بفريق الرد. ما بتطلع للعميل'},
-      {k:'hour_rate', l:'فريق الرد: سعر الساعة', t:'number'}, {k:'channel_fee', l:'فريق الرد: كل قناة إضافية', t:'number'}, {k:'msgs_per_hour', l:'فريق الرد: رسائل بالساعة للموظفة', t:'number'},
-      {k:'max_agents', l:'فريق الرد: أكثر عدد موظفات', t:'number'}, {k:'max_hours', l:'فريق الرد: أكثر ساعات باليوم', t:'number'}, {k:'channels', l:'فريق الرد: القنوات', ph: 'فيسبوك، إنستغرام، واتساب'},
-      {k:'tasks', l:'فريق الرد: مهام إضافية (مهمة=سعر للموظفة بالشهر)', t:'textarea', rows: 3},
-      {k:'includes', l:'بتشمل', t:'textarea', rows: 2}, {k:'excludes', l:'ما بتشمل', t:'textarea', rows: 2},
-      {k:'problems', l:'مقترحة لما العميل يختار', t:'checks', opts: probs},
-      {k:'public', l:'بالموقع', t:'select', opts: [['true','ظاهرة'], ['false','مخفية']]}, {k:'active', l:'الحالة', t:'select', opts: [['true','فعّالة'], ['false','موقوفة']]}, {k:'sort', l:'الترتيب', t:'number'}],
-      s ? {...s, tiers: (p.tiers || []).map(t => t.from + '=' + t.off).join('، '), hour_rate: p.hour_rate, channel_fee: p.channel_fee, msgs_per_hour: p.msgs_per_hour, max_agents: p.max_agents, max_hours: p.max_hours,
-           channels: (p.channels || []).join('، '), tasks: Object.entries(p.tasks || {}).map(([k, v]) => k + '=' + v).join('\n'), public: String(s.public), active: String(s.active)}
-        : {category: 'إدارة الإعلانات', ptype: 'monthly', min_qty: 1, max_qty: 1, def_qty: 1, price: 0, cost: 0, setup_fee: 0, pct: 0, min_fee: 0, max_fee: 0, public: 'true', active: 'true', sort: 100, problems: []},
-      async v => {
-        if (v.ptype === 'unit' && !(N(v.max_qty) >= N(v.min_qty) && N(v.min_qty) >= 1)) return 'أقل كمية لازم 1 أو أكثر، وأكثر كمية أكبر منها';
-        if (v.ptype === 'team' && !N(v.hour_rate)) return 'حط سعر الساعة لفريق الرد';
-        if (v.ptype === 'pct_spend' && !N(v.pct)) return 'حط النسبة من صرف الإعلانات';
-        const params = {...p, tiers: parseTiers(v.tiers)};
-        if (v.ptype === 'team') Object.assign(params, {hour_rate: N(v.hour_rate), channel_fee: N(v.channel_fee), msgs_per_hour: N(v.msgs_per_hour) || 12, max_agents: N(v.max_agents) || 6, max_hours: N(v.max_hours) || 16,
-          channels: String(v.channels || '').split(/[,،]/).map(x => x.trim()).filter(Boolean), tasks: parseTasks(v.tasks)});
-        const one = v.ptype === 'unit';
-        const row = {name: v.name, category: v.category, ptype: v.ptype, description: v.description || null, price: N(v.price), unit: v.unit || null, setup_fee: N(v.setup_fee),
-          min_qty: one ? Math.max(1, N(v.min_qty)) : 1, max_qty: one ? Math.max(1, N(v.max_qty)) : 1, def_qty: one ? Math.min(Math.max(N(v.def_qty), N(v.min_qty), 1), N(v.max_qty)) : 1,
-          pct: N(v.pct), min_fee: N(v.min_fee), max_fee: N(v.max_fee), cost: N(v.cost), params, includes: v.includes || null, excludes: v.excludes || null, problems: v.problems || [],
-          public: v.public === 'true', active: v.active === 'true', sort: N(v.sort)};
-        try { if (s) await db.upd('services', {id}, row); else await db.ins('services', row); }
-        catch (x) { if (/duplicate|unique/i.test(x.message)) return 'في خدمة بنفس الاسم'; throw x; }
-        toast('انحفظت الخدمة'); K.render();
-      });
-  },
+  svcForm: id => svcEditor(id),
   svcPub: async id => { const s = (ui.svcCache || []).find(x => x.id === id); await db.upd('services', {id}, {public: !s.public}); toast(s.public ? 'انخفت عن الموقع' : 'صارت ظاهرة بالموقع'); K.render(); },
   siteLive: async () => { const s = await loadSite(); await db.upd('oops_site', {id: 1}, {live: !s.live, updated_at: new Date().toISOString()}); toast(s.live ? 'انطفى الموقع' : 'الموقع صار شغّال، والشركات بتقدر تبعت طلبات'); K.render(); },
   probAdd: () => { ui.probs.push({k: 'p' + Date.now().toString(36), l: ''}); K.render(); },

@@ -133,6 +133,7 @@ input[type=range]{width:100%;accent-color:var(--indigo);height:32px}
 .svc.on{border-color:var(--indigo);box-shadow:inset 4px 0 0 var(--indigo)}
 .svc .nm{font:700 16px var(--f-d)}
 .svc .ds{font-size:14px;color:var(--muted)}
+.svc .dur{color:var(--indigo);font-weight:600;margin-top:2px}
 .svc .pr{font:600 14px var(--f-b);color:var(--indigo);white-space:nowrap}
 .svc .why{grid-column:1/-1;font-size:13px;background:color-mix(in srgb,var(--sun) 28%,transparent);border-radius:8px;padding:4px 10px;justify-self:start}
 .svc .act{display:flex;align-items:center;gap:8px;justify-content:flex-end}
@@ -487,7 +488,7 @@ function svcCard(s) {
       ${pr.need_agents && pr.need_agents > o.agents ? `<p class="warn">حجم الرسائل أكبر من طاقة ${o.agents} ${o.agents > 1 ? 'موظفات' : 'موظفة'} بهالساعات. بنقترح ${pr.need_agents}.</p>` : pr.need_agents ? '<p class="okk">العدد مناسب لحجم الرسائل اللي حطيته.</p>' : ''}
       <p class="m" style="font-size:13px">تغطية ${pr.hours} ساعة بالشهر. العدد النهائي ومستوى الخدمة بيتأكدوا بعد ما نشوف رسائلك الفعلية.</p></div>`;
   }
-  return `<div class="svc ${on ? 'on' : ''}"><div><div class="nm">${esc(s.name)}</div><div class="ds">${esc(s.description || '')}</div>${s.includes && on ? `<div class="ds" style="margin-top:4px">بيشمل: ${esc(s.includes)}</div>` : ''}</div>
+  return `<div class="svc ${on ? 'on' : ''}"><div><div class="nm">${esc(s.name)}</div><div class="ds">${esc(s.description || '')}</div>${s.duration ? `<div class="ds dur">المدة: ${esc(s.duration)}</div>` : ''}${s.includes && on ? `<div class="ds" style="margin-top:4px">بيشمل: ${esc(s.includes)}</div>` : ''}</div>
     <div class="act"><span class="pr">${priceLabel(s)}</span></div>
     ${w ? `<div class="why">${esc(w)}</div>` : ''}
     <div class="ctl" style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap">${ctl}<span></span><button type="button" class="add" data-add="${s.id}" aria-pressed="${pressed(on)}">${on ? 'مضافة ✓' : 'أضف'}</button></div>${team}</div>`;
@@ -676,7 +677,7 @@ async function quotePage(tok) {
     <span class="stamp ${stamp[1]}">${stamp[0]}</span></div>
     ${!ready ? '<p style="margin-top:14px">وصلنا طلبك وفريقنا بيراجعه. هاد ملخص اللي اخترته، والعرض الرسمي بيطلع هون لما يجهز.</p>' : q.notes ? `<p style="margin-top:14px;white-space:pre-line">${esc(q.notes)}</p>` : ''}
     <table><thead><tr><th>الخدمة</th><th>الكمية</th><th>شهري</th><th>مرة وحدة</th></tr></thead><tbody>
-    ${(q.items || []).map(i => `<tr><td>${esc(i.name)}${i.includes ? `<br><small class="m">${esc(i.includes)}</small>` : ''}${i.note ? `<br><small class="m">${esc(i.note)}</small>` : ''}</td><td class="n">${i.ptype === 'team' ? i.qty + ' موظفة' : i.qty}</td><td class="n">${i.quote ? 'بعد الجلسة' : N(i.monthly) ? jd(i.monthly) : '—'}</td><td class="n">${N(i.one_time) ? jd(i.one_time) : '—'}</td></tr>`).join('')}</tbody></table>
+    ${(q.items || []).map(i => `<tr><td>${esc(i.name)}${i.duration ? `<br><small class="m">المدة: ${esc(i.duration)}</small>` : ''}${i.includes ? `<br><small class="m">${esc(i.includes)}</small>` : ''}${i.note ? `<br><small class="m">${esc(i.note)}</small>` : ''}</td><td class="n">${i.ptype === 'team' ? i.qty + ' موظفة' : i.qty}</td><td class="n">${i.quote ? 'بعد الجلسة' : N(i.monthly) ? jd(i.monthly) : '—'}</td><td class="n">${N(i.one_time) ? jd(i.one_time) : '—'}</td></tr>`).join('')}</tbody></table>
     <div class="rsum" style="max-width:380px;margin-inline-start:auto"><div><span>أتعاب شهرية</span><b>${jd(q.fees_monthly)}</b></div>${N(q.discount) ? `<div><span>خصم شهري</span><b>−${jd(q.discount)}</b></div>` : ''}
       ${N(q.one_time) ? `<div><span>رسوم لمرة وحدة</span><b>${jd(q.one_time)}</b></div>` : ''}<div class="ads"><span>ميزانية الإعلانات (للمنصات مباشرة)</span><b>${jd(q.ad_budget)}</b></div>
       <div class="tot"><span>صرفك الشهري كامل</span><b>${jd(total + N(q.ad_budget))}</b></div></div>
