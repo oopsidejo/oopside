@@ -191,6 +191,8 @@ const CH_SOURCE = {'ماسنجر': 'ماسنجر', 'إنستغرام': 'إنست
 V.inbox = async () => {
   const f = ui.ifilter || 'waiting', o = {order: ['last_in', false], limit: 150};
   if (f === 'waiting') { o.eq = {waiting: true}; o.order = ['last_in', true]; } else if (f === 'orders') o.eq = {status: 'طلب'}; else if (f === 'closed') o.in = {status: ['مغلقة','ضائعة']};
+  if (ui.ipage) o.eq = {...(o.eq || {}), fb_page_id: ui.ipage};
+  const mpages = ST.mpages || (ST.mpages = await db.q('meta_pages', {eq: {active: true}, order: ['name', true]}).catch(() => []));
   const needAtt = can('inbox', 'edit') && !can('control');
   const [list, qr, att] = await Promise.all([db.q('v_conversations', o), db.q('quick_replies', {order: ['created_at', true]}),
     needAtt ? db.q('attendance', {eq: {user_id: me().id, day: today()}}) : []]);
@@ -201,11 +203,11 @@ V.inbox = async () => {
   const notIn = needAtt && (!att[0]?.check_in || att[0]?.check_out);
   const li = list.map(c => `<button class="ci ${cur && c.id === cur.id ? 'on' : ''}" data-act="openConv" data-id="${c.id}">
      <span class="l1"><span>${esc(c.customer || 'زبون')}</span>${c.waiting ? `<span class="tmr" data-since="${c.last_in}" data-sla="1">${dur(Date.now() - new Date(c.last_in))}</span>` : pill(c.status, c.status === 'طلب' ? 'good' : c.status === 'ضائعة' ? 'bad' : '')}</span>
-     <span class="l2">${esc(c.channel)}${c.product_name ? ' · ' + esc(c.product_name) : ''}${can('control') ? ' · ' + esc(c.agent_name || 'بدون موظف') : ''}</span><span class="l2">${esc(c.last_text || '')}</span></button>`).join('');
+     <span class="l2">${c.page_name ? `<b class="pgtag">${esc(c.page_name)}</b> ` : ''}${esc(c.channel)}${c.product_name ? ' · ' + esc(c.product_name) : ''}${can('control') && c.agent_name ? ' · ' + esc(c.agent_name) : ''}</span><span class="l2">${esc(c.last_text || '')}</span></button>`).join('');
   let th = '<div class="empty">اختار محادثة من القائمة</div>';
   if (cur) {
     const closed = cur.status !== 'مفتوحة', canReply = can('inbox', 'edit') || can('control', 'edit');
-    th = `<div class="thh"><div><h3>${esc(cur.customer || 'زبون')} ${pill(cur.channel, 'info')}</h3><small class="m">${cur.ad_name ? 'جاي من إعلان: ' + esc(cur.ad_name) : cur.ad_id ? 'جاي من إعلان' : 'بدون إعلان'}${cur.first_reply_at ? ' · أول رد بعد ' + dur(new Date(cur.first_reply_at) - new Date(cur.first_in || cur.created_at)) : ''}</small></div>
+    th = `<div class="thh"><div><h3>${esc(cur.customer || 'زبون')} ${pill(cur.channel, 'info')}${cur.page_name ? ' ' + pill(cur.page_name, 'brand') : ''}</h3><small class="m">${cur.ad_name ? 'جاي من إعلان: ' + esc(cur.ad_name) : cur.ad_id ? 'جاي من إعلان' : 'بدون إعلان'}${cur.first_reply_at ? ' · أول رد بعد ' + dur(new Date(cur.first_reply_at) - new Date(cur.first_in || cur.created_at)) : ''}</small></div>
       <div class="row">${sel('cv_prod', ST.products.filter(p => p.active).map(p => [p.id, p.name]), cur.product_id, 'المنتج: —', `data-chg="convProduct" data-id="${cur.id}" aria-label="المنتج"`)}
       ${can('control', 'edit') ? sel('cv_agent', (ST.people || []).map(p => [p.id, p.name]), cur.assigned_to, 'بدون موظف', `data-chg="convAssign" data-id="${cur.id}" aria-label="الموظف"`) : ''}</div></div>
      <div class="msgs" id="msgs">${msgs.map(m => m.dir === 'note' ? `<div class="bub s">${esc(m.text)} · ${hm(m.at)}</div>` : `<div class="bub ${m.dir === 'in' ? 'c' : 'e'} ${m.outside ? 'outside' : ''}">${esc(m.text)}<small>${hm(m.at)}${m.dir === 'out' ? ' · ' + esc(m.by_name || '') : ''}${m.outside ? ' · ⚠ من برا النظام' : ''}</small></div>`).join('')}</div>
@@ -217,7 +219,7 @@ V.inbox = async () => {
   ui.qr = qr;
   return head(can('control') ? 'صندوق الرسائل' : 'رسائلي', 'ماسنجر وإنستغرام والتعليقات بمكان واحد. الرد يدوي، وكل رد بينحسب على الموظف اللي رد، وكل محادثة مربوطة بالإعلان اللي جابها') +
     (notIn ? '<div class="note warnbar">إنت مش مسجّل دخول للدوام، فما رح توصلك محادثات جديدة. <button class="btn sm pri" data-act="checkIn">تسجيل دخول للدوام</button></div>' : '') +
-    `<div class="inbox"><div class="ilist">${chips([['waiting','بانتظار الرد'], ['all','الكل'], ['orders','طلبات'], ['closed','مغلقة']], f, 'ifilter')}<div class="iscroll" id="iscroll">${li || '<div class="empty">ما في محادثات هون</div>'}</div></div><div class="ithread">${th}</div></div>`;
+    `<div class="inbox"><div class="ilist">${mpages.length > 1 ? `<select class="inl" data-chg="ipage" aria-label="الصفحة" style="width:100%;margin-bottom:6px"><option value="">كل الصفحات</option>${mpages.map(m => `<option value="${esc(m.page_id)}" ${ui.ipage === m.page_id ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</select>` : ''}${chips([['waiting','بانتظار الرد'], ['all','الكل'], ['orders','طلبات'], ['closed','مغلقة']], f, 'ifilter')}<div class="iscroll" id="iscroll">${li || '<div class="empty">ما في محادثات هون</div>'}</div></div><div class="ithread">${th}</div></div>`;
 };
 const fillQ = (t, c) => t.replaceAll('{المنتج}', c?.product_name || 'المنتج').replaceAll('{السعر}', c?.product_price != null ? fmt(c.product_price) : '');
 Object.assign(A, {
@@ -246,6 +248,7 @@ document.addEventListener('change', async e => {
     if (c === 'taskStatus') { await db.rpc('task_status', {tid: t.dataset.id, st: t.value}); toast('تحدّثت المهمة'); refreshBadges(); K.render(); }
     if (c === 'delivStatus') { await db.upd('deliverables', {id: t.dataset.id}, {status: t.value}); toast('تحدّث'); K.render(); }
     if (c === 'leadStage') { await db.upd('leads', {id: t.dataset.id}, {stage: t.value, updated_at: new Date().toISOString()}); toast('تحدّث'); K.render(); }
+    if (c === 'ipage') { ui.ipage = t.value; ui.conv = null; K.render(); return; }
     if (c === 'adRange') { const f = $('#adf')?.value, tt = $('#adt')?.value; if (f && tt) { ui.adFrom = f; ui.adTo = tt; K.render(); } return; }
     if (c === 'adProduct') { await db.rpc('ad_set_product', {aid: t.dataset.id, pid: t.value || null}); toast('انربط الإعلان بالمنتج'); K.render(); }
     if (c === 'stageSet') { await db.upd('stages', {id: t.dataset.id}, {status: t.value, done_at: t.value === 'منتهي' ? new Date().toISOString() : null}); toast('تحدّثت المرحلة'); K.render(); }
@@ -444,6 +447,7 @@ Object.assign(A, {
       try {
         const res = await db.fn('meta-connect', {action: (linked ? 'unlink_' : 'link_') + kind, id: b.dataset.id, name: b.dataset.name});
         b.dataset.linked = linked ? '0' : '1'; b.textContent = linked ? 'ربط' : 'مربوط ✓ (فصل)'; b.className = 'btn sm ' + (linked ? 'pri' : 'ghost');
+        if (kind === 'page') ST.mpages = null;
         if (kind === 'page' && !linked) {
           // الصفحة بتصير كمان "صفحة بيع" عشان الطلبات تنحسب عليها
           try { const ex = await db.q('sales_pages', {eq: {meta_page_id: b.dataset.id}}); if (!ex.length) { await db.ins('sales_pages', {name: b.dataset.name, platform: res?.ig_username ? 'فيسبوك وإنستغرام' : 'فيسبوك', meta_page_id: b.dataset.id}); ST.pages = await db.q('sales_pages', {order: ['name', true]}); } } catch (x) {}
@@ -852,13 +856,14 @@ V.settings = async () => {
   const pages = isAdmin() ? await db.q('meta_pages', {order: ['name', true]}) : [];
   const ri = (k, l, u, d) => `<label class="fld" for="r_${k}"><span>${l}</span><div class="row"><input id="r_${k}" class="inl" type="number" step="any" value="${esc(r[k] ?? d)}" style="width:90px;font-size:14px;padding:6px 8px"> <small class="m">${u}</small></div></label>`;
   return html + `<div class="cols"><div class="card"><h2>قواعد المراقبة والإعلانات</h2><div class="fgrid">${ri('sla', 'تنبيه إذا ما في رد خلال', 'دقائق', 5)}${ri('escalate', 'تصعيد للإدارة بعد', 'دقيقة', 15)}${ri('idle', '"ترك الصفحة" بعد', 'دقائق', 10)}${ri('break_max', 'أقصى استراحة', 'دقيقة', 20)}${ri('late', 'تأخير الدخول المسموح', 'دقائق', 10)}
-      ${ri('roas_min', 'أقل ROAS مقبول', 'x', 2.5)}${ri('cpm_max', 'أعلى CPM مقبول', 'د.أ', 3)}${ri('freq_max', 'أعلى تكرار', 'مرة', 3.5)}${ri('posts_week', 'منشورات بالأسبوع', 'منشور', 5)}</div><div class="row" style="margin-top:12px"><button class="btn pri" data-act="saveRules">حفظ القواعد</button></div></div>
+      ${ri('roas_min', 'أقل ROAS مقبول', 'x', 2.5)}${ri('cpm_max', 'أعلى CPM مقبول', 'د.أ', 3)}${ri('freq_max', 'أعلى تكرار', 'مرة', 3.5)}${ri('posts_week', 'منشورات بالأسبوع', 'منشور', 5)}</div>
+      <label class="toggle" style="display:flex;gap:10px;align-items:flex-start;margin-top:12px"><input type="checkbox" id="r_outside_ok" ${N(r.outside_ok ?? 1) === 1 ? 'checked' : ''}><span><b>الرد من Business Suite أو الجوال عادي</b><br><small class="m">الرد بينحسب رد الصفحة بدون تنبيه "رد من برا النظام". التنبيه بيضل إذا الزبون استنى رد أكثر من المدة.</small></span></label><div class="row" style="margin-top:12px"><button class="btn pri" data-act="saveRules">حفظ القواعد</button></div></div>
     ${isAdmin() ? `<div class="card"><h2>صفحات Meta المربوطة</h2>${table([{h:'الصفحة', f:p => esc(p.name)}, {h:'المنصة', f:p => pill(p.platform)}, {h:'رقم الصفحة', f:p => esc(p.page_id)}, {h:'', f:p => `<button class="btn sm" data-act="metaPageForm" data-id="${esc(p.page_id)}">تحديث التوكن</button>`}], pages, 'ما في صفحات مربوطة لسا')}
       <div class="row" style="margin-top:10px"><button class="btn pri" data-act="metaConnect">ربط من Meta (بدون أرقام)</button><button class="btn ghost" data-act="metaPageForm">ربط يدوي</button></div><p class="note" style="margin-top:8px">التوكن بينحفظ بمكان مخفي بقاعدة البيانات، وما حدا بيقدر يقرأه من الواجهة. خطوات جلبه بدليل ربط Meta.</p></div>
     <div class="card"><h2>نسخة احتياطية</h2><p class="m">بتنزّل كل بيانات النظام بملف واحد (JSON) على جهازك. اعملها كل أسبوع على الأقل واحفظها بمكان آمن.</p><div class="row" style="margin-top:10px"><button class="btn pri" data-act="backup">تنزيل نسخة احتياطية</button></div></div>` : ''}</div>`;
 };
 Object.assign(A, {
-  saveRules: async () => { const rules = {...(ST.settings?.rules || {})}; ['sla','escalate','idle','break_max','late','roas_min','cpm_max','freq_max','posts_week'].forEach(k => { const v = parseFloat($('#r_' + k)?.value); if (v > 0) rules[k] = v; });
+  saveRules: async () => { const rules = {...(ST.settings?.rules || {})}; ['sla','escalate','idle','break_max','late','roas_min','cpm_max','freq_max','posts_week'].forEach(k => { const v = parseFloat($('#r_' + k)?.value); if (v > 0) rules[k] = v; }); if ($('#r_outside_ok')) rules.outside_ok = $('#r_outside_ok').checked ? 1 : 0;
     await db.upd('settings', {id: 1}, {rules}); ST.settings.rules = rules; toast('انحفظت القواعد'); },
   metaPageForm: id => openForm(id ? 'تحديث صفحة' : 'ربط صفحة Meta', [{k:'pid', l:'رقم الصفحة (Page ID)', req: 1, def: id || ''}, {k:'pname', l:'اسم الصفحة', req: 1}, {k:'platform', l:'المنصة', t:'select', opts: ['فيسبوك','إنستغرام','فيسبوك وإنستغرام']}, {k:'ig', l:'رقم حساب إنستغرام (إذا مربوط)'}, {k:'token', l:'Page Access Token', t:'textarea'}], null,
     async v => { await db.rpc('meta_save_page', {pid: v.pid.trim(), pname: v.pname, platform: v.platform, token: v.token.trim(), ig: v.ig.trim()}); toast('انحفظت الصفحة'); K.render(); }),
