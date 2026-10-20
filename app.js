@@ -383,9 +383,28 @@ function onLive(table, payload) {
 function softRender() {
   const a = document.activeElement;
   if (!$('#modal').hidden || (a && a.closest('#main') && /INPUT|TEXTAREA|SELECT/.test(a.tagName))) { pendingRefresh = true; return; }
-  render();
+  render(true);
 }
-async function render() {
+// التحديث التلقائي ما بيحرّك الشاشة: إذا ما تغيّر شي ما منلمس الصفحة، وإذا تغيّر منرجّع مكان التمرير والكتابة
+const sameKey = h => h.replace(/(data-since="[^"]*"[^>]*>)[^<]*/g, '$1');
+let lastPaint = {view: '', key: ''};
+function paintMain(html, soft) {
+  const main = $('#main'), key = sameKey(html);
+  if (soft && lastPaint.view === ui.view && lastPaint.key === key) return;
+  const keep = soft && lastPaint.view === ui.view, sc = {}, val = {}, wy = window.scrollY;
+  if (keep) {
+    main.querySelectorAll('[id]').forEach(el => {
+      if (el.scrollTop > 0 || el.scrollHeight > el.clientHeight) sc[el.id] = {t: el.scrollTop, end: el.scrollHeight - el.scrollTop - el.clientHeight < 30};
+      if (/INPUT|TEXTAREA|SELECT/.test(el.tagName) && el.type !== 'file') val[el.id] = el.value;
+    });
+  }
+  main.innerHTML = html; lastPaint = {view: ui.view, key};
+  if (!keep) return;
+  for (const id in val) { const el = document.getElementById(id); if (el && el.value !== val[id]) el.value = val[id]; }
+  for (const id in sc) { const el = document.getElementById(id); if (el) el.scrollTop = sc[id].end && id === 'msgs' ? el.scrollHeight : sc[id].t; }
+  window.scrollTo(0, wy);
+}
+async function render(soft) {
   if (!me) return;
   const seq = ++renderSeq;
   const ws = ui.ws || 'store', wl = wsList();
@@ -400,11 +419,11 @@ async function render() {
   const nav = isClient() ? [['', ['portal']]] : NAVS[ws].map(([g, ks]) => [g, ks.filter(k => can(k))]).filter(g => g[1].length);
   $('#nav').innerHTML = nav.map(([g, ks]) => `<div class="grp">${g}</div>` + ks.map(k => `<button class="${ui.view === k || (k === 'agency' && ui.view === 'client') || (k === 'oreq' && ui.view === 'oreqd') ? 'on' : ''}" data-act="go" data-id="${k}"><span>${SEC_NAME[k]}</span>${K.badges[k] ? `<em class="${K.badgeRed[k] ? 'red' : ''}">${K.badges[k]}</em>` : ''}</button>`).join('')).join('');
   if (!nav.length) { $('#main').innerHTML = '<p class="note">ما إلك صلاحية على أي قسم. راجع المدير.</p>'; return; }
-  const slow = setTimeout(() => { if (seq === renderSeq) $('#main').classList.add('loading'); }, 180);
+  const slow = soft ? 0 : setTimeout(() => { if (seq === renderSeq) $('#main').classList.add('loading'); }, 180);
   try {
     const html = await V[ui.view]();
     if (seq !== renderSeq) return;
-    $('#main').innerHTML = html; applyPerms($('#main'));
+    paintMain(html, soft); applyPerms($('#main'));
   } catch (e) {
     if (seq === renderSeq) $('#main').innerHTML = `<div class="head"><h1>${SEC_NAME[ui.view] || ''}</h1></div><p class="note">${esc(arabicErr(e))}</p><div class="row"><button class="btn" data-act="go" data-id="${ui.view}">جرّب مرة ثانية</button></div>`;
   } finally { clearTimeout(slow); $('#main').classList.remove('loading'); }
@@ -520,7 +539,7 @@ function openOrderForm(init = {}) {
   const fld = (id, l, inner, wide) => `<label class="fld ${wide ? 'wide' : ''}" for="${id}"><span>${l}</span>${inner}</label>`;
   $('#mtitle').textContent = init.customer ? 'طلب جديد لـ ' + init.customer : 'طلب جديد';
   $('#mform').innerHTML = `<div class="fgrid">
-    ${fld('of_name', 'اسم الزبون', `<input id="of_name" required autocomplete="off" value="${esc(init.customer || '')}">`)}${fld('of_phone', 'الهاتف', '<input id="of_phone" required inputmode="tel" placeholder="07xxxxxxxx" autocomplete="off">')}
+    ${fld('of_name', 'اسم الزبون', `<input id="of_name" required autocomplete="off" value="${esc(init.customer || '')}">`)}${fld('of_phone', 'الهاتف', `<input id="of_phone" required inputmode="tel" placeholder="07xxxxxxxx" autocomplete="off" value="${esc(init.phone || '')}">`)}
     ${fld('of_phone2', 'هاتف ثاني (اختياري)', '<input id="of_phone2" inputmode="tel" autocomplete="off">')}${fld('of_src', 'المصدر', `<select id="of_src">${SOURCES.map(s => `<option ${s === init.source ? 'selected' : ''}>${s}</option>`).join('')}</select>`)}
     ${pages.length ? fld('of_page', 'الصفحة اللي إجا منها الطلب', `<select id="of_page" required><option value="">اختار الصفحة</option>${pages.map(p => `<option value="${p.id}" ${p.id === pg0 ? 'selected' : ''}>${esc(p.name)}${p.platform ? ' · ' + esc(p.platform) : ''}</option>`).join('')}</select>`, 1) : ''}
     ${fld('of_city', 'المدينة', `<select id="of_city">${cs.map(c => `<option ${c === city ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select>`)}
