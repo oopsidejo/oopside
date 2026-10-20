@@ -165,6 +165,8 @@ input[type=range]{width:100%;accent-color:var(--indigo);height:32px}
 .rsum div{display:flex;justify-content:space-between;gap:8px}
 .rsum b{font-family:var(--f-d);font-variant-numeric:tabular-nums}
 .rsum .ads{background:repeating-linear-gradient(-45deg,var(--lilac) 0 6px,transparent 6px 12px);border-radius:8px;padding:6px 8px}
+.rsum .gift{background:var(--mint-bg);color:var(--mint);border-radius:8px;padding:6px 8px;font-weight:600}
+.rsum .gift s{opacity:.7;font-weight:400}
 .rsum .tot{border-top:2px dashed var(--line);padding-top:8px;margin-top:4px;font-size:16px}
 .rsum .tot b{font-size:24px;color:var(--indigo)}
 .gauge{margin-top:12px}
@@ -344,7 +346,10 @@ const plabel = k => problems().find(p => p.k === k)?.l || k;
 const adBudget = () => S.includes_ads ? Math.min(N(S.ad), N(S.budget)) : N(S.ad);
 const feesBudget = () => S.includes_ads ? Math.max(0, N(S.budget) - adBudget()) : N(S.budget);
 function lines() {
-  return Object.entries(S.items).map(([id, it]) => { const s = svc(id); if (!s) return null; const pr = P.price(s, it.qty, adBudget(), it.opts); return {id, s, it, ...pr}; }).filter(Boolean);
+  return Object.entries(S.items).map(([id, it]) => { const s = svc(id); if (!s) return null; const pr = P.price(s, it.qty, adBudget(), it.opts);
+    // رسوم الإعداد مجاناً: بتنشال من السعر وبتطلع للعميل كخصم
+    let waived = 0; if (SITE.config?.setup_free && N(s.setup_fee) > 0) { waived = Math.min(N(pr.one_time), s.ptype === 'team' ? N(s.setup_fee) * N(pr.qty) : N(s.setup_fee)); pr.one_time = Math.round((N(pr.one_time) - waived) * 1000) / 1000; }
+    return {id, s, it, ...pr, waived}; }).filter(Boolean);
 }
 const why = s => { const m = (s.problems || []).filter(k => S.problems.includes(k)); return m.length ? 'مقترحة لأنك اخترت: ' + m.slice(0, 2).map(plabel).join('، ') : ''; };
 function priceLabel(s) {
@@ -408,7 +413,8 @@ function drawReceipt() {
   $('#rCount').textContent = L.length ? nSvc(L.length) : '';
   $('#rLines').innerHTML = L.length ? L.map(l => `<li><div>${esc(l.s.name)}<small>${l.s.ptype === 'unit' ? l.qty + ' ' + esc(l.s.unit || '') + (l.off ? ' · خصم ' + l.off + '%' : '') : l.s.ptype === 'team' ? l.qty + ' موظفة · ' + l.hours + ' ساعة بالشهر' : l.s.ptype === 'quote' ? 'بيتسعّر بعد جلسة' : l.s.ptype === 'pct_spend' ? N(l.s.pct) + '% من الإعلانات' : l.one_time && !l.monthly ? 'مرة وحدة' : 'شهري'}</small></div><b>${l.quote ? '—' : l.monthly ? jd(l.monthly) : jd(l.one_time)}</b></li>`).join('')
     : '<li class="rempty">لسا ما اخترت خدمات. ابلش من المشكلة، ومنقترحلك.</li>';
-  $('#rSum').innerHTML = `<div><span>أتعابنا الشهرية</span><b>${jd(t.fees)}</b></div>${t.one_time ? `<div><span>رسوم لمرة وحدة</span><b>${jd(t.one_time)}</b></div>` : ''}
+  const saved = L.reduce((a, l) => a + N(l.waived), 0);
+  $('#rSum').innerHTML = `<div><span>أتعابنا الشهرية</span><b>${jd(t.fees)}</b></div>${t.one_time ? `<div><span>رسوم لمرة وحدة</span><b>${jd(t.one_time)}</b></div>` : ''}${saved ? `<div class="gift"><span>رسوم الإعداد <s>${jd(saved)}</s></span><b>مجاناً</b></div>` : ''}
     <div class="ads"><span>ميزانية الإعلانات <small class="m">(بتدفعها للمنصات مباشرة)</small></span><b>${jd(t.ad)}</b></div>
     <div class="tot"><span>صرفك الشهري كامل</span><b>${jd(t.monthly)}</b></div>${t.one_time ? `<div><span>أول شهر مع رسوم البداية</span><b>${jd(t.first)}</b></div>` : ''}`;
   const fb = feesBudget(), used = t.fees + t.one_time, over = used > fb && fb > 0;
@@ -677,9 +683,9 @@ async function quotePage(tok) {
     <span class="stamp ${stamp[1]}">${stamp[0]}</span></div>
     ${!ready ? '<p style="margin-top:14px">وصلنا طلبك وفريقنا بيراجعه. هاد ملخص اللي اخترته، والعرض الرسمي بيطلع هون لما يجهز.</p>' : q.notes ? `<p style="margin-top:14px;white-space:pre-line">${esc(q.notes)}</p>` : ''}
     <table><thead><tr><th>الخدمة</th><th>الكمية</th><th>شهري</th><th>مرة وحدة</th></tr></thead><tbody>
-    ${(q.items || []).map(i => `<tr><td>${esc(i.name)}${i.duration ? `<br><small class="m">المدة: ${esc(i.duration)}</small>` : ''}${i.includes ? `<br><small class="m">${esc(i.includes)}</small>` : ''}${i.note ? `<br><small class="m">${esc(i.note)}</small>` : ''}</td><td class="n">${i.ptype === 'team' ? i.qty + ' موظفة' : i.qty}</td><td class="n">${i.quote ? 'بعد الجلسة' : N(i.monthly) ? jd(i.monthly) : '—'}</td><td class="n">${N(i.one_time) ? jd(i.one_time) : '—'}</td></tr>`).join('')}</tbody></table>
+    ${(q.items || []).map(i => `<tr><td>${esc(i.name)}${i.duration ? `<br><small class="m">المدة: ${esc(i.duration)}</small>` : ''}${i.includes ? `<br><small class="m">${esc(i.includes)}</small>` : ''}${i.note ? `<br><small class="m">${esc(i.note)}</small>` : ''}</td><td class="n">${i.ptype === 'team' ? i.qty + ' موظفة' : i.qty}</td><td class="n">${i.quote ? 'بعد الجلسة' : N(i.monthly) ? jd(i.monthly) : '—'}</td><td class="n">${N(i.one_time) ? jd(i.one_time) : '—'}${N(i.waived) ? `<br><small style="color:var(--mint)">إعداد <s>${jd(i.waived)}</s> مجاناً</small>` : ''}</td></tr>`).join('')}</tbody></table>
     <div class="rsum" style="max-width:380px;margin-inline-start:auto"><div><span>أتعاب شهرية</span><b>${jd(q.fees_monthly)}</b></div>${N(q.discount) ? `<div><span>خصم شهري</span><b>−${jd(q.discount)}</b></div>` : ''}
-      ${N(q.one_time) ? `<div><span>رسوم لمرة وحدة</span><b>${jd(q.one_time)}</b></div>` : ''}<div class="ads"><span>ميزانية الإعلانات (للمنصات مباشرة)</span><b>${jd(q.ad_budget)}</b></div>
+      ${N(q.one_time) ? `<div><span>رسوم لمرة وحدة</span><b>${jd(q.one_time)}</b></div>` : ''}${(q.items || []).some(i => N(i.waived)) ? `<div class="gift"><span>رسوم الإعداد <s>${jd((q.items || []).reduce((a, i) => a + N(i.waived), 0))}</s></span><b>مجاناً</b></div>` : ''}<div class="ads"><span>ميزانية الإعلانات (للمنصات مباشرة)</span><b>${jd(q.ad_budget)}</b></div>
       <div class="tot"><span>صرفك الشهري كامل</span><b>${jd(total + N(q.ad_budget))}</b></div></div>
     ${ready && q.terms ? `<h3 style="margin-top:20px">الشروط</h3><p class="m" style="white-space:pre-line;margin-top:6px">${esc(q.terms)}</p>` : ''}
     ${ready && q.valid_until ? `<p class="m" style="margin-top:8px">العرض صالح لـ ${esc(q.valid_until)}</p>` : ''}

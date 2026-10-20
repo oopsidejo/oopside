@@ -25,7 +25,7 @@ const pnum = n => `<span class="num">${fmt(n)}</span>`;
 
 Object.assign(ACT_SEC, {
   nudge: 'control', moveWaiting: 'control', simForm: 'control', readAlerts: 'control', convAssign: 'control',
-  warnForm: 'team', taskForm: 'tasks', taskDel: 'tasks', adAccForm: 'ads', adSync: 'ads', adManual: 'ads', adLink: 'ads',
+  warnForm: 'team', taskForm: 'tasks', taskDel: 'tasks', adAccForm: 'ads', adAccEdit: 'ads', adSync: 'ads', manSales: 'ads', metaConnect: 'ads', adManual: 'ads', adLink: 'ads',
   landingForm: 'landing', landingToggle: 'landing', postForm: 'page', postToggle: 'page', qrForm: 'page', qrDel: 'page',
   empForm: 'staff', depForm: 'staff', payAdj: 'staff', paySalary: 'staff', clientForm: 'agency', genInvoices: 'agency',
   campForm: 'agency', delivForm: 'agency', stageForm: 'agency', stageSet: 'agency', invForm: 'agency', invToggle: 'agency',
@@ -246,6 +246,7 @@ document.addEventListener('change', async e => {
     if (c === 'taskStatus') { await db.rpc('task_status', {tid: t.dataset.id, st: t.value}); toast('تحدّثت المهمة'); refreshBadges(); K.render(); }
     if (c === 'delivStatus') { await db.upd('deliverables', {id: t.dataset.id}, {status: t.value}); toast('تحدّث'); K.render(); }
     if (c === 'leadStage') { await db.upd('leads', {id: t.dataset.id}, {stage: t.value, updated_at: new Date().toISOString()}); toast('تحدّث'); K.render(); }
+    if (c === 'adRange') { const f = $('#adf')?.value, tt = $('#adt')?.value; if (f && tt) { ui.adFrom = f; ui.adTo = tt; K.render(); } return; }
     if (c === 'adProduct') { await db.rpc('ad_set_product', {aid: t.dataset.id, pid: t.value || null}); toast('انربط الإعلان بالمنتج'); K.render(); }
     if (c === 'stageSet') { await db.upd('stages', {id: t.dataset.id}, {status: t.value, done_at: t.value === 'منتهي' ? new Date().toISOString() : null}); toast('تحدّثت المرحلة'); K.render(); }
     if (c === 'pmonth') { ui.pmonth = t.value || monthOf(today()); K.render(); }
@@ -357,20 +358,24 @@ function diagnose(g) {
   if (!d.length) d.push({l: 'brand', k: 'مستقر', t: 'الأرقام طبيعية، كمّل وراقب.'});
   return d;
 }
+const adRange = () => { if (ui.adFrom && ui.adTo) return [ui.adFrom <= ui.adTo ? ui.adFrom : ui.adTo, ui.adFrom <= ui.adTo ? ui.adTo : ui.adFrom]; const d = ui.adDays || 7; return [addDays(today(), -(d - 1)), today()]; };
 V.ads = async () => {
-  const d = ui.adDays || 7, from = addDays(today(), -(d - 1));
-  const [rows, accs, lastAd] = await Promise.all([db.rpc('ad_perf', {d_from: from, d_to: today()}), db.q('ad_accounts', {order: ['name', true]}), db.q('ads', {order: ['updated_at', false], limit: 1, select: 'updated_at'})]);
-  const ads = (rows || []).map(adCalc).filter(g => g.spend || g.orders).sort((a, b) => b.spend - a.spend);
-  const T = {}; ['spend','messages','orders','delivered','returned','revenue','pending_rev','profit','impressions','clicks'].forEach(k => T[k] = sum(ads, g => g[k]));
+  const d = ui.adFrom ? 0 : (ui.adDays || 7), [from, to] = adRange();
+  const [rows, accs, lastAd, man] = await Promise.all([db.rpc('ad_perf', {d_from: from, d_to: to}), db.q('ad_accounts', {order: ['name', true]}), db.q('ads', {order: ['updated_at', false], limit: 1, select: 'updated_at'}),
+    db.q('manual_sales', {gte: {day: from}, lte: {day: to}, order: ['day', false], limit: 500}).catch(() => null)]);
+  const all = (rows || []).map(adCalc);
+  const ads = all.filter(g => !String(g.ad_id).startsWith('manual:')).filter(g => g.spend || g.orders).sort((a, b) => b.spend - a.spend);
+  const T = {}; ['spend','messages','orders','delivered','returned','revenue','pending_rev','profit','impressions','clicks'].forEach(k => T[k] = sum(all, g => g[k]));
   const roas = T.spend ? T.revenue / T.spend : 0, roasE = T.spend ? (T.revenue + T.pending_rev * .8) / T.spend : 0;
-  const byP = {}; ads.forEach(g => { const k = g.product_id || 'none'; const x = byP[k] = byP[k] || {name: g.product_name || 'بدون منتج', product_id: g.product_id, spend: 0, messages: 0, orders: 0, delivered: 0, returned: 0, revenue: 0, pending_rev: 0, profit: 0}; ['spend','messages','orders','delivered','returned','revenue','pending_rev','profit'].forEach(f => x[f] += g[f]); });
+  const byP = {}; all.filter(g => g.spend || g.orders).forEach(g => { const k = g.product_id || 'none'; const x = byP[k] = byP[k] || {name: g.product_name || 'بدون منتج', product_id: g.product_id, spend: 0, messages: 0, orders: 0, delivered: 0, returned: 0, revenue: 0, pending_rev: 0, profit: 0}; ['spend','messages','orders','delivered','returned','revenue','pending_rev','profit'].forEach(f => x[f] += g[f]); });
   const prods = Object.values(byP).map(x => ({...x, roasE: x.spend ? (x.revenue + x.pending_rev * .8) / x.spend : 0, cpa: x.orders ? x.spend / x.orders : 0, margin: x.product_id ? N(P(x.product_id)?.price) - N(P(x.product_id)?.cost) : 0})).sort((a, b) => b.spend - a.spend);
   const rc = r => r >= 4 ? 'good' : r >= rule('roas_min', 2.5) ? 'warn' : 'bad';
   const dec = x => !x.spend ? pill('بدون إعلان') : x.roasE >= 4 ? pill('كبّر الميزانية', 'good') : x.roasE >= rule('roas_min', 2.5) ? pill('راقب', 'warn') : pill('وقّف أو غيّر العرض', 'bad');
   const pOpts = ST.products.filter(p => p.active).map(p => [p.id, p.name]);
   return head('الحسابات الإعلانية', 'العائد محسوب على الطلبات اللي فعلاً انطلبت وانسلّمت، مش على الرسائل. كل إعلان لازم ينربط بمنتج',
-      periodChips(d, 'adDays') + '<button class="btn" data-act="adManual">+ صرف يدوي</button><button class="btn pri" data-act="adSync">مزامنة من Meta</button>') +
-    `<div class="row">${accs.map(a => pill(a.name || a.account_id, a.active ? 'good' : '')).join('')}<button class="btn sm" data-act="adAccForm">+ حساب إعلاني</button><small class="m">آخر تحديث: ${lastAd[0] ? fmtDT(lastAd[0].updated_at) : 'ما في'}</small></div>
+      periodChips(d, 'adDays') + `<span class="row" style="gap:4px"><label class="m" for="adf" style="font-size:13px">من</label><input type="date" id="adf" class="inl" value="${from}" data-chg="adRange"><label class="m" for="adt" style="font-size:13px">لـ</label><input type="date" id="adt" class="inl" value="${to}" data-chg="adRange"></span>` +
+      '<button class="btn" data-act="manSales">+ مبيعات يدوية</button><button class="btn" data-act="adManual">+ صرف يدوي</button><button class="btn" data-act="metaConnect">ربط حسابات Meta</button><button class="btn pri" data-act="adSync">مزامنة من Meta</button>') +
+    `<div class="row">${accs.map(a => `<button class="chip ${a.active ? 'on' : ''}" data-act="adAccEdit" data-id="${esc(a.account_id)}" title="تعديل أو حذف">${esc(a.name || a.account_id)}${a.active ? '' : ' (موقوف)'}</button>`).join('')}<button class="btn sm" data-act="adAccForm">+ حساب إعلاني</button><small class="m">آخر تحديث: ${lastAd[0] ? fmtDT(lastAd[0].updated_at) : 'ما في'}</small></div>
     <div class="kpis">${kpi('صرف الإعلانات', jd(T.spend), '', 'hl')}${kpi('رسائل', fmt(T.messages), 'تكلفة الرسالة ' + jd(T.messages ? T.spend / T.messages : 0))}${kpi('طلبات من الإعلانات', T.orders, 'تحويل ' + pct(T.messages ? T.orders / T.messages : 0))}
      ${kpi('ROAS مسلّم', roas.toFixed(2) + 'x', 'على اللي انسلّم بس')}${kpi('ROAS متوقع', roasE.toFixed(2) + 'x', 'مسلّم + 80% من اللي بالطريق')}${kpi('ربح بعد الإعلان', jd(T.profit), '', T.profit < 0 ? 'red' : '')}</div>
     <div class="card"><h2>المنتجات: كم باع كل منتج وكم رجّع إعلانه</h2>${table([{h:'المنتج', f:x => esc(x.name)}, {h:'صرف', f:x => jd(x.spend)}, {h:'رسائل', f:x => x.messages}, {h:'طلبات', f:x => x.orders}, {h:'انسلّم / رجع', f:x => x.delivered + ' / ' + x.returned}, {h:'تكلفة الطلب', f:x => x.cpa ? jd(x.cpa) : '—'}, {h:'ربح القطعة', f:x => x.product_id ? jd(x.margin) : '—'},
@@ -379,11 +384,81 @@ V.ads = async () => {
     <div class="card"><h2>الإعلانات: ليش هالإعلان غالي؟</h2>${table([{h:'الإعلان', f:g => `<b>${esc(g.name)}</b><br><small class="m">${esc(g.campaign || '')}</small>`}, {h:'المنتج', f:g => sel('adp_' + g.ad_id.replace(/[^a-z0-9]/gi, ''), pOpts, g.product_id, '— اربط بمنتج —', `data-chg="adProduct" data-id="${esc(g.ad_id)}" aria-label="المنتج" ${can('ads', 'edit') ? '' : 'disabled'}`)},
       {h:'صرف', f:g => jd(g.spend)}, {h:'CPM', f:g => g.impressions ? `<span class="${g.cpm > rule('cpm_max', 3) ? 'neg' : ''}">${fmt(g.cpm)}</span>` : '—'}, {h:'CTR', f:g => g.impressions ? `<span class="${g.ctr < .008 ? 'neg' : ''}">${pct(g.ctr)}</span>` : '—'}, {h:'تكرار', f:g => g.reach ? `<span class="${g.freq > rule('freq_max', 3.5) ? 'neg' : ''}">${g.freq.toFixed(1)}</span>` : '—'},
       {h:'رسائل', f:g => g.messages}, {h:'تكلفة الرسالة', f:g => g.messages ? jd(g.cpMsg) : '—'}, {h:'طلبات', f:g => g.orders}, {h:'تحويل', f:g => g.messages ? `<span class="${g.cv < .1 ? 'neg' : ''}">${pct(g.cv)}</span>` : '—'},
-      {h:'ROAS', f:g => pill(g.roasExp.toFixed(2) + 'x', rc(g.roasExp))}, {h:'التشخيص', f:g => diagnose(g).map(x => `<div style="margin-bottom:4px">${pill(x.k, x.l)} ${esc(x.t)}</div>`).join(''), c:'wrap'}], ads, 'ما في إعلانات لسا. اربط حساب Meta أو أضف صرف يدوي')}</div>`;
+      {h:'ROAS', f:g => pill(g.roasExp.toFixed(2) + 'x', rc(g.roasExp))}, {h:'التشخيص', f:g => diagnose(g).map(x => `<div style="margin-bottom:4px">${pill(x.k, x.l)} ${esc(x.t)}</div>`).join(''), c:'wrap'}], ads, 'ما في إعلانات لسا. اربط حساب Meta أو أضف صرف يدوي')}</div>` + manCard(man, from, to);
 };
+function manCard(man, from, to) {
+  if (man === null) return '<p class="note">المبيعات اليدوية بتحتاج ملف 09_sales_setup.sql على Supabase.</p>';
+  const byDay = {}; man.forEach(m => { (byDay[m.day] = byDay[m.day] || []).push(m); });
+  const days = Object.keys(byDay).sort().reverse();
+  return `<div class="card"><div class="head" style="margin-bottom:10px"><h2>مبيعات مسجّلة يدوي (${from === to ? from : from + ' لـ ' + to})</h2><button class="btn sm" data-act="manSales">+ مبيعات يوم</button></div>
+    <p class="m" style="margin-bottom:10px">للمبيعات اللي ما انطلبت من النظام (مثلاً من الصفحة أو المحل). بتنحسب بأرباح الإعلانات والـ ROAS للمنتج.</p>
+    ${days.length ? table([{h:'اليوم', f:x => `<b>${x}</b>`}, {h:'المبيعات', f:x => byDay[x].map(m => esc(P(m.product_id)?.name || 'منتج') + ' × ' + m.qty + (m.ad_id ? ' <small class="m">(إعلان)</small>' : '')).join('، '), c: 'wrap'},
+      {h:'القطع', f:x => sum(byDay[x], m => m.qty)}, {h:'القيمة', f:x => jd(sum(byDay[x], m => N(m.qty) * N(m.unit_price)))}, {h:'الربح قبل الإعلان', f:x => jd(sum(byDay[x], m => N(m.qty) * (N(m.unit_price) - N(m.unit_cost))))},
+      {h:'', f:x => `<button class="btn sm" data-act="manSales" data-id="${x}">تعديل</button>`}], days) : '<p class="note">ما في مبيعات يدوية بهالفترة.</p>'}</div>`;
+}
 Object.assign(A, {
-  adDays: k => { ui.adDays = +k; K.render(); },
-  adSync: async () => { toast('جاري المزامنة…'); const r = await db.fn('meta-ads-sync', {days: Math.max(3, ui.adDays || 7)}); toast(`تمت المزامنة: ${N(r?.rows)} سطر`); loadAdsList(); K.render(); },
+  adDays: k => { ui.adDays = +k; ui.adFrom = ui.adTo = null; K.render(); },
+  adSync: async () => { toast('جاري المزامنة…'); const r = await db.fn('meta-ads-sync', {days: Math.min(90, Math.max(3, Math.round((new Date(today()) - new Date(adRange()[0])) / 864e5) + 1))});
+    const errs = (r?.errors || []).map(e => e.account_id + ': ' + (/ads_read|ads_management|#200|permission/i.test(e.error) ? 'ما في صلاحية. أعطي مستخدم النظام هالحساب واعمل رمز جديد فيه ads_read' : /does not exist|Unsupported get request|#100/i.test(e.error) ? 'الرقم غلط أو الحساب مش موجود' : e.error));
+    toast(`تمت المزامنة: ${N(r?.rows)} سطر` + (errs.length ? ' · مشاكل: ' + errs.join(' | ') : ''), !!errs.length); loadAdsList(); K.render(); },
+  manSales: async day => {
+    const d0 = day || today();
+    const load = async d => (await db.q('manual_sales', {eq: {day: d}}).catch(() => []));
+    const prods = ST.products.filter(p => p.active);
+    if (!prods.length) return toast('أضف منتجات أول', true);
+    const draw = async d => {
+      const ex = await load(d), get = pid => ex.find(m => m.product_id === pid && !m.ad_id);
+      $('#mtitle').textContent = 'مبيعات يدوية';
+      $('#mform').innerHTML = `<div class="fgrid"><label class="fld" for="ms_day"><span>اليوم</span><input id="ms_day" type="date" value="${d}" max="${today()}"></label></div>
+        <p class="m" style="margin:10px 0">اكتب كم قطعة انباعت من كل منتج بهاليوم (برا طلبات النظام). صفر أو فاضي = ما انباع. بتقدر ترجع تعدّل أي يوم.</p>
+        <div class="tw"><table><thead><tr><th>المنتج</th><th>كم قطعة</th><th>سعر القطعة</th></tr></thead><tbody>${prods.map(p => { const m = get(p.id); return `<tr><td>${esc(p.name)}</td><td><input class="inl" style="width:80px" type="number" min="0" step="1" inputmode="numeric" data-msq="${p.id}" value="${m ? m.qty : ''}" aria-label="الكمية"></td><td><input class="inl" style="width:90px" type="number" min="0" step="any" data-msp="${p.id}" value="${m ? N(m.unit_price) : N(p.price)}" aria-label="السعر"></td></tr>`; }).join('')}</tbody></table></div>
+        <p class="lerr" id="ferr"></p><div class="fact"><button class="btn pri" type="submit" id="fsave">حفظ اليوم</button><button class="btn" type="button" data-act="closeM">إلغاء</button></div>`;
+      $('#ms_day').onchange = e => { if (e.target.value) draw(e.target.value); };
+      $('#mform').oninput = null;
+      $('#mform').onsubmit = async e => {
+        e.preventDefault(); const btn = $('#fsave'); btn.disabled = true;
+        const dd = $('#ms_day').value || d;
+        const rows = prods.map(p => ({product_id: p.id, qty: Math.max(0, Math.round(N($(`[data-msq="${p.id}"]`).value))), price: N($(`[data-msp="${p.id}"]`).value)}));
+        try { const n = await db.rpc('manual_sales_save', {d: dd, rows}); closeM(true); toast(n ? `انحفظت مبيعات ${dd}` : `انمسحت مبيعات ${dd}`); K.render(); }
+        catch (x) { $('#ferr').textContent = /manual_sales/.test(x.message) ? 'شغّل ملف 09_sales_setup.sql على Supabase أول' : K.arabicErr(x); btn.disabled = false; }
+      };
+      $('#modal').hidden = false;
+    };
+    await draw(d0);
+  },
+  metaConnect: async () => {
+    $('#mtitle').textContent = 'ربط حسابات Meta';
+    $('#mform').innerHTML = '<p class="m">جاري جلب حساباتك من Meta…</p>'; $('#mform').onsubmit = e => e.preventDefault(); $('#modal').hidden = false;
+    let r;
+    try { r = await db.fn('meta-connect', {action: 'list'}); }
+    catch (x) { $('#mform').innerHTML = `<p class="lerr">${esc(x.message)}</p><p class="note">لازم تنشر الدالة <b>meta-connect</b> على Supabase (وتطفي JWT verification)، وتحط <b>META_ADS_TOKEN</b> بالـ Secrets.</p><div class="fact"><button class="btn" type="button" data-act="closeM">سكّر</button></div>`; return; }
+    const row = (kind, x) => `<div class="mcrow"><div><b>${esc(x.name)}</b><br><small class="m">${kind === 'ad' ? esc(x.id) + (x.status ? ' · ' + esc(x.status) : '') + (x.currency ? ' · ' + esc(x.currency) : '') : (x.ig_username ? 'فيسبوك + إنستغرام @' + esc(x.ig_username) : 'فيسبوك')}</small></div>
+      <button type="button" class="btn sm ${x.linked ? 'ghost' : 'pri'}" data-mc="${kind}" data-id="${esc(x.id)}" data-name="${esc(x.name)}" data-linked="${x.linked ? 1 : 0}" ${kind === 'page' && !r.can_pages ? 'disabled title="للمدير العام بس"' : ''}>${x.linked ? 'مربوط ✓ (فصل)' : 'ربط'}</button></div>`;
+    $('#mform').innerHTML = `<p class="m">هاي كل الحسابات اللي معطاة لمستخدم النظام بـ Meta. اضغط "ربط" على اللي بدك إياه، بدون ما تكتب أي رقم.</p>
+      <h3 style="margin:14px 0 6px">الحسابات الإعلانية</h3>${r.ads_error ? `<p class="lerr">${esc(r.ads_error)}</p>` : ''}${(r.ads || []).map(x => row('ad', x)).join('') || '<p class="note">ما في حسابات إعلانية. أعطيها لمستخدم النظام من إعدادات البزنس.</p>'}
+      <h3 style="margin:16px 0 6px">الصفحات (الرسائل والتعليقات)</h3>${r.pages_error ? `<p class="lerr">${esc(r.pages_error)}</p>` : ''}${(r.pages || []).map(x => row('page', x)).join('') || '<p class="note">ما في صفحات. أعطيها لمستخدم النظام بتحكم كامل.</p>'}
+      <p class="lerr" id="ferr"></p><div class="fact"><button class="btn" type="button" data-act="closeM">خلصت</button></div>`;
+    $('#mform').onclick = async e => {
+      const b = e.target.closest('[data-mc]'); if (!b) return;
+      const kind = b.dataset.mc, linked = b.dataset.linked === '1'; b.disabled = true; const old = b.textContent; b.textContent = '…'; $('#ferr').textContent = '';
+      try {
+        const res = await db.fn('meta-connect', {action: (linked ? 'unlink_' : 'link_') + kind, id: b.dataset.id, name: b.dataset.name});
+        b.dataset.linked = linked ? '0' : '1'; b.textContent = linked ? 'ربط' : 'مربوط ✓ (فصل)'; b.className = 'btn sm ' + (linked ? 'pri' : 'ghost');
+        if (kind === 'page' && !linked) {
+          // الصفحة بتصير كمان "صفحة بيع" عشان الطلبات تنحسب عليها
+          try { const ex = await db.q('sales_pages', {eq: {meta_page_id: b.dataset.id}}); if (!ex.length) { await db.ins('sales_pages', {name: b.dataset.name, platform: res?.ig_username ? 'فيسبوك وإنستغرام' : 'فيسبوك', meta_page_id: b.dataset.id}); ST.pages = await db.q('sales_pages', {order: ['name', true]}); } } catch (x) {}
+          if (res && res.subscribed === false) $('#ferr').textContent = 'انربطت الصفحة، بس ما قدرنا نشترك برسائلها: ' + (res.sub_error || '') + '. تأكد إنك أضفت Messenger و Webhooks للتطبيق.';
+          else toast('انربطت ' + b.dataset.name + ' والرسائل رح توصل للنظام');
+        } else toast(linked ? 'انفصل' : 'انربط ' + b.dataset.name);
+      } catch (x) { $('#ferr').textContent = x.message; b.textContent = old; }
+      b.disabled = false;
+    };
+    K.setModalCancel(() => K.render());
+  },
+  adAccEdit: id => { const a = {account_id: id}; ui.adAccId = id;
+    openForm('الحساب ' + id, [{k:'name', l:'الاسم'}, {k:'active', l:'الحالة', t:'select', opts: [['true', 'شغّال (بينسحب)'], ['false', 'موقوف']]}, {k:'del', l:'حذف الحساب من النظام؟', t:'select', opts: [['no', 'لا'], ['yes', 'نعم، احذفه']]}], {name: '', active: 'true', del: 'no'},
+      async v => { if (v.del === 'yes') { try { await db.del('ad_accounts', {account_id: id}); toast('انحذف الحساب'); } catch (x) { await db.upd('ad_accounts', {account_id: id}, {active: false}); toast('ما قدرت أحذفه لأنه إله إعلانات، فوقّفته'); } }
+        else { await db.upd('ad_accounts', {account_id: id}, {active: v.active === 'true', ...(v.name ? {name: v.name} : {})}); toast('انحفظ'); } K.render(); }); },
   adAccForm: () => openForm('حساب إعلاني', [{k:'account_id', l:'رقم الحساب (act_123...)', req: 1}, {k:'name', l:'الاسم'}], null,
     async v => { const id = v.account_id.startsWith('act_') ? v.account_id : 'act_' + v.account_id.replace(/\D/g, ''); await db.ins('ad_accounts', {account_id: id, name: v.name || id}); toast('انضاف الحساب'); K.render(); }),
   adManual: () => openForm('صرف إعلان يدوي', [{k:'name', l:'اسم الإعلان أو الحملة', req: 1, wide: 1}, {k:'pid', l:'المنتج', t:'select', opts: [['', '—'], ...ST.products.filter(p => p.active).map(p => [p.id, p.name])]}, {k:'d', l:'التاريخ', t:'date', def: today()}, {k:'amount', l:'المصروف (د.أ)', t:'number'}, {k:'msgs', l:'رسائل', t:'number', def: 0}, {k:'platform', l:'المنصة', t:'select', opts: ['فيسبوك وإنستغرام','تيك توك','سناب شات','جوجل','يدوي']}], null,
@@ -779,7 +854,7 @@ V.settings = async () => {
   return html + `<div class="cols"><div class="card"><h2>قواعد المراقبة والإعلانات</h2><div class="fgrid">${ri('sla', 'تنبيه إذا ما في رد خلال', 'دقائق', 5)}${ri('escalate', 'تصعيد للإدارة بعد', 'دقيقة', 15)}${ri('idle', '"ترك الصفحة" بعد', 'دقائق', 10)}${ri('break_max', 'أقصى استراحة', 'دقيقة', 20)}${ri('late', 'تأخير الدخول المسموح', 'دقائق', 10)}
       ${ri('roas_min', 'أقل ROAS مقبول', 'x', 2.5)}${ri('cpm_max', 'أعلى CPM مقبول', 'د.أ', 3)}${ri('freq_max', 'أعلى تكرار', 'مرة', 3.5)}${ri('posts_week', 'منشورات بالأسبوع', 'منشور', 5)}</div><div class="row" style="margin-top:12px"><button class="btn pri" data-act="saveRules">حفظ القواعد</button></div></div>
     ${isAdmin() ? `<div class="card"><h2>صفحات Meta المربوطة</h2>${table([{h:'الصفحة', f:p => esc(p.name)}, {h:'المنصة', f:p => pill(p.platform)}, {h:'رقم الصفحة', f:p => esc(p.page_id)}, {h:'', f:p => `<button class="btn sm" data-act="metaPageForm" data-id="${esc(p.page_id)}">تحديث التوكن</button>`}], pages, 'ما في صفحات مربوطة لسا')}
-      <div class="row" style="margin-top:10px"><button class="btn" data-act="metaPageForm">+ ربط صفحة</button></div><p class="note" style="margin-top:8px">التوكن بينحفظ بمكان مخفي بقاعدة البيانات، وما حدا بيقدر يقرأه من الواجهة. خطوات جلبه بدليل ربط Meta.</p></div>
+      <div class="row" style="margin-top:10px"><button class="btn pri" data-act="metaConnect">ربط من Meta (بدون أرقام)</button><button class="btn ghost" data-act="metaPageForm">ربط يدوي</button></div><p class="note" style="margin-top:8px">التوكن بينحفظ بمكان مخفي بقاعدة البيانات، وما حدا بيقدر يقرأه من الواجهة. خطوات جلبه بدليل ربط Meta.</p></div>
     <div class="card"><h2>نسخة احتياطية</h2><p class="m">بتنزّل كل بيانات النظام بملف واحد (JSON) على جهازك. اعملها كل أسبوع على الأقل واحفظها بمكان آمن.</p><div class="row" style="margin-top:10px"><button class="btn pri" data-act="backup">تنزيل نسخة احتياطية</button></div></div>` : ''}</div>`;
 };
 Object.assign(A, {
