@@ -12,7 +12,7 @@ const IDEAS = ['عيادات أسنان', 'عيادات تجميل', 'مطاعم
 const AREAS = ['عمّان', 'عبدون', 'الصويفية', 'خلدا', 'تلاع العلي', 'الشميساني', 'جبل عمّان', 'مرج الحمام', 'الزرقاء', 'إربد', 'العقبة', 'السلط', 'مادبا', 'المفرق', 'جرش'];
 const scoreCls = s => s >= 60 ? 'good' : s >= 35 ? 'warn' : '';
 
-Object.assign(ACT_SEC, {hSearch: 'leads', hMsgs: 'leads', hMsgOne: 'leads', hWa: 'leads', hImg: 'leads', hLead: 'leads', hCfgSave: 'leads', hImgDel: 'leads', hSelAll: 'leads', hFilter: 'leads', hShow: 'leads', hDiag: 'leads', hErrX: 'leads', hErrCopy: 'leads', hTplOne: 'leads', hTplSel: 'leads', hNext: 'leads'});
+Object.assign(ACT_SEC, {hSearch: 'leads', hMsgs: 'leads', hMsgOne: 'leads', hWa: 'leads', hImg: 'leads', hLead: 'leads', hCfgSave: 'leads', hImgDel: 'leads', hSelAll: 'leads', hFilter: 'leads', hShow: 'leads', hDiag: 'leads', hErrX: 'leads', hErrCopy: 'leads', hTplOne: 'leads', hTplSel: 'leads', hNext: 'leads', hPurge: 'leads'});
 
 V.hunt = async () => {
   const f = ui.hFilter || 'جديد';
@@ -41,6 +41,7 @@ V.hunt = async () => {
         <label class="fld"><span>نوع الشغل</span><input id="h_q" list="h_ideas" value="${esc(ui.hQ || '')}" placeholder="مثلاً: عيادات أسنان"><datalist id="h_ideas">${IDEAS.map(x => `<option value="${x}">`).join('')}</datalist></label>
         <label class="fld"><span>المنطقة أو المدينة</span><input id="h_area" list="h_areas" value="${esc(ui.hArea || 'عمّان')}"><datalist id="h_areas">${AREAS.map(x => `<option value="${x}">`).join('')}</datalist></label>
         <label class="fld"><span>من وين</span><select id="h_src"><option value="google" ${ui.hSrc !== 'osm' ? 'selected' : ''}>خرائط جوجل (أدق، فيها أرقام وتقييمات)</option><option value="osm" ${ui.hSrc === 'osm' ? 'selected' : ''}>OpenStreetMap (مجاني بالكامل، أرقام أقل)</option></select></label>
+        <label class="fld"><span>الرقم</span><select id="h_need"><option value="phone" ${(ui.hNeed || 'phone') === 'phone' ? 'selected' : ''}>بس اللي إلهم رقم (إجباري)</option><option value="mobile" ${ui.hNeed === 'mobile' ? 'selected' : ''}>بس اللي إلهم موبايل (واتساب)</option><option value="any" ${ui.hNeed === 'any' ? 'selected' : ''}>الكل حتى بدون رقم</option></select></label>
         <label class="fld"><span>كم شركة بدك (لحد 2000)</span><input id="h_target" type="number" min="20" max="2000" step="10" list="h_targets" value="${N(ui.hTarget) || 60}"><datalist id="h_targets">${[60, 100, 200, 500, 1000, 2000].map(x => `<option value="${x}">`).join('')}</datalist></label>
       </div>
       <div class="row" style="margin-top:8px"><button class="btn sm ghost" data-act="hDiag">افحص مفتاح جوجل</button><button class="btn pri" data-act="hSearch">${ui.hBusy ? '…عم يدوّر' + (N(ui.hTarget) > 60 ? ' (ممكن ياخد دقيقة)' : '') : 'دوّر'}</button><small class="m">كل 20 نتيجة من جوجل تقريباً = بحث واحد من الـ${N(s.google_limit) || 950} المجانية بالشهر (باقيلك ${Math.max(0, N(s.google_limit) - N(s.google_used))}). أكثر من 60 بيقسم المنطقة مربعات لحاله.</small></div>
@@ -61,7 +62,7 @@ V.hunt = async () => {
       {h: '', f: h => `<button class="btn sm" data-act="hShow" data-id="${h.id}">اعرض نتائجه</button>`}], ST.hHist)}</details>` : ''}
     ${curS ? `<div class="card" style="border-color:var(--info)"><div class="row" style="justify-content:space-between"><span>عم تشوف نتائج: <b>${esc(curS.query)}</b> ${esc(curS.area || '')} · ${K.fmtDT(curS.at)}</span><button class="btn sm" data-act="hShow" data-id="">رجوع للكل</button></div></div>` : ''}
     <div class="row" style="margin:12px 0 6px;justify-content:space-between">${chips([['جديد', 'جديد'], ['wa', 'جديد وعليه واتساب'], ['انبعتت', 'انبعتت'], ['رد', 'رد'], ['مهتم', 'مهتم'], ['اجتماع', 'اجتماع'], ['عميل', 'عميل'], ['مش مهتم', 'مش مهتم'], ['all', 'الكل']], f, 'hFilter')}
-      <span class="row" style="gap:6px"><button class="btn sm" data-act="hSelAll">${sel.size ? 'ألغِ التحديد (' + sel.size + ')' : 'حدد أول 20'}</button><button class="btn sm" data-act="hTplSel" ${sel.size ? '' : 'disabled'}>📝 حط القالب للمحدد</button><button class="btn sm" data-act="hMsgs" ${sel.size ? '' : 'disabled'}>✨ اكتب بالذكاء للمحدد</button><button class="btn sm pri" data-act="hNext" title="بيفتح واتساب لأول شركة جاهزة (عليها رقم ورسالة ولسا ما انبعتلها)">▶ ابعت للي بعده</button></span></div>
+      <span class="row" style="gap:6px"><button class="btn sm ghost" data-act="hPurge" title="بيشيل الشركات الجديدة اللي ما إلها رقم">🧹 شيل اللي بدون رقم</button><button class="btn sm" data-act="hSelAll">${sel.size ? 'ألغِ التحديد (' + sel.size + ')' : 'حدد أول 20'}</button><button class="btn sm" data-act="hTplSel" ${sel.size ? '' : 'disabled'}>📝 حط القالب للمحدد</button><button class="btn sm" data-act="hMsgs" ${sel.size ? '' : 'disabled'}>✨ اكتب بالذكاء للمحدد</button><button class="btn sm pri" data-act="hNext" title="بيفتح واتساب لأول شركة جاهزة (عليها رقم ورسالة ولسا ما انبعتلها)">▶ ابعت للي بعده</button></span></div>
     ${list.length ? `<div class="hgrid">${list.map(card).join('')}</div>` : '<div class="card"><p class="note">ما في شركات هون. دوّر من فوق.</p></div>'}`;
 };
 
@@ -105,7 +106,7 @@ Object.assign(A, {
   hFilter: k => { ui.hFilter = k; ui.hSid = null; ui.hSel = new Set(); K.render(); },
   hSearch: async () => {
     if (ui.hBusy) return;
-    ui.hQ = $('#h_q').value.trim(); ui.hArea = $('#h_area').value.trim(); ui.hSrc = $('#h_src').value; ui.hTarget = Math.min(2000, Math.max(20, +$('#h_target').value || 60));
+    ui.hQ = $('#h_q').value.trim(); ui.hArea = $('#h_area').value.trim(); ui.hSrc = $('#h_src').value; ui.hTarget = Math.min(2000, Math.max(20, +$('#h_target').value || 60)); ui.hNeed = $('#h_need')?.value || 'phone';
     if (!ui.hQ) { toast('اكتب نوع الشغل', true); return; }
     const norm = x => String(x || '').replace(/[أإآ]/g, 'ا').replace(/ّ/g, '').trim();
     const dup = (ST.hHist || []).find(h => norm(h.query) === norm(ui.hQ) && norm(h.area) === norm(ui.hArea) && (h.source || 'google') === ui.hSrc);
@@ -113,8 +114,8 @@ Object.assign(A, {
     ui.hConfirm = null;
     ui.hBusy = true; await K.render();
     ui.hErr = ''; ui.hOk = '';
-    try { const r = await db.fn('prospects', {action: 'search', query: ui.hQ, area: ui.hArea, source: ui.hSrc, target: ui.hTarget});
-      ui.hOk = N(r.found) ? `لقيت ${N(r.found)} شركة (${N(r.new)} جديدة)` : '';
+    try { const r = await db.fn('prospects', {action: 'search', query: ui.hQ, area: ui.hArea, source: ui.hSrc, target: ui.hTarget, need: ui.hNeed});
+      ui.hOk = N(r.found) ? `لقيت ${N(r.found)} شركة إلها رقم (${N(r.new)} جديدة)${N(r.skipped) ? ' · تجاهلت ' + N(r.skipped) + ' بدون رقم' : ''}` : (N(r.skipped) ? `لقيت ${N(r.skipped)} شركة بس ولا وحدة إلها رقم. جرّب جوجل أو منطقة ثانية` : '');
       toast(N(r.found) ? `لقيت ${N(r.found)} شركة: ${N(r.new)} جديدة، والباقي كانت عندك من قبل${N(r.calls) ? ' · استخدم ' + N(r.calls) + ' بحث من المجاني' : ''}` : 'ما لقيت شركات. جرّب كلمة ثانية أو منطقة أكبر', !N(r.new)); ui.hFilter = 'جديد'; ui.hSid = r.search_id || null; ui.hHistOpen = false; }
     catch (e) { ui.hErr = e.message; }
     ui.hBusy = false; K.render();
@@ -134,6 +135,7 @@ Object.assign(A, {
     const c = $$('.hcard').find(x => x.dataset.id === p.id); c?.scrollIntoView?.({behavior: 'smooth', block: 'center'}); c?.classList.add('hnow');
     await A.hWa(p.id);
   },
+  hPurge: async () => { const n = await db.rpc('prospect_purge', {mode: 'phone'}); toast(N(n) ? `شلت ${N(n)} شركة بدون رقم` : 'ما في شركات بدون رقم'); K.render(); },
   hShow: id => { ui.hSid = id || null; ui.hSel = new Set(); K.render(); window.scrollTo(0, 0); },
   hSelAll: () => { if (ui.hSel?.size) ui.hSel = new Set(); else ui.hSel = new Set((ui.hRows || []).slice(0, 20).map(r => r.id)); K.render(); },
   hMsgs: async () => {

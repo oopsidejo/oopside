@@ -163,7 +163,11 @@ function supaDb(cfg) {
       const {data, error} = await sb.functions.invoke(name, {body});
       if (error) {
         let msg = error.message || '';
-        try { const j = await error.context?.json?.(); if (j?.error) msg = j.error; } catch (e) {}
+        const st = error.context?.status;
+        try { const t = await error.context?.text?.(); let j = null; try { j = JSON.parse(t); } catch (e) {}
+          if (j?.error || j?.message || j?.msg) msg = j.error || j.message || j.msg;
+          else if (st === 504 || st === 546 || /timeout|WORKER|wall clock/i.test(t || '')) msg = 'الدالة "' + name + '" طوّلت أكثر من اللازم أو وقفت (' + st + '). جرّب طلب أصغر أو بعد دقيقة';
+          else if (st) msg = 'الدالة "' + name + '" رجّعت خطأ ' + st + (t ? ': ' + String(t).slice(0, 200) : ''); } catch (e) {}
         if (/not found|404|Failed to send/i.test(msg)) msg = 'الدالة "' + name + '" مش منشورة على Supabase لسا. شوف دليل الربط';
         throw new Error(msg);
       }
