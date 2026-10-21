@@ -359,3 +359,14 @@ details.adv summary{cursor:pointer;font-weight:600}
 @media (max-width:700px){.agchat{height:300px}}
 
 .agdraft{white-space:pre-wrap;max-height:420px;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;line-height:1.8}
+
+/* زوار الموقع الآن */
+.vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.vcard{margin:0}
+.vcard.live-on{border-color:var(--good)}
+.vsteps{display:flex;gap:3px;flex-wrap:wrap}
+.vsteps span{flex:1 1 0;min-width:52px;text-align:center;font-size:11px;padding:3px 2px;border-radius:6px;background:var(--line);color:var(--muted)}
+.vsteps span.done{background:var(--good-bg);color:var(--good)}
+.vsteps span.on{background:var(--good);color:#fff;font-weight:700}
+.bignow b{font-size:44px;line-height:1.1}
+.kpi.hl .live{color:inherit}

@@ -384,9 +384,10 @@ async function autoAdSync() {
 setInterval(autoAdSync, 60e3);
 V.ads = async () => {
   const d = ui.adFrom ? 0 : (ui.adDays || 7), [from, to] = adRange();
-  const [rows, accs, lastAd, man, pperf] = await Promise.all([db.rpc('ad_perf', {d_from: from, d_to: to}), db.q('ad_accounts', {order: ['name', true]}), db.q('ads', {order: ['updated_at', false], limit: 1, select: 'updated_at'}).then(r => { AS.seen = r[0] ? new Date(r[0].updated_at).getTime() : 0; setTimeout(autoAdSync, 800); return r; }),
+  const [rows, accs, lastAd, man, pperf, ordAll] = await Promise.all([db.rpc('ad_perf', {d_from: from, d_to: to}), db.q('ad_accounts', {order: ['name', true]}), db.q('ads', {order: ['updated_at', false], limit: 1, select: 'updated_at'}).then(r => { AS.seen = r[0] ? new Date(r[0].updated_at).getTime() : 0; setTimeout(autoAdSync, 800); return r; }),
     db.q('manual_sales', {gte: {day: from}, lte: {day: to}, order: ['day', false], limit: 500}).catch(() => null),
-    db.rpc('prod_perf', {d_from: from, d_to: to}).catch(() => null)]);
+    db.rpc('prod_perf', {d_from: from, d_to: to}).catch(() => null),
+    db.q('orders', {gte: {day: from}, lte: {day: to}, select: 'id,status,outcome,ad_id', limit: 5000}).catch(() => null)]);
   const accName = id => { const a = accs.find(x => x.account_id === id); return a ? (a.name || a.account_id) : (id || ''); };
   const accSpend = {}; (rows || []).forEach(r => { if (r.account_id) accSpend[r.account_id] = N(accSpend[r.account_id]) + N(r.spend); });
   if (ui.adAcc && !accs.some(a => a.account_id === ui.adAcc)) ui.adAcc = '';
@@ -406,6 +407,9 @@ V.ads = async () => {
   Object.values(byP).forEach(x => { x.profit = x.mdel + x.mpend * .8 - x.spend - x.ret; });
   const T = {}; ['spend','messages','impressions','clicks'].forEach(k => T[k] = sum(all, g => g[k]));
   ['orders','linked','delivered','returned','revenue','pending_rev','profit'].forEach(k => T[k] = sum(Object.values(byP), x => x[k]));
+  // كل الطلبات بالفترة (حتى اللي ما إلها منتج بإعلان أو ما انربطت بإعلان)
+  const okOrd = (ordAll || []).filter(o => !(o.status === 'ملغي' && !o.outcome));
+  if (ordAll && !ui.adAcc) { T.orders = okOrd.length + sum(man || [], m => N(m.qty)); T.linked = okOrd.filter(o => o.ad_id).length; }
   const roas = T.spend ? T.revenue / T.spend : 0, roasE = T.spend ? (T.revenue + T.pending_rev * .8) / T.spend : 0;
   const prods = Object.values(byP).map(x => ({...x, roasE: x.spend ? (x.revenue + x.pending_rev * .8) / x.spend : 0, cpa: x.orders ? x.spend / x.orders : 0, margin: x.product_id ? N(P(x.product_id)?.price) - N(P(x.product_id)?.cost) : 0})).sort((a, b) => b.spend - a.spend || b.orders - a.orders);
   const rc = r => r >= 4 ? 'good' : r >= rule('roas_min', 2.5) ? 'warn' : 'bad';

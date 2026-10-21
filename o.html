@@ -306,6 +306,22 @@ const friendly = m => { m = String(m || ''); if (/fetch|network|failed to|load f
 const VID = (() => { let v = null; try { v = localStorage.getItem('oops-vid'); } catch (e) {} if (!v || !/^[0-9a-f-]{36}$/.test(v)) { v = (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-8xxx-xxxxxxxxxxxx'.replace(/x/g, () => (Math.random() * 16 | 0).toString(16))); try { localStorage.setItem('oops-vid', v); } catch (e) {} } return v; })();
 let tracked = -1;
 const funnel = st => { if (!sb || st <= tracked || !SITE?.live) return; tracked = st; sb.rpc('oops_track', {vid: VID, step: st, utm: utm(), dev: innerWidth < 760 ? 'جوال' : 'كمبيوتر'}).then(() => {}, () => {}); };
+// نبضة مباشرة لشاشة "زوار الموقع الآن": وين وصل وشو الباقة (بدون الاسم والرقم)
+let pingT = 0, pingOff = false;
+function livePing() {
+  if (!sb || !SITE?.live || pingOff || document.visibilityState !== 'visible') return;
+  let d = {};
+  try {
+    const L = typeof lines === 'function' ? lines() : [], t = L.length ? P.totals(L, adBudget()) : {fees: 0, one_time: 0};
+    d = {sector: S.sector, company: S.company, city: S.city, stage: S.stage, budget: N(S.budget), ad: adBudget(), fees: t.fees, one: t.one_time,
+      problems: (S.problems || []).map(plabel), items: L.map(l => ({n: l.s.name, q: l.qty}))};
+  } catch (e) {}
+  const st = /[?&]q=/.test(location.search) ? 0 : (S.started || S.step ? N(S.step) + 1 : 0);
+  sb.rpc('oops_ping', {vid: VID, step: st, utm: utm(), dev: innerWidth < 760 ? 'جوال' : 'كمبيوتر', d}).then(r => { if (r?.error && /oops_ping|function/i.test(r.error.message || '')) pingOff = true; }, () => {});
+}
+const pingSoon = () => { clearTimeout(pingT); pingT = setTimeout(livePing, 2500); };
+setInterval(livePing, 25000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') livePing(); });
 function stepUrl(push) {
   const u = location.pathname + '?step=' + SLUGS[S.step] + '#build';
   if (location.pathname + location.search + location.hash === u) return;
@@ -343,7 +359,7 @@ function loadTracking(s) {
 const blank = () => ({step: 0, maxStep: 0, split: {}, problems: [], problem_other: '', sector: '', company: '', city: 'عمّان', stage: '', agency_now: '', answers: {}, about: '',
   budget: 600, includes_ads: true, ad: 300, items: {}, contact: '', phone: '', email: '', website: '', social: '', consent: false, marketing_ok: false, cat: 'مقترحة', started: false});
 let S = Object.assign(blank(), ls.get('oops-draft') || {});
-const save = () => ls.set('oops-draft', S);
+const save = () => { ls.set('oops-draft', S); if (typeof pingSoon === 'function') pingSoon(); };
 const svc = id => SITE.services.find(s => s.id === id);
 const problems = () => SITE.config.problems || [];
 const plabel = k => problems().find(p => p.k === k)?.l || k;
@@ -787,7 +803,7 @@ async function boot() {
   $('#app').innerHTML = home();
   S.step = Math.min(N(S.step), 4);
   Object.keys(S.items).forEach(id => { if (!svc(id)) delete S.items[id]; });
-  drawStep(); drawTools(); funnel(0);
+  drawStep(); drawTools(); funnel(0); setTimeout(livePing, 1500);
   addEventListener('popstate', () => { const m = /[?&]step=(\d)/.exec(location.search); if (!m) return; const st = N(m[1]) - 1; if (st >= 0 && st <= 4 && st <= N(S.maxStep) && $('#wiz .prog')) { readStep(); S.step = st; $('#wiz').innerHTML = stepHtml(); drawReceipt(); save(); } });
   if (!SITE.live) $('#build .sechead p').insertAdjacentHTML('beforeend', ' <b style="color:var(--coral)">(معاينة: الموقع مطفي، والإرسال مسكّر)</b>');
 }

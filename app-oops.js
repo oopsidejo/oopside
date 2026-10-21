@@ -156,6 +156,34 @@ A.fnDays = k => { ui.fnDays = N(k); K.render(); };
 
 /* قمع الموقع: الزوار لوين وصلوا */
 const baseFunnel = V.funnel;
+
+/* ---------- زوار الموقع الآن (مباشر) ---------- */
+const VSTEPS = ['دخل الموقع', 'المشكلة', 'شغله', 'الميزانية', 'الخدمات', 'التواصل', 'بعت الطلب'];
+const ago = t => { const m = Math.max(0, Math.round((Date.now() - new Date(t)) / 60000)); return m < 1 ? 'هلأ' : m < 60 ? 'من ' + m + ' د' : 'من ' + Math.round(m / 60) + ' س'; };
+function visitorCard(v, live) {
+  const d = v.draft || {}, st = N(v.step), items = d.items || [];
+  return `<div class="card vcard ${live ? 'live-on' : ''}"><div class="head" style="margin-bottom:6px"><b>${esc(d.company || d.sector || 'زائر ' + v.id)}${d.company && d.sector ? ` <small class="m">${esc(d.sector)}</small>` : ''}</b>
+     <span class="row" style="gap:6px">${live ? '<span class="live"><i></i>هلأ</span>' : `<small class="m">${ago(v.seen)}</small>`}${v.sent ? pill('بعت طلب #' + v.sent, 'good') : ''}</span></div>
+    <div class="vsteps" aria-label="وين وصل">${VSTEPS.slice(0, 6).map((n, i) => `<span class="${i < st ? 'done' : i === st ? 'on' : ''}">${n}</span>`).join('')}</div>
+    <div class="m" style="margin:6px 0">${[esc(v.source || 'مباشر') + (v.campaign && v.campaign !== '—' ? ' · ' + esc(v.campaign) : ''), esc(v.device || ''), d.city ? esc(d.city) : '', 'دخل ' + ago(v.since)].filter(Boolean).join(' · ')}</div>
+    ${(d.problems || []).length ? `<div class="chips" style="margin:4px 0">${d.problems.slice(0, 5).map(x => `<span class="chip">${esc(x)}</span>`).join('')}</div>` : ''}
+    ${N(d.budget) ? `<div class="kv"><span>الميزانية</span><b>${jd(d.budget)} <small class="m">منها إعلانات ${jd(d.ad)}</small></b></div>` : ''}
+    ${items.length ? `<div class="kv"><span>الباقة (${items.length})</span><b>${jd(d.fees)} شهري${N(d.one) ? ' + ' + jd(d.one) : ''}</b></div><small class="m">${items.map(i => esc(i.n) + (N(i.q) > 1 ? ' ×' + N(i.q) : '')).join('، ')}</small>` : ''}</div>`;
+}
+V.olive = async () => {
+  const r = await db.rpc('oops_live').catch(e => ({err: e.message}));
+  if (!r || r.err) return head('زوار الموقع الآن', '') + `<div class="card"><p class="note">هالشاشة بتحتاج ملف <b>19_live_visitors.sql</b> على Supabase، وملف o.html الجديد على موقع الوكالة.</p></div>`;
+  const now = r.now || [], t = r.today || {};
+  const building = now.filter(v => N(v.step) >= 4).length;
+  return head('زوار الموقع الآن', 'مين على موقع الوكالة هلأ، وين وصل، وشو الباقة اللي عم يبنيها. بتتحدّث لحالها كل 10 ثواني', `<a class="btn" href="${esc(siteUrl())}" target="_blank" rel="noopener">افتح الموقع</a>`) +
+    `<div class="kpis"><div class="kpi hl bignow"><span>على الموقع هلأ</span><b>${now.length}</b><small><span class="live"><i></i>مباشر</span></small></div>
+      ${kpi('عم يبنوا باقة هلأ', building, 'وصلوا للخدمات أو التواصل')}${kpi('زوار اليوم', N(t.visits), N(t.started) + ' بلّشوا الباني')}
+      ${kpi('وصلوا الميزانية', N(t.budget), N(t.services) + ' وصلوا الخدمات')}${kpi('بعتوا طلب اليوم', N(t.sent), N(t.visits) ? 'تحويل ' + Math.round(N(t.sent) / N(t.visits) * 100) + '%' : '')}</div>
+    <h2 style="margin:14px 0 8px">هلأ على الموقع</h2>${now.length ? `<div class="vgrid">${now.map(v => visitorCard(v, true)).join('')}</div>` : '<div class="card"><p class="note">ما في حدا على الموقع هلأ.</p></div>'}
+    ${(r.recent || []).length ? `<h2 style="margin:18px 0 8px">طلعوا آخر 24 ساعة بعد ما وصلوا الميزانية أو أكثر</h2><div class="vgrid">${r.recent.map(v => visitorCard(v, false)).join('')}</div>` : ''}`;
+};
+setInterval(() => { if (ui.view === 'olive' && K.me && document.visibilityState === 'visible') K.softRender(); }, 10000);
+
 V.funnel = async () => {
   const html = await baseFunnel(), d = ui.fnDays || 90;
   let rows = []; try { rows = await db.rpc('oops_funnel', {d_from: addDays(today(), -(d - 1)), d_to: today()}) || []; } catch (e) { return html; }
