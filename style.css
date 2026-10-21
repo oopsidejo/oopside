@@ -376,3 +376,10 @@ details.adv summary{cursor:pointer;font-weight:600}
 .hcard{margin:0}
 .hcard textarea{font-size:14px;line-height:1.6}
 @media (max-width:420px){.hgrid{grid-template-columns:1fr}}
+
+.herr{margin-top:10px;border:1.5px solid var(--bad);background:var(--bad-bg);color:var(--ink);border-radius:10px;padding:10px 12px}
+.herr b{color:var(--bad)}
+.hok{margin-top:10px;border:1px solid var(--good);background:var(--good-bg);color:var(--good);border-radius:10px;padding:8px 12px;font-weight:600}
+
+.hcard textarea,.hmsg,#h_tpl,#h_offer,#h_prompt{font-family:inherit}
+.hcard.hnow{outline:2px solid var(--good);outline-offset:2px}

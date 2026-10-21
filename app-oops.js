@@ -9,7 +9,11 @@ const me = () => K.me;
 const PT = {monthly: 'شهري ثابت', unit: 'بالقطعة', one_time: 'مرة وحدة', pct_spend: 'نسبة من صرف الإعلانات', team: 'فريق الرد (بالساعات)', quote: 'بعد جلسة (عرض مخصص)'};
 const RS_CLS = {'جديد': 'warn', 'مسودة عرض': 'info', 'عرض مرسل': 'brand', 'مقبول': 'good', 'مرفوض': 'bad', 'منتهي': ''};
 const ASK = [['', 'بدون سؤال إضافي'], ['sales', 'يسأل عن المبيعات'], ['msgs', 'يسأل عن الرسائل'], ['text', 'يطلب وصف']];
-const siteUrl = () => { const u = String(ST.oSite?.config?.site_url || '').trim(); return /^https?:\/\//.test(u) ? u.split(/[?#]/)[0] : location.href.split(/[?#]/)[0].replace(/[^/]*$/, '') + 'o.html'; };
+// رابط صفحة الزباين: إذا الرابط المحفوظ مجلد (بيخلص بـ /) منزيد o.html
+const siteUrl = () => { let u = String(ST.oSite?.config?.site_url || '').trim().split(/[?#]/)[0];
+  if (!/^https?:\/\//.test(u)) return location.href.split(/[?#]/)[0].replace(/[^/]*$/, '') + 'o.html';
+  if (!/\.html?$/i.test(u)) u = u.replace(/\/?$/, '/') + 'o.html';
+  return u; };
 const storeLandingBase = () => location.href.split(/[?#]/)[0].replace(/[^/]*$/, '') + 'p.html';
 const quoteUrl = tok => siteUrl() + '?q=' + tok;
 const margin = (rev, cost) => rev > 0 ? (rev - cost) / rev : null;

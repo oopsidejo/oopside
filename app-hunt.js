@@ -12,7 +12,7 @@ const IDEAS = ['عيادات أسنان', 'عيادات تجميل', 'مطاعم
 const AREAS = ['عمّان', 'عبدون', 'الصويفية', 'خلدا', 'تلاع العلي', 'الشميساني', 'جبل عمّان', 'مرج الحمام', 'الزرقاء', 'إربد', 'العقبة', 'السلط', 'مادبا', 'المفرق', 'جرش'];
 const scoreCls = s => s >= 60 ? 'good' : s >= 35 ? 'warn' : '';
 
-Object.assign(ACT_SEC, {hSearch: 'leads', hMsgs: 'leads', hMsgOne: 'leads', hWa: 'leads', hImg: 'leads', hLead: 'leads', hCfgSave: 'leads', hImgDel: 'leads', hSelAll: 'leads', hFilter: 'leads', hShow: 'leads', hDiag: 'leads'});
+Object.assign(ACT_SEC, {hSearch: 'leads', hMsgs: 'leads', hMsgOne: 'leads', hWa: 'leads', hImg: 'leads', hLead: 'leads', hCfgSave: 'leads', hImgDel: 'leads', hSelAll: 'leads', hFilter: 'leads', hShow: 'leads', hDiag: 'leads', hErrX: 'leads', hErrCopy: 'leads', hTplOne: 'leads', hTplSel: 'leads', hNext: 'leads'});
 
 V.hunt = async () => {
   const f = ui.hFilter || 'جديد';
@@ -43,11 +43,13 @@ V.hunt = async () => {
         <label class="fld"><span>من وين</span><select id="h_src"><option value="google" ${ui.hSrc !== 'osm' ? 'selected' : ''}>خرائط جوجل (أدق، فيها أرقام وتقييمات)</option><option value="osm" ${ui.hSrc === 'osm' ? 'selected' : ''}>OpenStreetMap (مجاني بالكامل، أرقام أقل)</option></select></label>
         <label class="fld"><span>كم شركة بدك (لحد 2000)</span><input id="h_target" type="number" min="20" max="2000" step="10" list="h_targets" value="${N(ui.hTarget) || 60}"><datalist id="h_targets">${[60, 100, 200, 500, 1000, 2000].map(x => `<option value="${x}">`).join('')}</datalist></label>
       </div>
-      <div class="row" style="margin-top:8px"><button class="btn sm ghost" data-act="hDiag">افحص مفتاح جوجل</button><button class="btn pri" data-act="hSearch">${ui.hBusy ? '…عم يدوّر' + (N(ui.hTarget) > 60 ? ' (ممكن ياخد دقيقة)' : '') : 'دوّر'}</button><small class="m">كل 20 نتيجة من جوجل تقريباً = بحث واحد من الـ${N(s.google_limit) || 950} المجانية بالشهر (باقيلك ${Math.max(0, N(s.google_limit) - N(s.google_used))}). أكثر من 60 بيقسم المنطقة مربعات لحاله.</small></div></div>
+      <div class="row" style="margin-top:8px"><button class="btn sm ghost" data-act="hDiag">افحص مفتاح جوجل</button><button class="btn pri" data-act="hSearch">${ui.hBusy ? '…عم يدوّر' + (N(ui.hTarget) > 60 ? ' (ممكن ياخد دقيقة)' : '') : 'دوّر'}</button><small class="m">كل 20 نتيجة من جوجل تقريباً = بحث واحد من الـ${N(s.google_limit) || 950} المجانية بالشهر (باقيلك ${Math.max(0, N(s.google_limit) - N(s.google_used))}). أكثر من 60 بيقسم المنطقة مربعات لحاله.</small></div>
+      ${ui.hErr ? `<div class="herr" role="alert"><div class="row" style="justify-content:space-between;align-items:flex-start"><b>ما زبط البحث</b><span class="row" style="gap:4px"><button class="btn sm" data-act="hErrCopy">انسخ</button><button class="btn sm ghost" data-act="hErrX" aria-label="سكّر">✕</button></span></div><p dir="auto" style="margin:6px 0 0;white-space:pre-wrap;word-break:break-word">${esc(ui.hErr)}</p></div>` : ''}${ui.hOk ? `<div class="hok" role="status">${esc(ui.hOk)}</div>` : ''}</div>
     <details class="card" ${cfg && !cfg.offer ? 'open' : ''}><summary><b>العرض والصورة والرسالة</b> ${cfg?.offer ? '' : pill('عبّيهم أول', 'warn')}</summary>
       <div class="fgrid" style="margin-top:8px">
         <label class="fld" style="grid-column:1/-1"><span>العرض اللي بتقدمه</span><textarea id="h_offer" rows="2" placeholder="مثلاً: تدقيق مجاني لصفحتكم وإعلاناتكم، وأول شهر إدارة إعلانات بخصم 30%">${esc(cfg?.offer || '')}</textarea></label>
         <label class="fld" style="grid-column:1/-1"><span>تعليمات للرسالة (اختياري)</span><textarea id="h_prompt" rows="2" placeholder="مثلاً: احكي إنه عنا شغل مع عيادات بعمّان، وخليها رسمية شوي">${esc(cfg?.prompt || '')}</textarea></label>
+        <label class="fld" style="grid-column:1/-1"><span>قالب رسالة جاهز (بدون ذكاء، مجاني)</span><textarea id="h_tpl" rows="5" placeholder="مرحبا {الاسم} 👋&#10;معكم وليد من وكالة OOPSIDE. لاحظنا إنه ما إلكم موقع، وهاد بيضيّع عليكم زباين بيدوّروا عليكم بالنت.&#10;عنا هالشهر تدقيق مجاني لصفحاتكم وإعلاناتكم. بتحبوا أبعتلكم التفاصيل؟&#10;{التوقيع}">${esc(cfg?.template || '')}</textarea><small class="m">بيتبدّل لحاله: <b>{الاسم}</b> اسم الشركة، <b>{المنطقة}</b>، <b>{النوع}</b>، <b>{التوقيع}</b>.${cfg && !('template' in cfg) ? ' ⚠ بيحتاج ملف 22_prospect_template.sql' : ''}</small></label>
         <label class="fld"><span>التوقيع</span><input id="h_sig" value="${esc(cfg?.signature || '')}" placeholder="وليد · OOPSIDE"></label>
         <label class="fld"><span>حد الرسائل لكل موظف باليوم</span><input id="h_lim" type="number" min="1" value="${N(cfg?.daily_limit) || 30}"></label>
         <label class="fld"><span>صورة العرض</span><input type="file" accept="image/*" id="h_img"></label>
@@ -59,7 +61,7 @@ V.hunt = async () => {
       {h: '', f: h => `<button class="btn sm" data-act="hShow" data-id="${h.id}">اعرض نتائجه</button>`}], ST.hHist)}</details>` : ''}
     ${curS ? `<div class="card" style="border-color:var(--info)"><div class="row" style="justify-content:space-between"><span>عم تشوف نتائج: <b>${esc(curS.query)}</b> ${esc(curS.area || '')} · ${K.fmtDT(curS.at)}</span><button class="btn sm" data-act="hShow" data-id="">رجوع للكل</button></div></div>` : ''}
     <div class="row" style="margin:12px 0 6px;justify-content:space-between">${chips([['جديد', 'جديد'], ['wa', 'جديد وعليه واتساب'], ['انبعتت', 'انبعتت'], ['رد', 'رد'], ['مهتم', 'مهتم'], ['اجتماع', 'اجتماع'], ['عميل', 'عميل'], ['مش مهتم', 'مش مهتم'], ['all', 'الكل']], f, 'hFilter')}
-      <span class="row" style="gap:6px"><button class="btn sm" data-act="hSelAll">${sel.size ? 'ألغِ التحديد (' + sel.size + ')' : 'حدد أول 20'}</button><button class="btn sm pri" data-act="hMsgs" ${sel.size ? '' : 'disabled'}>✨ اكتب رسائل للمحدد</button></span></div>
+      <span class="row" style="gap:6px"><button class="btn sm" data-act="hSelAll">${sel.size ? 'ألغِ التحديد (' + sel.size + ')' : 'حدد أول 20'}</button><button class="btn sm" data-act="hTplSel" ${sel.size ? '' : 'disabled'}>📝 حط القالب للمحدد</button><button class="btn sm" data-act="hMsgs" ${sel.size ? '' : 'disabled'}>✨ اكتب بالذكاء للمحدد</button><button class="btn sm pri" data-act="hNext" title="بيفتح واتساب لأول شركة جاهزة (عليها رقم ورسالة ولسا ما انبعتلها)">▶ ابعت للي بعده</button></span></div>
     ${list.length ? `<div class="hgrid">${list.map(card).join('')}</div>` : '<div class="card"><p class="note">ما في شركات هون. دوّر من فوق.</p></div>'}`;
 };
 
@@ -72,7 +74,7 @@ function card(p) {
     <div class="row" style="gap:6px;margin:6px 0">${p.wa ? `<b dir="ltr">+${esc(p.wa)}</b>` : p.phone ? `<span dir="ltr">${esc(p.phone)}</span> <small class="m">أرضي</small>` : '<small class="m">ما في رقم</small>'}
       <select class="inl hstatus" data-id="${p.id}" aria-label="الحالة">${STATUSES.map(x => `<option ${x === p.status ? 'selected' : ''}>${x}</option>`).join('')}</select>${p.sent_at ? `<small class="m">${esc(p.sent_by_name || '')}</small>` : ''}</div>
     <textarea class="hmsg" rows="5" style="width:100%" placeholder="اضغط ✨ عشان يكتب رسالة مخصصة، أو اكتبها بإيدك">${esc(p.msg || '')}</textarea>
-    <div class="row" style="gap:4px;margin-top:6px"><button class="btn sm" data-act="hMsgOne" data-id="${p.id}">✨ اكتب</button>
+    <div class="row" style="gap:4px;margin-top:6px"><button class="btn sm" data-act="hTplOne" data-id="${p.id}">📝 قالب</button><button class="btn sm" data-act="hMsgOne" data-id="${p.id}">✨ اكتب</button>
       ${p.wa ? `<button class="btn sm pri" data-act="hWa" data-id="${p.id}">واتساب</button>` : ''}${ST.hCfg?.image ? `<button class="btn sm" data-act="hImg">انسخ الصورة</button>` : ''}
       ${p.phone ? `<a class="btn sm ghost" href="tel:${esc(p.phone.replace(/\s/g, ''))}">اتصل</a>` : ''}${p.lead_id ? pill('بالعملاء المحتملين', 'good') : `<button class="btn sm ghost" data-act="hLead" data-id="${p.id}">← عميل محتمل</button>`}</div></div>`;
 }
@@ -84,6 +86,20 @@ async function shrinkImg(file) {
   return c.toDataURL('image/jpeg', .85);
 }
 const msgOf = id => $$('.hcard').find(c => c.dataset.id === id)?.querySelector('.hmsg')?.value.trim() || '';
+// القالب: بيركّب اسم الشركة والمنطقة والتوقيع
+async function applyTpl(ids) {
+  const tpl = ($('#h_tpl')?.value || ST.hCfg?.template || '').trim();
+  if (!tpl) { toast('اكتب قالب الرسالة أول (العرض والصورة والرسالة)', true); const d = $('details.card'); if (d) d.open = true; return 0; }
+  let n = 0;
+  for (const id of ids) {
+    const p = (ui.hRows || []).find(r => r.id === id); if (!p) continue;
+    const msg = tpl.replace(/\{\s*الاسم\s*\}/g, p.name || '').replace(/\{\s*المنطقة\s*\}/g, p.area || '').replace(/\{\s*النوع\s*\}/g, p.category || '')
+      .replace(/\{\s*التوقيع\s*\}/g, ST.hCfg?.signature || '').replace(/\n{3,}/g, '\n\n').trim();
+    p.msg = msg; const t = $$('.hcard').find(c => c.dataset.id === id)?.querySelector('.hmsg'); if (t) t.value = msg;
+    try { await db.upd('prospects', {id}, {msg}); n++; } catch (e) {}
+  }
+  return n;
+}
 
 Object.assign(A, {
   hFilter: k => { ui.hFilter = k; ui.hSid = null; ui.hSel = new Set(); K.render(); },
@@ -96,15 +112,27 @@ Object.assign(A, {
     if (dup && ui.hConfirm !== dup.id) { ui.hConfirm = dup.id; toast(`دوّرت على "${dup.query}" بـ${dup.area || ''} قبل (${K.fmtDT(dup.at)}) ولقيت ${N(dup.found)}. غالباً رح يطلع نفس الشركات. جرّب منطقة أصغر، أو اضغط دوّر مرة ثانية إذا متأكد`, true); return; }
     ui.hConfirm = null;
     ui.hBusy = true; await K.render();
+    ui.hErr = ''; ui.hOk = '';
     try { const r = await db.fn('prospects', {action: 'search', query: ui.hQ, area: ui.hArea, source: ui.hSrc, target: ui.hTarget});
+      ui.hOk = N(r.found) ? `لقيت ${N(r.found)} شركة (${N(r.new)} جديدة)` : '';
       toast(N(r.found) ? `لقيت ${N(r.found)} شركة: ${N(r.new)} جديدة، والباقي كانت عندك من قبل${N(r.calls) ? ' · استخدم ' + N(r.calls) + ' بحث من المجاني' : ''}` : 'ما لقيت شركات. جرّب كلمة ثانية أو منطقة أكبر', !N(r.new)); ui.hFilter = 'جديد'; ui.hSid = r.search_id || null; ui.hHistOpen = false; }
-    catch (e) { toast(e.message, true); }
+    catch (e) { ui.hErr = e.message; }
     ui.hBusy = false; K.render();
   },
   hDiag: async () => {
     toast('عم يفحص المفتاح…');
     const r = await db.fn('prospects', {action: 'diag'});
     K.openInfo('فحص مفتاح جوجل', `<div class="kvlist">${(r.checks || []).map(([k, v]) => `<div class="kv" style="align-items:flex-start"><span>${esc(k)}</span><b dir="ltr" style="text-align:left;white-space:pre-wrap;word-break:break-word;font-weight:400;font-size:13px">${esc(v)}</b></div>`).join('')}</div><p class="m" style="margin-top:8px">صوّر هالشاشة وابعتها. ما فيها المفتاح نفسه.</p>`);
+  },
+  hErrX: () => { ui.hErr = ''; K.render(); },
+  hErrCopy: () => copyText(ui.hErr || ''),
+  hTplOne: async id => { const n = await applyTpl([id]); if (n) toast('انحط القالب. راجعه وابعت'); },
+  hTplSel: async () => { const n = await applyTpl([...(ui.hSel || [])]); if (n) { ui.hSel = new Set(); toast(`انحط القالب على ${n} شركة. اضغط "▶ ابعت للي بعده"`); K.render(); } },
+  hNext: async () => {
+    const p = (ui.hRows || []).find(r => r.wa && r.status === 'جديد' && (msgOf(r.id) || r.msg));
+    if (!p) { toast('ما في شركة جاهزة: لازم يكون عليها واتساب ورسالة ولسا ما انبعتلها. حط القالب أول', true); return; }
+    const c = $$('.hcard').find(x => x.dataset.id === p.id); c?.scrollIntoView?.({behavior: 'smooth', block: 'center'}); c?.classList.add('hnow');
+    await A.hWa(p.id);
   },
   hShow: id => { ui.hSid = id || null; ui.hSel = new Set(); K.render(); window.scrollTo(0, 0); },
   hSelAll: () => { if (ui.hSel?.size) ui.hSel = new Set(); else ui.hSel = new Set((ui.hRows || []).slice(0, 20).map(r => r.id)); K.render(); },
@@ -137,7 +165,7 @@ Object.assign(A, {
   },
   hLead: async id => { await db.rpc('prospect_to_lead', {pid: id}); toast('انضافت للعملاء المحتملين'); K.render(); },
   hCfgSave: async () => {
-    const patch = {offer: $('#h_offer').value.trim(), prompt: $('#h_prompt').value.trim(), signature: $('#h_sig').value.trim(), daily_limit: Math.max(1, +$('#h_lim').value || 30)};
+    const patch = {offer: $('#h_offer').value.trim(), prompt: $('#h_prompt').value.trim(), signature: $('#h_sig').value.trim(), ...($('#h_tpl') && ST.hCfg && 'template' in ST.hCfg ? {template: $('#h_tpl').value.trim()} : {}), daily_limit: Math.max(1, +$('#h_lim').value || 30)};
     const f = $('#h_img')?.files?.[0]; if (f) patch.image = await shrinkImg(f);
     await db.upd('prospect_cfg', {id: 1}, patch); toast('انحفظ'); K.render();
   },
@@ -145,7 +173,7 @@ Object.assign(A, {
 });
 document.addEventListener('change', async e => {
   const t = e.target;
-  if (t.classList?.contains('hsel')) { ui.hSel = ui.hSel || new Set(); t.checked ? ui.hSel.add(t.value) : ui.hSel.delete(t.value); const b = $('[data-act=hMsgs]'); if (b) b.disabled = !ui.hSel.size; const s = $('[data-act=hSelAll]'); if (s) s.textContent = ui.hSel.size ? 'ألغِ التحديد (' + ui.hSel.size + ')' : 'حدد أول 20'; }
+  if (t.classList?.contains('hsel')) { ui.hSel = ui.hSel || new Set(); t.checked ? ui.hSel.add(t.value) : ui.hSel.delete(t.value); ['hMsgs', 'hTplSel'].forEach(k => { const b = $(`[data-act=${k}]`); if (b) b.disabled = !ui.hSel.size; }); const s = $('[data-act=hSelAll]'); if (s) s.textContent = ui.hSel.size ? 'ألغِ التحديد (' + ui.hSel.size + ')' : 'حدد أول 20'; }
   if (t.classList?.contains('hstatus')) { try { await db.upd('prospects', {id: t.dataset.id}, {status: t.value, updated_at: new Date().toISOString()}); toast('انحفظت الحالة'); } catch (x) { toast(x.message, true); } }
 });
 // حفظ الرسالة لما الموظف يعدّلها
