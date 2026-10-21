@@ -370,3 +370,9 @@ details.adv summary{cursor:pointer;font-weight:600}
 .vsteps span.on{background:var(--good);color:#fff;font-weight:700}
 .bignow b{font-size:44px;line-height:1.1}
 .kpi.hl .live{color:inherit}
+
+/* صيد العملاء */
+.hgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px}
+.hcard{margin:0}
+.hcard textarea{font-size:14px;line-height:1.6}
+@media (max-width:420px){.hgrid{grid-template-columns:1fr}}

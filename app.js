@@ -36,21 +36,21 @@ const SECTIONS = [['dash','لوحة التحكم'],['orders','الطلبات و�
   ['agency','الوكالة وعملاءها'],['leads','العملاء المحتملين'],
   ['accounting','المحاسبة'],['expenses','المصاريف'],['staff','الموظفين والرواتب'],
   ['oops','موقع الوكالة والأسعار'],['ai','المساعد الذكي'],['users','المستخدمين والصلاحيات'],['settings','الإعدادات']];
-const SEC_NAME = Object.fromEntries(SECTIONS.concat([['myday','دوامي'],['mytasks','مهامي'],['portal','متابعة الشغل'],['client','ملف العميل'],['agdash','لوحة الوكالة'],['pagesrep','أداء صفحات البيع'],['oreq','طلبات الموقع'],['oreqd','طلب من الموقع'],['funnel','من الإعلان للإيراد'],['agent','الوكيل الذكي'],['olive','زوار الموقع الآن']]));
+const SEC_NAME = Object.fromEntries(SECTIONS.concat([['myday','دوامي'],['mytasks','مهامي'],['portal','متابعة الشغل'],['client','ملف العميل'],['agdash','لوحة الوكالة'],['pagesrep','أداء صفحات البيع'],['oreq','طلبات الموقع'],['oreqd','طلب من الموقع'],['funnel','من الإعلان للإيراد'],['agent','الوكيل الذكي'],['olive','زوار الموقع الآن'],['hunt','صيد العملاء']]));
 const PERSONAL = new Set(['myday','mytasks']);
 /* مساحتين شغل منفصلات: المتجر الأونلاين ووكالة التسويق. كل وحدة إلها قوائمها وحساباتها */
 const NAVS = {
   store: [['اليومي', ['dash','orders','delivery']], ['شغلي', ['myday','mytasks']], ['الرسائل والفريق', ['inbox','agent','control','team','tasks']],
     ['التسويق', ['ads','pagesrep','landing','page']], ['المخزون', ['products','inventory','purchases']],
     ['المالية', ['accounting','expenses','staff']], ['الإدارة', ['ai','users','settings']]],
-  agency: [['الوكالة', ['agdash','oreq','leads','agency']], ['النمو', ['olive','funnel','oops']], ['شغلي', ['myday','mytasks']], ['الفريق', ['tasks','team']],
+  agency: [['الوكالة', ['agdash','oreq','leads','hunt','agency']], ['النمو', ['olive','funnel','oops']], ['شغلي', ['myday','mytasks']], ['الفريق', ['tasks','team']],
     ['المالية', ['accounting','expenses','staff']], ['الإدارة', ['ai','users','settings']]]
 };
 const NAV = NAVS.store;
 const WS = {store: {name: 'المتجر الأونلاين', mark: 'م', sub: 'الطلبات والتوصيل والمستودع والرسائل والإعلانات'},
   agency: {name: 'وكالة التسويق', mark: 'و', sub: 'العملاء والحملات والتسليمات والعملاء المحتملين'}};
 const STORE_ONLY = ['dash','orders','delivery','inbox','control','ads','landing','page','products','inventory','purchases'];
-const ALIAS = {agent: 'ai', olive: 'leads', agdash: 'agency', pagesrep: 'dash', oreq: 'leads', oreqd: 'leads', funnel: 'leads'};
+const ALIAS = {agent: 'ai', olive: 'leads', hunt: 'leads', agdash: 'agency', pagesrep: 'dash', oreq: 'leads', oreqd: 'leads', funnel: 'leads'};
 const lsGet = k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
 const TEMPLATES = {
