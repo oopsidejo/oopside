@@ -12,7 +12,7 @@ const IDEAS = ['عيادات أسنان', 'عيادات تجميل', 'مطاعم
 const AREAS = ['عمّان', 'عبدون', 'الصويفية', 'خلدا', 'تلاع العلي', 'الشميساني', 'جبل عمّان', 'مرج الحمام', 'الزرقاء', 'إربد', 'العقبة', 'السلط', 'مادبا', 'المفرق', 'جرش'];
 const scoreCls = s => s >= 60 ? 'good' : s >= 35 ? 'warn' : '';
 
-Object.assign(ACT_SEC, {hSearch: 'leads', hMsgs: 'leads', hMsgOne: 'leads', hWa: 'leads', hImg: 'leads', hLead: 'leads', hCfgSave: 'leads', hImgDel: 'leads', hSelAll: 'leads', hFilter: 'leads', hShow: 'leads'});
+Object.assign(ACT_SEC, {hSearch: 'leads', hMsgs: 'leads', hMsgOne: 'leads', hWa: 'leads', hImg: 'leads', hLead: 'leads', hCfgSave: 'leads', hImgDel: 'leads', hSelAll: 'leads', hFilter: 'leads', hShow: 'leads', hDiag: 'leads'});
 
 V.hunt = async () => {
   const f = ui.hFilter || 'جديد';
@@ -43,7 +43,7 @@ V.hunt = async () => {
         <label class="fld"><span>من وين</span><select id="h_src"><option value="google" ${ui.hSrc !== 'osm' ? 'selected' : ''}>خرائط جوجل (أدق، فيها أرقام وتقييمات)</option><option value="osm" ${ui.hSrc === 'osm' ? 'selected' : ''}>OpenStreetMap (مجاني بالكامل، أرقام أقل)</option></select></label>
         <label class="fld"><span>كم شركة بدك (لحد 2000)</span><input id="h_target" type="number" min="20" max="2000" step="10" list="h_targets" value="${N(ui.hTarget) || 60}"><datalist id="h_targets">${[60, 100, 200, 500, 1000, 2000].map(x => `<option value="${x}">`).join('')}</datalist></label>
       </div>
-      <div class="row" style="margin-top:8px"><button class="btn pri" data-act="hSearch">${ui.hBusy ? '…عم يدوّر' + (N(ui.hTarget) > 60 ? ' (ممكن ياخد دقيقة)' : '') : 'دوّر'}</button><small class="m">كل 20 نتيجة من جوجل تقريباً = بحث واحد من الـ${N(s.google_limit) || 950} المجانية بالشهر (باقيلك ${Math.max(0, N(s.google_limit) - N(s.google_used))}). أكثر من 60 بيقسم المنطقة مربعات لحاله.</small></div></div>
+      <div class="row" style="margin-top:8px"><button class="btn sm ghost" data-act="hDiag">افحص مفتاح جوجل</button><button class="btn pri" data-act="hSearch">${ui.hBusy ? '…عم يدوّر' + (N(ui.hTarget) > 60 ? ' (ممكن ياخد دقيقة)' : '') : 'دوّر'}</button><small class="m">كل 20 نتيجة من جوجل تقريباً = بحث واحد من الـ${N(s.google_limit) || 950} المجانية بالشهر (باقيلك ${Math.max(0, N(s.google_limit) - N(s.google_used))}). أكثر من 60 بيقسم المنطقة مربعات لحاله.</small></div></div>
     <details class="card" ${cfg && !cfg.offer ? 'open' : ''}><summary><b>العرض والصورة والرسالة</b> ${cfg?.offer ? '' : pill('عبّيهم أول', 'warn')}</summary>
       <div class="fgrid" style="margin-top:8px">
         <label class="fld" style="grid-column:1/-1"><span>العرض اللي بتقدمه</span><textarea id="h_offer" rows="2" placeholder="مثلاً: تدقيق مجاني لصفحتكم وإعلاناتكم، وأول شهر إدارة إعلانات بخصم 30%">${esc(cfg?.offer || '')}</textarea></label>
@@ -100,6 +100,11 @@ Object.assign(A, {
       toast(N(r.found) ? `لقيت ${N(r.found)} شركة: ${N(r.new)} جديدة، والباقي كانت عندك من قبل${N(r.calls) ? ' · استخدم ' + N(r.calls) + ' بحث من المجاني' : ''}` : 'ما لقيت شركات. جرّب كلمة ثانية أو منطقة أكبر', !N(r.new)); ui.hFilter = 'جديد'; ui.hSid = r.search_id || null; ui.hHistOpen = false; }
     catch (e) { toast(e.message, true); }
     ui.hBusy = false; K.render();
+  },
+  hDiag: async () => {
+    toast('عم يفحص المفتاح…');
+    const r = await db.fn('prospects', {action: 'diag'});
+    K.openInfo('فحص مفتاح جوجل', `<div class="kvlist">${(r.checks || []).map(([k, v]) => `<div class="kv" style="align-items:flex-start"><span>${esc(k)}</span><b dir="ltr" style="text-align:left;white-space:pre-wrap;word-break:break-word;font-weight:400;font-size:13px">${esc(v)}</b></div>`).join('')}</div><p class="m" style="margin-top:8px">صوّر هالشاشة وابعتها. ما فيها المفتاح نفسه.</p>`);
   },
   hShow: id => { ui.hSid = id || null; ui.hSel = new Set(); K.render(); window.scrollTo(0, 0); },
   hSelAll: () => { if (ui.hSel?.size) ui.hSel = new Set(); else ui.hSel = new Set((ui.hRows || []).slice(0, 20).map(r => r.id)); K.render(); },
