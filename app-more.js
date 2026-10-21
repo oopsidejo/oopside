@@ -252,6 +252,7 @@ document.addEventListener('change', async e => {
     if (c === 'leadStage') { await db.upd('leads', {id: t.dataset.id}, {stage: t.value, updated_at: new Date().toISOString()}); toast('تحدّث'); K.render(); }
     if (c === 'ipage') { ui.ipage = t.value; ui.conv = null; K.render(); return; }
     if (c === 'adRange') { const f = $('#adf')?.value, tt = $('#adt')?.value; if (f && tt) { ui.adFrom = f; ui.adTo = tt; K.render(); } return; }
+    if (c === 'campProduct') { const [acc, ...rest] = t.dataset.id.split('|'); const n = await db.rpc('camp_set_product', {acc: acc || null, camp: rest.join('|'), pid: t.value || null}); toast(t.value ? `انربطت الحملة بالمنتج (${N(n)} إعلان)` : 'انشال المنتج عن الحملة'); K.render(); }
     if (c === 'adProduct') { await db.rpc('ad_set_product', {aid: t.dataset.id, pid: t.value || null}); toast('انربط الإعلان بالمنتج'); K.render(); }
     if (c === 'stageSet') { await db.upd('stages', {id: t.dataset.id}, {status: t.value, done_at: t.value === 'منتهي' ? new Date().toISOString() : null}); toast('تحدّثت المرحلة'); K.render(); }
     if (c === 'pmonth') { ui.pmonth = t.value || monthOf(today()); K.render(); }
@@ -369,7 +370,7 @@ const AS = {busy: false, last: 0, seen: 0};
 async function autoAdSync() {
   if (ui.view !== 'ads' || AS.busy || !can('ads', 'edit') || document.visibilityState !== 'visible') return;
   const age = Date.now() - Math.max(AS.last, AS.seen);
-  if (age < 15 * 60e3) return;
+  if (age < 5 * 60e3) return;
   AS.busy = true; AS.last = Date.now();
   try { await db.fn('meta-ads-sync', {days: 3}); loadAdsList(); } catch (e) {} finally { AS.busy = false; }
   if (ui.view === 'ads') K.softRender();
@@ -395,9 +396,10 @@ V.ads = async () => {
   return head('الحسابات الإعلانية', 'العائد محسوب على الطلبات اللي فعلاً انطلبت وانسلّمت، مش على الرسائل. كل إعلان لازم ينربط بمنتج',
       periodChips(d, 'adDays') + `<span class="row" style="gap:4px"><label class="m" for="adf" style="font-size:13px">من</label><input type="date" id="adf" class="inl" value="${from}" data-chg="adRange"><label class="m" for="adt" style="font-size:13px">لـ</label><input type="date" id="adt" class="inl" value="${to}" data-chg="adRange"></span>` +
       '<button class="btn" data-act="manSales">+ مبيعات يدوية</button><button class="btn" data-act="adManual">+ صرف يدوي</button><button class="btn" data-act="metaConnect">ربط حسابات Meta</button><button class="btn pri" data-act="adSync">مزامنة من Meta</button>') +
-    `<div class="row accbar">${accs.length > 1 ? `<button class="chip ${!ui.adAcc ? 'on' : ''}" data-act="adAcc" data-id="">كل الحسابات</button>` : ''}${accs.map(a => `<span class="accchip"><button class="chip ${ui.adAcc === a.account_id || accs.length === 1 ? 'on' : ''}" data-act="adAcc" data-id="${esc(a.account_id)}" title="اعرض إعلانات هالحساب بس${a.currency ? ' · عملة الحساب ' + esc(a.currency) + (a.currency !== 'JOD' ? ' (محوّلة لدينار)' : '') : ''}${a.tz ? ' · توقيت ' + esc(a.tz) : ''}">${esc(a.name || a.account_id)}${a.active ? '' : ' (موقوف)'} <small>${jd(accSpend[a.account_id] || 0)}</small></button><button class="btn sm ghost" data-act="adAccEdit" data-id="${esc(a.account_id)}" title="تعديل أو حذف" aria-label="تعديل ${esc(a.name || a.account_id)}">✎</button></span>`).join('')}<button class="btn sm" data-act="adAccForm">+ حساب إعلاني</button>${accs.some(a => a.tz && a.tz !== 'Asia/Amman') ? `<small class="m" style="flex-basis:100%">⚠ في حساب توقيته ${esc(accs.find(a => a.tz && a.tz !== 'Asia/Amman').tz)}: "اليوم" عنده بيبلش بوقت غير عمّان، فصرف اليوم ممكن يبين أقل. شوف 7 أيام للمقارنة.</small>` : ''}<small class="m">آخر تحديث: ${lastAd[0] ? fmtDT(lastAd[0].updated_at) : 'ما في'}${AS.busy ? ' · <b>عم يتحدّث…</b>' : ' · بيتحدّث لحاله كل 15 دقيقة'}</small></div>
+    `<div class="row accbar">${accs.length > 1 ? `<button class="chip ${!ui.adAcc ? 'on' : ''}" data-act="adAcc" data-id="">كل الحسابات</button>` : ''}${accs.map(a => `<span class="accchip"><button class="chip ${ui.adAcc === a.account_id || accs.length === 1 ? 'on' : ''}" data-act="adAcc" data-id="${esc(a.account_id)}" title="اعرض إعلانات هالحساب بس${a.currency ? ' · عملة الحساب ' + esc(a.currency) + (a.currency !== 'JOD' ? ' (محوّلة لدينار)' : '') : ''}${a.tz ? ' · توقيت ' + esc(a.tz) : ''}">${esc(a.name || a.account_id)}${a.active ? '' : ' (موقوف)'} <small>${jd(accSpend[a.account_id] || 0)}</small></button><button class="btn sm ghost" data-act="adAccEdit" data-id="${esc(a.account_id)}" title="تعديل أو حذف" aria-label="تعديل ${esc(a.name || a.account_id)}">✎</button></span>`).join('')}<button class="btn sm" data-act="adAccForm">+ حساب إعلاني</button>${accs.some(a => a.tz && a.tz !== 'Asia/Amman') ? `<small class="m" style="flex-basis:100%">⚠ في حساب توقيته ${esc(accs.find(a => a.tz && a.tz !== 'Asia/Amman').tz)}: "اليوم" عنده بيبلش بوقت غير عمّان، فصرف اليوم ممكن يبين أقل. شوف 7 أيام للمقارنة.</small>` : ''}<small class="m">آخر تحديث: ${lastAd[0] ? fmtDT(lastAd[0].updated_at) : 'ما في'}${AS.busy ? ' · <b>عم يتحدّث…</b>' : ' · <span class="live"><i></i>مباشر</span> بيتحدّث كل 5 دقائق'}</small></div>
     <div class="kpis">${kpi('صرف الإعلانات', jd(T.spend), '', 'hl')}${kpi('رسائل', fmt(T.messages), 'تكلفة الرسالة ' + jd(T.messages ? T.spend / T.messages : 0))}${kpi('طلبات من الإعلانات', T.orders, 'تحويل ' + pct(T.messages ? T.orders / T.messages : 0))}
      ${kpi('ROAS مسلّم', roas.toFixed(2) + 'x', 'على اللي انسلّم بس')}${kpi('ROAS متوقع', roasE.toFixed(2) + 'x', 'مسلّم + 80% من اللي بالطريق')}${kpi('ربح بعد الإعلان', jd(T.profit), '', T.profit < 0 ? 'red' : '')}</div>
+    ${campCard(all, accs, accName, pOpts)}
     <div class="card"><h2>المنتجات: كم باع كل منتج وكم رجّع إعلانه</h2>${table([{h:'المنتج', f:x => esc(x.name)}, {h:'صرف', f:x => jd(x.spend)}, {h:'رسائل', f:x => x.messages}, {h:'طلبات', f:x => x.orders}, {h:'انسلّم / رجع', f:x => x.delivered + ' / ' + x.returned}, {h:'تكلفة الطلب', f:x => x.cpa ? jd(x.cpa) : '—'}, {h:'ربح القطعة', f:x => x.product_id ? jd(x.margin) : '—'},
       {h:'ROAS متوقع', f:x => x.spend ? pill(x.roasE.toFixed(2) + 'x', rc(x.roasE)) : '—'}, {h:'ربح بعد الإعلان', f:x => `<b class="${x.profit < 0 ? 'neg' : 'pos'}">${jd(x.profit)}</b>`}, {h:'القرار', f:x => dec(x)}], prods, 'ما في صرف ولا طلبات من إعلانات بهالفترة')}
      <p class="note" style="margin-top:10px">قاعدة سريعة: إذا تكلفة الطلب أعلى من ربح القطعة، الإعلان خسران حتى لو الرسائل كثيرة.</p></div>
@@ -406,6 +408,26 @@ V.ads = async () => {
       {h:'رسائل', f:g => g.messages}, {h:'تكلفة الرسالة', f:g => g.messages ? jd(g.cpMsg) : '—'}, {h:'طلبات', f:g => g.orders}, {h:'تحويل', f:g => g.messages ? `<span class="${g.cv < .1 ? 'neg' : ''}">${pct(g.cv)}</span>` : '—'},
       {h:'ROAS', f:g => pill(g.roasExp.toFixed(2) + 'x', rc(g.roasExp))}, {h:'التشخيص', f:g => diagnose(g).map(x => `<div style="margin-bottom:4px">${pill(x.k, x.l)} ${esc(x.t)}</div>`).join(''), c:'wrap'}], ads, 'ما في إعلانات لسا. اربط حساب Meta أو أضف صرف يدوي')}</div>` + manCard(man, from, to);
 };
+// الحملات بشكل مدير الإعلانات: كل حملة بسطر، وربط الحملة كاملة بمنتجها
+function campCard(all, accs, accName, pOpts) {
+  const by = {};
+  all.filter(g => !String(g.ad_id).startsWith('manual')).forEach(g => {
+    const k = (g.account_id || '') + '|' + (g.campaign || g.name || '');
+    const c = by[k] = by[k] || {k, acc: g.account_id, name: g.campaign || g.name || 'بدون اسم', ads: 0, active: 0, pids: new Set(), spend: 0, impressions: 0, clicks: 0, messages: 0, orders: 0, delivered: 0, revenue: 0, pending_rev: 0, profit: 0};
+    c.ads++; if (String(g.status || '').toUpperCase() === 'ACTIVE') c.active++; if (g.product_id) c.pids.add(g.product_id);
+    ['spend','impressions','clicks','messages','orders','delivered','revenue','pending_rev','profit'].forEach(f => c[f] += N(g[f]));
+  });
+  const camps = Object.values(by).filter(c => c.spend || c.messages || c.orders || c.active).sort((a, b) => b.active - a.active || b.spend - a.spend);
+  const st = c => c.active ? `<span class="live"><i></i>شغّالة</span>` : '<small class="m">متوقفة</small>';
+  const pidOf = c => c.pids.size === 1 ? [...c.pids][0] : '';
+  return `<div class="card"><h2>الحملات الآن</h2><p class="m" style="margin-bottom:10px">زي مدير الإعلانات، بس فيه الطلبات والربح. اختار منتج الحملة مرة وحدة، وكل إعلاناتها بتنربط فيه.</p>${table([
+    {h:'الحملة', f:c => `<b>${esc(c.name)}</b><br>${st(c)} <small class="m">${c.ads} إعلان</small>${c.acc && accs.length > 1 && !ui.adAcc ? ' ' + pill(accName(c.acc), 'brand') : ''}`},
+    {h:'المنتج', f:c => sel('cp_' + c.k.replace(/[^a-z0-9]/gi, '').slice(-20) + Math.abs([...c.k].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) | 0, 0)), pOpts, pidOf(c), c.pids.size > 1 ? 'أكثر من منتج' : '— اربط بمنتج —', `data-chg="campProduct" data-id="${esc(c.k)}" aria-label="منتج الحملة" ${can('ads', 'edit') ? '' : 'disabled'}`)},
+    {h:'الصرف', f:c => `<b>${jd(c.spend)}</b>`}, {h:'الظهور', f:c => fmt(c.impressions)}, {h:'CPM', f:c => c.impressions ? fmt(c.spend / c.impressions * 1000) : '—'},
+    {h:'رسائل', f:c => c.messages}, {h:'تكلفة الرسالة', f:c => c.messages ? jd(c.spend / c.messages) : '—'},
+    {h:'طلبات', f:c => c.orders}, {h:'تكلفة الطلب', f:c => c.orders ? jd(c.spend / c.orders) : '—'},
+    {h:'ربح بعد الإعلان', f:c => `<b class="${c.profit < 0 ? 'neg' : 'pos'}">${jd(c.profit)}</b>`}], camps, 'ما في حملات بهالفترة')}</div>`;
+}
 function manCard(man, from, to) {
   if (man === null) return '<p class="note">المبيعات اليدوية بتحتاج ملف 09_sales_setup.sql على Supabase.</p>';
   const byDay = {}; man.forEach(m => { (byDay[m.day] = byDay[m.day] || []).push(m); });
