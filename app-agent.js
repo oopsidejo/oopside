@@ -10,11 +10,11 @@ const USD_JOD = 0.709;
 const MODELS = [['claude-haiku-5-5', 'Claude Haiku 5.5 · الأرخص والأسرع (مقترح)'], ['claude-sonnet-5-5', 'Claude Sonnet 5.5 · أذكى، أغلى بـ20 ضعف']];
 const MODES = [['off', 'موقف', 'الوكيل ما بيعمل إشي على هالصفحة'], ['suggest', 'اقتراح للبنات', 'بيكتب الرد المقترح بصندوق الرسائل، والبنت بتنسخه وبتبعته'], ['auto', 'رد تلقائي', 'بيرد على الزبون لحاله وبيسجّل الطلب. بيحتاج موافقة Meta على pages_messaging']];
 const ACT = {reply: ['رد', 'good'], order: ['سحب طلب', 'brand'], suggest: ['اقتراح', 'info'], handoff: ['حوّل لموظف', 'warn'], error: ['خطأ', 'bad']};
-const TABS = [['dash', 'اللوحة'], ['pages', 'الصفحات'], ['prompts', 'البرومبتات'], ['learn', 'التعلّم'], ['settings', 'الإعدادات'], ['test', 'جرّب الوكيل']];
+const TABS = [['dash', 'اللوحة'], ['pages', 'الصفحات'], ['products', 'المنتجات'], ['prompts', 'البرومبتات'], ['learn', 'التعلّم'], ['settings', 'الإعدادات'], ['test', 'جرّب الوكيل']];
 const usd = n => '$' + (Math.round(N(n) * 10000) / 10000).toFixed(N(n) < 1 ? 4 : 2);
 const fnUrl = () => String(window.SABER_CONFIG?.url || '').replace(/\/$/, '') + '/functions/v1/ai-agent';
 
-Object.assign(ACT_SEC, {agTab: 'ai', agSave: 'ai', agPageSave: 'ai', agPromptSave: 'ai', agDefaults: 'ai', agToggle: 'ai', agTestSend: 'ai', agTestReset: 'ai', agPeriod: 'ai', agLearn: 'ai', agLearnSave: 'ai', agLearnDrop: 'ai'});
+Object.assign(ACT_SEC, {agTab: 'ai', agSave: 'ai', agPageSave: 'ai', agPromptSave: 'ai', agDefaults: 'ai', agToggle: 'ai', agTestSend: 'ai', agTestReset: 'ai', agPeriod: 'ai', agLearn: 'ai', agLearnSave: 'ai', agLearnDrop: 'ai', agAutoSave: 'ai', agAutoNow: 'ai', agDraft: 'ai', agProdDraft: 'ai', agProdSave: 'ai'});
 
 async function loadAgent() {
   const [ag, pages, mpages] = await Promise.all([
@@ -32,7 +32,7 @@ V.agent = async () => {
   const tab = ui.agTab || 'dash';
   const live = ST.aiPages.filter(p => p.mode !== 'off');
   const status = !ag.enabled ? pill('موقف', 'bad') : !live.length ? pill('شغّال بس ما في صفحات', 'warn') : `<span class="live"><i></i>شغّال على ${live.length} ${live.length === 1 ? 'صفحة' : 'صفحات'}</span>`;
-  const body = await ({dash: agDash, pages: agPages, prompts: agPrompts, learn: agLearn, settings: agSettings, test: agTest}[tab] || agDash)(ag);
+  const body = await ({dash: agDash, pages: agPages, products: agProducts, prompts: agPrompts, learn: agLearn, settings: agSettings, test: agTest}[tab] || agDash)(ag);
   return head('الوكيل الذكي', 'بيرد على الزباين، بيسحب الطلبات، وبيحوّل للبنات لما يلزم. كل شي بيتعدّل من هون',
       `${status}${can('ai', 'edit') ? `<button class="btn ${ag.enabled ? '' : 'pri'}" data-act="agToggle">${ag.enabled ? 'وقّف الوكيل' : 'شغّل الوكيل'}</button>` : ''}`) +
     `<div class="chips agtabs" role="tablist">${TABS.map(([k, l]) => `<button class="chip ${tab === k ? 'on' : ''}" role="tab" aria-selected="${tab === k}" data-act="agTab" data-id="${k}">${l}</button>`).join('')}</div>` + body;
@@ -77,6 +77,18 @@ async function agPages() {
   }).join('');
 }
 
+/* ---------- معلومات المنتجات ---------- */
+async function agProducts() {
+  const prods = await db.q('products', {eq: {active: true}, select: 'id,name,price,stock,landing,ai_info', order: ['name', true]}).catch(() => null);
+  if (!prods) return '<div class="card"><p class="note">معلومات المنتجات بتحتاج ملف <b>18_ai_auto_learn.sql</b> على Supabase مرة وحدة.</p></div>';
+  if (!prods.length) return '<div class="card"><p class="note">ما في منتجات شغّالة. أضفها من المخزون ← المنتجات.</p></div>';
+  return `<div class="card"><h2>شو بيعرف الوكيل عن كل منتج</h2><p class="m">الوكيل بياخد الاسم والسعر والمخزون من النظام، وعنوان صفحة البيع ومزاياها إذا موجودة. هون بتكتبله الباقي: المزايا، طريقة الاستخدام، لمين مناسب، الأسئلة الشائعة، والممنوعات. هاي المعلومات أول مرجع إله، وزر "اقترح" بيكتبلك مسودة من صفحة البيع وخبرة البنات.</p></div>` +
+    prods.map(p => `<div class="card agprod" data-id="${p.id}"><div class="head" style="margin-bottom:6px"><h2>${esc(p.name)}</h2><span class="row" style="gap:6px">${pill(jd(p.price), 'brand')}${N(p.stock) > 0 ? pill('متوفر ' + N(p.stock), 'good') : pill('خالص', 'bad')}${p.ai_info ? pill('فيه معلومات', 'good') : pill('بدون معلومات', 'warn')}</span></div>
+      ${p.landing?.headline ? `<p class="m">من صفحة البيع: ${esc(p.landing.headline)}${p.landing.sub ? ' · ' + esc(p.landing.sub) : ''}</p>` : ''}
+      <textarea rows="7" style="width:100%" class="agpi" aria-label="معلومات ${esc(p.name)}" placeholder="المزايا:&#10;طريقة الاستخدام:&#10;مناسب لـ / مش مناسب لـ:&#10;أسئلة شائعة:&#10;ممنوع نحكي:">${esc(p.ai_info || '')}</textarea>
+      <div class="row" style="margin-top:6px"><button class="btn pri" data-act="agProdSave" data-id="${p.id}">حفظ</button><button class="btn" data-act="agProdDraft" data-id="${p.id}">✨ اقترح وصف</button></div></div>`).join('');
+}
+
 /* ---------- البرومبتات ---------- */
 async function agPrompts(ag) {
   const box = (k, l, hint) => `<label class="fld" style="margin-top:12px"><span>${l}</span><textarea id="agp_${k}" rows="7" placeholder="فاضي = التعليمات الافتراضية">${esc(ag['prompt_' + k] || '')}</textarea><small class="m">${hint}</small></label>`;
@@ -94,7 +106,17 @@ async function agLearn(ag) {
   const cur = sc ? (ST.aiPages.find(p => p.page_id === sc) || {}) : ag;
   const draft = ui.agLDraft?.scope === sc ? ui.agLDraft : null;
   const opts = [['', 'كل الصفحات'], ...ST.mpages.map(m => [m.page_id, m.name || m.page_id])];
-  return `<div class="card"><h2>تعلّم من محادثات البنات</h2>
+  const hasAuto = 'auto_learn' in ag;
+  const drafts = hasAuto ? [...(ag.learn_draft ? [{pid: '', name: 'كل الصفحات', text: ag.learn_draft, at: ag.learn_draft_at}] : []), ...ST.aiPages.filter(p => p.learn_draft).map(p => ({pid: p.page_id, name: p.name || p.page_id, text: p.learn_draft, at: p.learn_draft_at}))] : [];
+  const autoCard = !hasAuto ? '<div class="card"><p class="note">التعلّم التلقائي بيحتاج ملف <b>18_ai_auto_learn.sql</b>.</p></div>' : `<div class="card"><h2>التعلّم التلقائي</h2>
+    <p class="m">كل كم يوم الوكيل بيقرأ المحادثات الجديدة لحاله (الساعة 3 الفجر)، بيحدّث خبرته، وبيكتبلك تقرير: شو البنات عملوا صح، فرص طلبات ضاعت، وطرق أحسن للرد مع أمثلة.</p>
+    <div class="fgrid"><label class="fld"><span>شو يعمل بالخبرة الجديدة</span><select id="aga_mode"><option value="review" ${ag.auto_learn === 'review' ? 'selected' : ''}>يستناني أراجعها وأعتمدها (مقترح)</option><option value="apply" ${ag.auto_learn === 'apply' ? 'selected' : ''}>يعتمدها لحاله</option><option value="off" ${ag.auto_learn === 'off' ? 'selected' : ''}>موقف</option></select></label>
+      <label class="fld"><span>كل كم يوم</span><select id="aga_every">${[[1, 'كل يوم'], [3, 'كل 3 أيام'], [7, 'كل أسبوع']].map(([v, l]) => `<option value="${v}" ${N(ag.learn_every) === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
+    <div class="row" style="margin-top:8px"><button class="btn pri" data-act="agAutoSave">حفظ</button><button class="btn" data-act="agAutoNow">${ui.agABusy ? '…عم يقرأ' : 'تعلّم من الجديد هلأ'}</button><small class="m">${ag.last_auto_learn ? 'آخر مرة: ' + fmtDT(ag.last_auto_learn) : 'لسا ما اشتغل'}</small></div></div>
+   ${drafts.map(d => `<div class="card" style="border-color:var(--info)"><h2>خبرة جديدة تستنى موافقتك · ${esc(d.name)}</h2><p class="m">${d.at ? fmtDT(d.at) : ''}</p><div class="aitext agdraft">${esc(d.text)}</div>
+     <div class="row" style="margin-top:8px"><button class="btn pri" data-act="agDraft" data-id="ok|${esc(d.pid)}">اعتمدها</button><button class="btn" data-act="agDraft" data-id="no|${esc(d.pid)}">تجاهلها</button></div></div>`).join('')}
+   ${hasAuto && ag.learn_report ? `<div class="card"><h2>اقتراحات لتحسين الرد وجلب الطلبات</h2><p class="m">${fmtDT(ag.learn_report_at)} · من ${N(ag.learn_report_n)} محادثة</p><div class="aitext agdraft">${esc(ag.learn_report)}</div></div>` : ''}`;
+  return autoCard + `<div class="card"><h2>تعلّم يدوي من محادثات معيّنة</h2>
     <p class="m">بيقرأ المحادثات اللي صار فيها طلب (آخر 90 يوم، والمسلّمة أول)، وشوية محادثات ضاعت. وبيطلّع منها: الأسئلة المتكررة وأحسن الردود، طريقة الإقناع، والرد على "غالي" و"بدي أفكر"، ومعلومات التوصيل والاستخدام. بتراجع النتيجة وبتعدّل عليها، وبعد الحفظ بيصير الوكيل يحكي زي البنات الشاطرات.</p>
     <div class="fgrid">
       <label class="fld"><span>من وين يتعلّم</span><select id="agl_scope">${opts.map(([v, l]) => `<option value="${esc(v)}" ${v === sc ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>
@@ -193,6 +215,20 @@ Object.assign(A, {
     ui.agLDraft = null; toast('انحفظت. الوكيل صار يستخدم هالخبرة'); K.render();
   },
   agLearnDrop: () => { ui.agLDraft = null; K.render(); },
+  agAutoSave: async () => { await db.upd('ai_agent', {id: 1}, {auto_learn: $('#aga_mode').value, learn_every: +$('#aga_every').value, fn_url: fnUrl()}); toast('انحفظ'); K.render(); },
+  agAutoNow: async () => {
+    if (ui.agABusy) return; ui.agABusy = true; await K.render();
+    try { const r = await db.fn('ai-agent', {action: 'auto_learn'}); toast(N(r.total) ? `تعلّم من ${N(r.total)} محادثة جديدة` : 'ما في محادثات جديدة كفاية (بدها 3 على الأقل فيها طلب أو ضاعت)', !N(r.total)); }
+    catch (e) { toast(e.message, true); }
+    ui.agABusy = false; K.render();
+  },
+  agDraft: async k => { const [ok, ...rest] = String(k).split('|'); await db.rpc('ai_draft_apply', {pid: rest.join('|') || null, ok: ok === 'ok'}); toast(ok === 'ok' ? 'اعتمدتها. الوكيل صار يستخدمها' : 'تجاهلتها'); K.render(); },
+  agProdSave: async id => { const c = $$('.agprod').find(x => x.dataset.id === id); await db.rpc('ai_product_save', {pid: id, txt: c.querySelector('.agpi').value.trim()}); toast('انحفظت معلومات المنتج'); K.render(); },
+  agProdDraft: async id => {
+    const c = $$('.agprod').find(x => x.dataset.id === id); toast('بيكتب مسودة…');
+    try { const r = await db.fn('ai-agent', {action: 'product_draft', product_id: id}); const t = c.querySelector('.agpi'); t.value = r.text + (t.value.trim() ? '\n\n--- القديم ---\n' + t.value : ''); toast('هاي مسودة. عدّلها واضغط حفظ'); }
+    catch (e) { toast(e.message, true); }
+  },
   agTestReset: () => { ui.agChat = []; ui.agLast = null; ui.agCosts = []; K.render(); },
   agTestSend: async () => {
     const t = $('#ag_tmsg'), txt = t?.value.trim(); if (!txt || ui.agBusy) return;
