@@ -364,11 +364,26 @@ function diagnose(g) {
   return d;
 }
 const adRange = () => { if (ui.adFrom && ui.adTo) return [ui.adFrom <= ui.adTo ? ui.adFrom : ui.adTo, ui.adFrom <= ui.adTo ? ui.adTo : ui.adFrom]; const d = ui.adDays || 7; return [addDays(today(), -(d - 1)), today()]; };
+// تحديث الحسابات الإعلانية لحاله: لما تفتح الشاشة وكل 15 دقيقة وهي مفتوحة (بدون ما يحرّك الشاشة)
+const AS = {busy: false, last: 0, seen: 0};
+async function autoAdSync() {
+  if (ui.view !== 'ads' || AS.busy || !can('ads', 'edit') || document.visibilityState !== 'visible') return;
+  const age = Date.now() - Math.max(AS.last, AS.seen);
+  if (age < 15 * 60e3) return;
+  AS.busy = true; AS.last = Date.now();
+  try { await db.fn('meta-ads-sync', {days: 3}); loadAdsList(); } catch (e) {} finally { AS.busy = false; }
+  if (ui.view === 'ads') K.softRender();
+}
+setInterval(autoAdSync, 60e3);
 V.ads = async () => {
   const d = ui.adFrom ? 0 : (ui.adDays || 7), [from, to] = adRange();
-  const [rows, accs, lastAd, man] = await Promise.all([db.rpc('ad_perf', {d_from: from, d_to: to}), db.q('ad_accounts', {order: ['name', true]}), db.q('ads', {order: ['updated_at', false], limit: 1, select: 'updated_at'}),
+  const [rows, accs, lastAd, man] = await Promise.all([db.rpc('ad_perf', {d_from: from, d_to: to}), db.q('ad_accounts', {order: ['name', true]}), db.q('ads', {order: ['updated_at', false], limit: 1, select: 'updated_at'}).then(r => { AS.seen = r[0] ? new Date(r[0].updated_at).getTime() : 0; setTimeout(autoAdSync, 800); return r; }),
     db.q('manual_sales', {gte: {day: from}, lte: {day: to}, order: ['day', false], limit: 500}).catch(() => null)]);
-  const all = (rows || []).map(adCalc);
+  const accName = id => { const a = accs.find(x => x.account_id === id); return a ? (a.name || a.account_id) : (id || ''); };
+  const accSpend = {}; (rows || []).forEach(r => { if (r.account_id) accSpend[r.account_id] = N(accSpend[r.account_id]) + N(r.spend); });
+  if (ui.adAcc && !accs.some(a => a.account_id === ui.adAcc)) ui.adAcc = '';
+  // فلتر الحساب الإعلاني: بنعرض بس إعلانات الحساب المختار (والمبيعات اليدوية بتنشال)
+  const all = (rows || []).filter(r => !ui.adAcc || r.account_id === ui.adAcc).map(adCalc);
   const ads = all.filter(g => !String(g.ad_id).startsWith('manual:')).filter(g => g.spend || g.orders).sort((a, b) => b.spend - a.spend);
   const T = {}; ['spend','messages','orders','delivered','returned','revenue','pending_rev','profit','impressions','clicks'].forEach(k => T[k] = sum(all, g => g[k]));
   const roas = T.spend ? T.revenue / T.spend : 0, roasE = T.spend ? (T.revenue + T.pending_rev * .8) / T.spend : 0;
@@ -380,13 +395,13 @@ V.ads = async () => {
   return head('الحسابات الإعلانية', 'العائد محسوب على الطلبات اللي فعلاً انطلبت وانسلّمت، مش على الرسائل. كل إعلان لازم ينربط بمنتج',
       periodChips(d, 'adDays') + `<span class="row" style="gap:4px"><label class="m" for="adf" style="font-size:13px">من</label><input type="date" id="adf" class="inl" value="${from}" data-chg="adRange"><label class="m" for="adt" style="font-size:13px">لـ</label><input type="date" id="adt" class="inl" value="${to}" data-chg="adRange"></span>` +
       '<button class="btn" data-act="manSales">+ مبيعات يدوية</button><button class="btn" data-act="adManual">+ صرف يدوي</button><button class="btn" data-act="metaConnect">ربط حسابات Meta</button><button class="btn pri" data-act="adSync">مزامنة من Meta</button>') +
-    `<div class="row">${accs.map(a => `<button class="chip ${a.active ? 'on' : ''}" data-act="adAccEdit" data-id="${esc(a.account_id)}" title="تعديل أو حذف">${esc(a.name || a.account_id)}${a.active ? '' : ' (موقوف)'}</button>`).join('')}<button class="btn sm" data-act="adAccForm">+ حساب إعلاني</button><small class="m">آخر تحديث: ${lastAd[0] ? fmtDT(lastAd[0].updated_at) : 'ما في'}</small></div>
+    `<div class="row accbar">${accs.length > 1 ? `<button class="chip ${!ui.adAcc ? 'on' : ''}" data-act="adAcc" data-id="">كل الحسابات</button>` : ''}${accs.map(a => `<span class="accchip"><button class="chip ${ui.adAcc === a.account_id || accs.length === 1 ? 'on' : ''}" data-act="adAcc" data-id="${esc(a.account_id)}" title="اعرض إعلانات هالحساب بس">${esc(a.name || a.account_id)}${a.active ? '' : ' (موقوف)'} <small>${jd(accSpend[a.account_id] || 0)}</small></button><button class="btn sm ghost" data-act="adAccEdit" data-id="${esc(a.account_id)}" title="تعديل أو حذف" aria-label="تعديل ${esc(a.name || a.account_id)}">✎</button></span>`).join('')}<button class="btn sm" data-act="adAccForm">+ حساب إعلاني</button><small class="m">آخر تحديث: ${lastAd[0] ? fmtDT(lastAd[0].updated_at) : 'ما في'}${AS.busy ? ' · <b>عم يتحدّث…</b>' : ' · بيتحدّث لحاله كل 15 دقيقة'}</small></div>
     <div class="kpis">${kpi('صرف الإعلانات', jd(T.spend), '', 'hl')}${kpi('رسائل', fmt(T.messages), 'تكلفة الرسالة ' + jd(T.messages ? T.spend / T.messages : 0))}${kpi('طلبات من الإعلانات', T.orders, 'تحويل ' + pct(T.messages ? T.orders / T.messages : 0))}
      ${kpi('ROAS مسلّم', roas.toFixed(2) + 'x', 'على اللي انسلّم بس')}${kpi('ROAS متوقع', roasE.toFixed(2) + 'x', 'مسلّم + 80% من اللي بالطريق')}${kpi('ربح بعد الإعلان', jd(T.profit), '', T.profit < 0 ? 'red' : '')}</div>
     <div class="card"><h2>المنتجات: كم باع كل منتج وكم رجّع إعلانه</h2>${table([{h:'المنتج', f:x => esc(x.name)}, {h:'صرف', f:x => jd(x.spend)}, {h:'رسائل', f:x => x.messages}, {h:'طلبات', f:x => x.orders}, {h:'انسلّم / رجع', f:x => x.delivered + ' / ' + x.returned}, {h:'تكلفة الطلب', f:x => x.cpa ? jd(x.cpa) : '—'}, {h:'ربح القطعة', f:x => x.product_id ? jd(x.margin) : '—'},
       {h:'ROAS متوقع', f:x => x.spend ? pill(x.roasE.toFixed(2) + 'x', rc(x.roasE)) : '—'}, {h:'ربح بعد الإعلان', f:x => `<b class="${x.profit < 0 ? 'neg' : 'pos'}">${jd(x.profit)}</b>`}, {h:'القرار', f:x => dec(x)}], prods, 'ما في صرف ولا طلبات من إعلانات بهالفترة')}
      <p class="note" style="margin-top:10px">قاعدة سريعة: إذا تكلفة الطلب أعلى من ربح القطعة، الإعلان خسران حتى لو الرسائل كثيرة.</p></div>
-    <div class="card"><h2>الإعلانات: ليش هالإعلان غالي؟</h2>${table([{h:'الإعلان', f:g => `<b>${esc(g.name)}</b><br><small class="m">${esc(g.campaign || '')}</small>`}, {h:'المنتج', f:g => sel('adp_' + g.ad_id.replace(/[^a-z0-9]/gi, ''), pOpts, g.product_id, '— اربط بمنتج —', `data-chg="adProduct" data-id="${esc(g.ad_id)}" aria-label="المنتج" ${can('ads', 'edit') ? '' : 'disabled'}`)},
+    <div class="card"><h2>الإعلانات: ليش هالإعلان غالي؟</h2>${table([{h:'الإعلان', f:g => `<b>${esc(g.name)}</b><br><small class="m">${esc(g.campaign || '')}</small>${g.account_id && accs.length > 1 && !ui.adAcc ? '<br>' + pill(accName(g.account_id), 'brand') : ''}`}, {h:'المنتج', f:g => sel('adp_' + g.ad_id.replace(/[^a-z0-9]/gi, ''), pOpts, g.product_id, '— اربط بمنتج —', `data-chg="adProduct" data-id="${esc(g.ad_id)}" aria-label="المنتج" ${can('ads', 'edit') ? '' : 'disabled'}`)},
       {h:'صرف', f:g => jd(g.spend)}, {h:'CPM', f:g => g.impressions ? `<span class="${g.cpm > rule('cpm_max', 3) ? 'neg' : ''}">${fmt(g.cpm)}</span>` : '—'}, {h:'CTR', f:g => g.impressions ? `<span class="${g.ctr < .008 ? 'neg' : ''}">${pct(g.ctr)}</span>` : '—'}, {h:'تكرار', f:g => g.reach ? `<span class="${g.freq > rule('freq_max', 3.5) ? 'neg' : ''}">${g.freq.toFixed(1)}</span>` : '—'},
       {h:'رسائل', f:g => g.messages}, {h:'تكلفة الرسالة', f:g => g.messages ? jd(g.cpMsg) : '—'}, {h:'طلبات', f:g => g.orders}, {h:'تحويل', f:g => g.messages ? `<span class="${g.cv < .1 ? 'neg' : ''}">${pct(g.cv)}</span>` : '—'},
       {h:'ROAS', f:g => pill(g.roasExp.toFixed(2) + 'x', rc(g.roasExp))}, {h:'التشخيص', f:g => diagnose(g).map(x => `<div style="margin-bottom:4px">${pill(x.k, x.l)} ${esc(x.t)}</div>`).join(''), c:'wrap'}], ads, 'ما في إعلانات لسا. اربط حساب Meta أو أضف صرف يدوي')}</div>` + manCard(man, from, to);
@@ -403,6 +418,7 @@ function manCard(man, from, to) {
 }
 Object.assign(A, {
   adDays: k => { ui.adDays = +k; ui.adFrom = ui.adTo = null; K.render(); },
+  adAcc: id => { ui.adAcc = id || ''; K.render(); },
   adSync: async () => { toast('جاري المزامنة…'); const r = await db.fn('meta-ads-sync', {days: Math.min(90, Math.max(3, Math.round((new Date(today()) - new Date(adRange()[0])) / 864e5) + 1))});
     const errs = (r?.errors || []).map(e => e.account_id + ': ' + (/ads_read|ads_management|#200|permission/i.test(e.error) ? 'ما في صلاحية. أعطي مستخدم النظام هالحساب واعمل رمز جديد فيه ads_read' : /does not exist|Unsupported get request|#100/i.test(e.error) ? 'الرقم غلط أو الحساب مش موجود' : e.error));
     toast(`تمت المزامنة: ${N(r?.rows)} سطر` + (errs.length ? ' · مشاكل: ' + errs.join(' | ') : ''), !!errs.length); loadAdsList(); K.render(); },

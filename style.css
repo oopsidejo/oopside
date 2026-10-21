@@ -327,3 +327,8 @@ body[data-ws="agency"]{--brand:#2f3b82;--brand-ink:#ffffff;--brand-soft:#e2e6f7}
 details.adv{margin-top:14px;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 details.adv summary{cursor:pointer;font-weight:600}
 .mcrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+
+/* فلتر الحسابات الإعلانية */
+.accchip{display:inline-flex;align-items:center;gap:2px}
+.accchip .chip small{opacity:.75;font-size:11px;margin-inline-start:4px}
+.accchip .btn.sm{padding:2px 6px;min-width:0}
