@@ -107,6 +107,7 @@ async function boot() {
   const {data, error} = await sb.rpc('oops_site_data');
   if (error || !data) { app.innerHTML = '<div class="center"><p>صار خطأ بتحميل الصفحة. جرّب بعد شوي.</p></div>'; return; }
   const c = data.config || {}, brand = data.brand || 'OOPSIDE', wa = waNum(c.whatsapp);
+  if (c.clarity && !window.clarity) { const id = String(c.clarity).toLowerCase().replace(/[^a-z0-9]/g, ''); (function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src='https://www.clarity.ms/tag/'+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window, document, 'clarity', 'script', id); }
   const base = c.site_url ? String(c.site_url).split(/[?#]/)[0] : location.href.split(/[?#]/)[0].replace(/[^/]*$/, '');
   const builder = /\.html?$/i.test(base) ? base : base.replace(/\/?$/, '/') + 'o.html';
   const offer = c.quick_offer || 'اشترك الآن واحصل على خصم 50% على خدماتنا';

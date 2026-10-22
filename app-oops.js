@@ -564,7 +564,8 @@ V.settings = async () => {
       ${logoBox('logo', 'شعار ' + (s.company || 'المتجر'), s.company || 'المتجر')}${logoBox('agency_logo', 'شعار ' + (s.agency_name || 'الوكالة'), s.agency_name || 'الوكالة')}
       <p class="note" style="margin-top:8px">اسم المتجر من "اسم الشركة" فوق، واسم الوكالة من خانة "اسم الوكالة".</p></div>
     <div class="card"><h2>البكسل والتتبع</h2><div class="fgrid">${ti('store_pixel', 'Meta Pixel للمتجر', '123456789012345', 'لصفحات الهبوط تبعت المنتجات (p.html)')}${ti('agency_pixel', 'Meta Pixel للوكالة', '123456789012345', 'لموقع الوكالة: زيارة، بدء بناء الباقة، طلب')}
-      ${ti('agency_ga4', 'Google Analytics 4', 'G-XXXXXXX', 'لموقع الوكالة (اختياري)')}${ti('agency_gtm', 'Google Tag Manager', 'GTM-XXXXXXX', 'لموقع الوكالة (اختياري)')}</div>
+      ${ti('agency_ga4', 'Google Analytics 4', 'G-XXXXXXX', 'لموقع الوكالة (اختياري)')}${ti('agency_gtm', 'Google Tag Manager', 'GTM-XXXXXXX', 'لموقع الوكالة (اختياري)')}
+      ${ti('agency_clarity', 'Microsoft Clarity (تسجيل جلسات الزوار)', 'abcd1234ef', 'مجاني: بتشوف فيديو لكل زائر وين كبس ووين وقف، وملخص بالذكاء الاصطناعي. الحروف اللي بيكتبها الزائر بتطلع مخفية')}</div>
       ${ed ? '<div class="row" style="margin-top:10px"><button class="btn pri" data-act="trackSave">حفظ التتبع</button></div>' : ''}
       <p class="note" style="margin-top:8px">ما منبعت لمنصات الإعلان أي اسم أو رقم هاتف أو تفاصيل مشاكل العميل. بس الحدث وقيمة الأتعاب.</p></div></div>`;
 };
@@ -582,10 +583,12 @@ Object.assign(A, {
     const pxOf = k => { const t = ($('#tr_' + k)?.value || '').trim(); if (!t) return ''; const m = t.match(/init['"]?\s*,\s*['"]?(\d{6,20})/) || t.match(/[?&]id=(\d{6,20})/); if (m) return m[1]; const d = t.replace(/\D/g, ''); return /^[\d\s-]+$/.test(t) ? d : null; };
     const sp = pxOf('store_pixel'), ap = pxOf('agency_pixel');
     if (sp === null || ap === null || (sp && sp.length < 10) || (ap && ap.length < 10)) return toast('حط رقم البكسل بس (15 أو 16 رقم)، أو الصق كود البكسل كامل', true);
-    const tracking = {...(ST.settings?.tracking || {}), store_pixel: sp, agency_pixel: ap, agency_ga4: clean('agency_ga4', /[^A-Za-z0-9-]/g).toUpperCase(), agency_gtm: clean('agency_gtm', /[^A-Za-z0-9-]/g).toUpperCase()};
+    const tracking = {...(ST.settings?.tracking || {}), store_pixel: sp, agency_pixel: ap, agency_ga4: clean('agency_ga4', /[^A-Za-z0-9-]/g).toUpperCase(), agency_gtm: clean('agency_gtm', /[^A-Za-z0-9-]/g).toUpperCase(), agency_clarity: (($('#tr_agency_clarity')?.value || '').trim().match(/clarity\.ms\/tag\/([a-z0-9]+)|["']script["'],\s*["']([a-z0-9]+)["']/i)?.slice(1).find(Boolean) || clean('agency_clarity', /[^A-Za-z0-9]/g)).toLowerCase()};
+    if (tracking.agency_clarity && !/^[a-z0-9]{6,14}$/.test(tracking.agency_clarity)) return toast('رقم Clarity مش صحيح. خذ الـ Project ID من إعدادات Clarity (حوالي 10 حروف وأرقام)', true);
     if (tracking.agency_ga4 && !/^G-/.test(tracking.agency_ga4)) return toast('رقم Google Analytics بيبلش بـ G-', true);
     if (tracking.agency_gtm && !/^GTM-/.test(tracking.agency_gtm)) return toast('رقم Tag Manager بيبلش بـ GTM-', true);
-    await db.upd('settings', {id: 1}, {tracking}); ST.settings.tracking = tracking; toast('انحفظ. افتح الصفحة مرة وحدة، وبنحكيلك أول ما البكسل يشتغل'); K.render(); watchPixel();
+    await db.upd('settings', {id: 1}, {tracking}); ST.settings.tracking = tracking;
+    try { const st = await loadSite(); if ((st.config?.clarity || '') !== tracking.agency_clarity) await db.upd('oops_site', {id: 1}, {config: {...st.config, clarity: tracking.agency_clarity}}); } catch (e) { toast('انحفظ التتبع، بس Clarity بده صلاحية "موقع الوكالة" عشان يشتغل عالموقع', true); } toast('انحفظ. افتح الصفحة مرة وحدة، وبنحكيلك أول ما البكسل يشتغل'); K.render(); watchPixel();
   },
   pxCheck: async () => { await checkPixel(true); }
 });

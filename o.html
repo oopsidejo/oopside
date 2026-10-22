@@ -364,7 +364,12 @@ const track = (ev, data) => {
   try { if (window.gtag) gtag('event', {Lead: 'generate_lead', ViewContent: 'view_item_list', InitiateCheckout: 'begin_checkout'}[ev] || ev, data || {}); } catch (e) {}
   try { (window.dataLayer = window.dataLayer || []).push({event: 'oops_' + ev, ...(data || {})}); } catch (e) {}
 };
+function loadClarity(id) {
+  id = String(id || '').toLowerCase().replace(/[^a-z0-9]/g, ''); if (!id || window.clarity) return;
+  (function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src='https://www.clarity.ms/tag/'+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window, document, 'clarity', 'script', id);
+}
 function loadTracking(s) {
+  loadClarity(s.config?.clarity);
   const px = String(s.pixel || '').replace(/\D/g, ''), ga = String(s.ga4 || '').replace(/[^A-Z0-9-]/gi, ''), gtm = String(s.gtm || '').replace(/[^A-Z0-9-]/gi, '');
   if (px) {
     !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
@@ -424,7 +429,7 @@ function quickForm() {
   </form>`;
 }
 const qfSent = {};
-function qf(ev, note) { if (!sb || !VID || (qfSent[ev] && !['bad','err'].includes(ev))) return; qfSent[ev] = 1; try { sb.rpc('oops_qf', {vid: VID, ev, note: note ? String(note).slice(0, 200) : null}).then(() => {}, () => {}); } catch (x) {} }
+function qf(ev, note) { try { window.clarity?.('event', 'qf_' + ev); if (ev === 'ok') window.clarity?.('set', 'lead', 'yes'); } catch (x) {} if (!sb || !VID || (qfSent[ev] && !['bad','err'].includes(ev))) return; qfSent[ev] = 1; try { sb.rpc('oops_qf', {vid: VID, ev, note: note ? String(note).slice(0, 200) : null}).then(() => {}, () => {}); } catch (x) {} }
 function qfWatch() {
   const f = $('#qform'); if (!f) return;
   if ('IntersectionObserver' in window) { const io = new IntersectionObserver(es => { if (es.some(x => x.isIntersecting)) { qf('seen'); io.disconnect(); } }, {threshold: .35}); io.observe(f); } else qf('seen');
