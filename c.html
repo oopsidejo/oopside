@@ -102,14 +102,16 @@ function pad(cv) {
   return {clear: () => { ctx.clearRect(0, 0, cv.width, cv.height); empty = true; }, empty: () => empty, data: () => cv.toDataURL('image/png')};
 }
 
-function vatRows(c, base) {
-  const vr = N(c.vat_rate) / 100;
-  if (c.vat_mode === 'excl') return `<div><span>ضريبة المبيعات ${N(c.vat_rate)}%</span><b>${jd(base * vr)}</b></div><div class="tot"><span>المجموع مع الضريبة (أول شهر)</span><b>${jd(base * (1 + vr))}</b></div>`;
-  if (c.vat_mode === 'incl') return `<div class="tot"><span>المجموع (شامل ضريبة ${N(c.vat_rate)}%)</span><b>${jd(base)}</b></div>`;
-  if (c.vat_mode === 'exempt') return `<div class="tot"><span>المجموع (معفي من الضريبة)</span><b>${jd(base)}</b></div>`;
-  return `<div class="tot"><span>المجموع (أول شهر)</span><b>${jd(base)}</b></div>`;
+function sumRows(c) {
+  const vm = c.vat_mode, vr = N(c.vat_rate) / 100, net = N(c.fees_monthly) - N(c.discount), one = N(c.one_time), ad = N(c.ad_budget);
+  const vat = x => vm === 'excl' ? x * vr : 0, monthly = net + vat(net), first = monthly + one + vat(one);
+  const tag = vm === 'excl' ? 'شامل الضريبة' : vm === 'incl' ? 'شامل ضريبة ' + N(c.vat_rate) + '%' : vm === 'exempt' ? 'معفي من الضريبة' : '';
+  return (vm === 'excl' ? `<div><span>ضريبة المبيعات ${N(c.vat_rate)}%</span><b>${jd(vat(net))}</b></div>` : '') +
+    `<div class="tot"><span>السعر النهائي شهرياً${tag ? ' <small style="color:var(--muted);font-weight:400">(' + tag + ')</small>' : ''}</span><b>${jd(monthly)}</b></div>` +
+    (one ? `<div><span>رسوم لمرة وحدة${vm === 'excl' ? ' مع الضريبة' : ''}</span><b>${jd(one + vat(one))}</b></div><div class="tot"><span>السعر النهائي لأول شهر</span><b>${jd(first)}</b></div>` : '') +
+    (ad ? `<div style="color:var(--muted);font-size:13px"><span>+ ميزانية الإعلانات المقترحة (بتندفع للمنصات مباشرة)</span><b>${jd(ad)}</b></div>`
+        : `<div style="color:var(--indigo);font-weight:600"><span>+ مصاريف الإعلانات</span><b>حسب الميزانية</b></div><small style="color:var(--muted)">ميزانية الإعلانات بيدفعها الطرف الثاني للمنصات مباشرة، ومش من ضمن السعر.</small>`);
 }
-
 function render() {
   const c = C, a = c.agency || {}, p = c.party || {}, net = N(c.fees_monthly) - N(c.discount), base = net + N(c.one_time);
   const agencyName = a.legal_name || c.brand;
@@ -137,8 +139,7 @@ function render() {
       <table><thead><tr><th>الخدمة</th><th class="n">الكمية</th><th class="n">شهري</th><th class="n">مرة وحدة</th></tr></thead><tbody>
       ${items.map(i => `<tr><td>${esc(i.name)}${i.includes ? `<br><small style="color:var(--muted)">${esc(i.includes)}</small>` : ''}</td><td class="n">${N(i.qty) || 1}</td><td class="n">${N(i.monthly) ? jd(i.monthly) : '—'}</td><td class="n">${N(i.one_time) ? jd(i.one_time) : '—'}</td></tr>`).join('')}</tbody></table>
       <div class="sum"><div><span>الأتعاب الشهرية</span><b>${jd(c.fees_monthly)}</b></div>${N(c.discount) ? `<div class="g"><span>خصم${N(c.discount_pct) ? ' ' + N(c.discount_pct) + '%' : ''}</span><b>−${jd(c.discount)}</b></div><div><span>الأتعاب الشهرية بعد الخصم</span><b>${jd(net)}</b></div>` : ''}
-        ${N(c.one_time) ? `<div><span>رسوم لمرة وحدة</span><b>${jd(c.one_time)}</b></div>` : ''}${vatRows(c, base)}
-        ${N(c.ad_budget) ? `<div style="color:var(--muted);font-size:13px"><span>ميزانية الإعلانات المقترحة (بتندفع للمنصات مباشرة)</span><b>${jd(c.ad_budget)}</b></div>` : ''}</div>
+        ${sumRows(c)}</div>
       ${(c.gifts || []).length ? `<div class="gifts"><b>🎁 هدايا مجانية ضمن العقد</b>${c.gifts.map(g => `<div><span>${esc(g.name)}</span><b>${N(g.value) ? '<s style="color:var(--muted);font-weight:400">' + jd(g.value) + '</s> ' : ''}مجاناً</b></div>`).join('')}</div>` : ''}
       ${c.scope ? `<h2 class="sec">شو رح نقدّم</h2><ul class="chk">${String(c.scope).split('\n').map(x => x.trim()).filter(Boolean).map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
       <h2 class="sec">بنود العقد</h2>

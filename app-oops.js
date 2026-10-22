@@ -45,7 +45,8 @@ K.onLive.push((t, p) => {
 /* ================= طلبات الموقع ================= */
 V.oreq = async () => {
   const f = ui.oreqF || 'مفتوحة', o = {order: ['created_at', false], limit: 300};
-  if (f === 'مفتوحة') o.in = {status: ['جديد','مسودة عرض','عرض مرسل']}; else if (f !== 'الكل') o.eq = {status: f};
+  o.eq = {archived: f === 'مؤرشفة'};
+  if (f === 'مفتوحة') o.in = {status: ['جديد','مسودة عرض','عرض مرسل']}; else if (!['الكل','مؤرشفة'].includes(f)) o.eq.status = f;
   const [list, site, all] = await Promise.all([db.q('oops_requests', o), loadSite(), db.q('oops_requests', {select: 'status,created_at,fees_monthly,discount', limit: 2000})]);
   const mm = N(site.config?.min_margin ?? 30) / 100, m0 = today().slice(0, 7);
   const rev = r => N(r.fees_monthly) - N(r.discount) + N(r.one_time);
@@ -54,8 +55,9 @@ V.oreq = async () => {
     (site.live === false ? `<div class="warnbar">الموقع لسا <b>مطفي</b>، والزباين ما بيقدروا يبعتوا طلبات. راجع الأسعار من <button class="lnk" data-act="go" data-id="oops">موقع الوكالة والأسعار</button> وبعدين شغّله.</div>` : '') +
     `<div class="kpis">${kpi('طلبات جديدة', all.filter(r => r.status === 'جديد').length, 'لازم تتراجع', all.some(r => r.status === 'جديد') ? 'red' : '')}${kpi('عروض بانتظار الرد', all.filter(r => r.status === 'عرض مرسل').length)}
       ${kpi('وافقوا هالشهر', all.filter(r => r.status === 'مقبول' && String(r.created_at).slice(0, 7) === m0).length, '', 'hl')}${kpi('قيمة العروض المفتوحة', jd(sum(all.filter(r => ['جديد','مسودة عرض','عرض مرسل'].includes(r.status)), r => N(r.fees_monthly) - N(r.discount))), 'شهرياً')}</div>` +
-    chips([['مفتوحة','المفتوحة'], ['جديد','جديدة'], ['عرض مرسل','بانتظار الرد'], ['مقبول','مقبولة'], ['مرفوض','مرفوضة'], ['الكل','الكل']], f, 'oreqF') +
-    table([{h:'رقم', f:r => `<button class="btn sm" data-act="oreqOpen" data-id="${r.id}">#${r.no}</button>`}, {h:'التاريخ', f:r => fmtDT(r.created_at)},
+    chips([['مفتوحة','المفتوحة'], ['جديد','جديدة'], ['عرض مرسل','بانتظار الرد'], ['مقبول','مقبولة'], ['مرفوض','مرفوضة'], ['الكل','الكل'], ['مؤرشفة','📦 المؤرشفة']], f, 'oreqF') +
+    (K.bulkBar ? (f === 'مؤرشفة' ? K.bulkBar('request', list.map(r => r.id), true) : K.bulkBar('request', list.map(r => r.id), false)) : '') +
+    table([{h:'', f:r => K.selBox ? K.selBox('request', r.id) : ''}, {h:'رقم', f:r => `<button class="btn sm" data-act="oreqOpen" data-id="${r.id}">#${r.no}</button>`}, {h:'التاريخ', f:r => fmtDT(r.created_at)},
       {h:'الشركة', f:r => `<b>${esc(r.company)}</b><br><small class="m">${esc(r.contact || '')} ${esc(r.phone)}</small>${r.verified_via ? ' ' + pill('مؤكد ' + r.verified_via, 'good') : ''}`}, {h:'القطاع', f:r => esc(r.sector || '—')},
       {h:'المشاكل', f:r => esc((r.data?.problems || []).slice(0, 2).map(probLabel).join('، ') + ((r.data?.problems || []).length > 2 ? ' +' + ((r.data.problems.length) - 2) : '')), c: 'wrap'},
       {h:'أتعاب شهرية', f:r => `<b>${jd(N(r.fees_monthly) - N(r.discount))}</b>${N(r.one_time) ? `<br><small class="m">+ ${jd(r.one_time)} مرة وحدة</small>` : ''}`}, {h:'ميزانية الإعلانات', f:r => jd(r.ad_budget) + (r.data?.ad_split && Object.keys(r.data.ad_split).length ? `<br><small class="m">${esc(Object.entries(r.data.ad_split).map(([k, v]) => ({meta:'فيسبوك وإنستغرام', tiktok:'تيك توك', google:'جوجل', snap:'سناب', other:'غيرها'})[k] + ' ' + fmt(v)).join(' · '))}</small>` : '') + (N(r.data?.budget_total) ? `<br><small class="m">كل الميزانية ${jd(r.data.budget_total)}</small>` : '')},
@@ -153,7 +155,7 @@ function qSum() {
   const vatTxt = vm === 'excl' ? `ضريبة ${N(ui.qD.vat_rate)}%: ${jd(base * vr)} · المجموع مع الضريبة ${jd(base * (1 + vr))}` : vm === 'incl' ? `الأسعار شاملة ضريبة ${N(ui.qD.vat_rate)}% (منها ${jd(base - base / (1 + vr))})` : vm === 'exempt' ? 'معفي من الضريبة' : '';
   const rev = fees - disc + one, g = margin(rev, cost), mm = N(ST.oSite?.config?.min_margin ?? 30) / 100;
   return `<div class="kpis">${kpi('أتعاب شهرية بعد الخصم', jd(fees - disc), disc ? 'قبل الخصم ' + jd(fees) : '', 'hl')}${kpi('رسوم لمرة وحدة', jd(one))}${kpi('تكلفتنا التقديرية', jd(cost))}
-    ${kpi('الهامش', g == null ? '—' : pct(g), g != null && g < mm ? 'أقل من الحد (' + pct(mm) + ')' : 'الحد ' + pct(mm), g != null && g < mm ? 'red' : '')}${kpi('صرف العميل الشهري', jd(fees - disc + N(ui.qD.ad_budget)), 'مع الإعلانات')}</div>
+    ${kpi('الهامش', g == null ? '—' : pct(g), g != null && g < mm ? 'أقل من الحد (' + pct(mm) + ')' : 'الحد ' + pct(mm), g != null && g < mm ? 'red' : '')}${kpi('السعر النهائي للعميل شهرياً', jd((fees - disc) * (vm === 'excl' ? 1 + vr : 1)), (vm === 'excl' ? 'شامل الضريبة' : '') + (N(ui.qD.ad_budget) ? ' + إعلانات ' + jd(ui.qD.ad_budget) : ' + مصاريف الإعلانات'))}</div>
     ${vatTxt ? `<p class="note" style="margin-top:6px">${vatTxt}</p>` : ''}${disc && g != null ? `<p class="note" style="margin-top:6px">الخصم${N(ui.qD.discount_pct) ? ' (' + N(ui.qD.discount_pct) + '%)' : ''} بيقلل ربحك ${jd(disc)} بالشهر.</p>` : ''}${ui.qL.some(l => l.quote && !N(l.monthly) && !N(l.one_time)) ? '<p class="warnbar" style="margin-top:8px">في بند "بعد جلسة" لسا بدون سعر. حطله سعر قبل الإرسال.</p>' : ''}`;
 }
 document.addEventListener('input', e => {

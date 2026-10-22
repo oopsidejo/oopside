@@ -825,21 +825,23 @@ V.leads = async () => {
   const [from, to] = leadRange(), day = l => new Date(new Date(l.created_at).getTime() + 3 * 3600e3).toISOString().slice(0, 10);
   const who = ui.lWho ?? '', intr = ui.lInt || '', typ = ui.lType || '', qq = (ui.lQ || '').trim().toLowerCase();
   // الفلاتر (غير المرحلة)
-  const base = list.filter(l => (!from || (day(l) >= from && day(l) <= to)) && (!who || (who === 'me' ? l.owner === me().id : l.owner === who))
+  const arch = tab === 'archive';
+  const base = list.filter(l => !!l.archived === arch && (!from || (day(l) >= from && day(l) <= to)) && (!who || (who === 'me' ? l.owner === me().id : l.owner === who))
     && (!intr || (intr === 'hi' ? N(l.interest) >= 70 : intr === 'mid' ? N(l.interest) >= 40 && N(l.interest) < 70 : intr === 'lo' ? N(l.interest) < 40 : true))
     && (!typ || l.type === typ) && (!qq || [l.company, l.contact_name, l.phone, l.notes].some(x => String(x || '').toLowerCase().includes(qq))));
-  const inTab = l => tab === 'all' ? true : tab === 'due' ? l.due : l.stage === tab;
+  const inTab = l => tab === 'all' || tab === 'archive' ? true : tab === 'due' ? l.due : l.stage === tab;
   const rows = base.filter(inTab).sort((a, b) => tab === 'due' ? N(b.interest) - N(a.interest) || N(b.silent_days) - N(a.silent_days) : 0);
   const shown = rows.slice(0, (ui.lPage || 1) * LPAGE);
   const open = base.filter(l => !['تم التعاقد','خسرناه'].includes(l.stage));
   const myDue = list.filter(l => l.due && l.owner === me().id).length;
   const types = [...new Set(list.map(l => l.type).filter(Boolean))];
   const by = {}; base.forEach(l => { const k = l.owner_name || '—'; const x = by[k] = by[k] || {n: 0, won: 0, fee: 0, due: 0}; x.n++; if (l.due) x.due++; if (l.stage === 'تم التعاقد') { x.won++; x.fee += N(l.expected_fee); } });
-  const tabs = [['due', 'لازم تتواصل'], ...LSTAGES.map(s => [s, s]), ['all', 'الكل']];
+  const tabs = [['due', 'لازم تتواصل'], ...LSTAGES.map(s => [s, s]), ['all', 'الكل'], ['archive', '📦 المؤرشفين']];
+  const nArch = list.filter(l => l.archived).length;
   return head('العملاء المحتملين', 'كل مرحلة بصفحة. سجّل كل تواصل، وحط نسبة الاهتمام. اللي مهتم أو باجتماع وما حدا كلّمه من أسبوع بيطلع بـ "لازم تتواصل"', '<button class="btn pri" data-act="leadForm">+ عميل محتمل</button>') +
     (myDue ? `<p class="warnbar">عندك ${myDue} عميل مهتم أو باجتماع ما تواصلت معه من أسبوع أو أكثر. <button class="lnk" data-act="lTab" data-id="due">افتحهم</button></p>` : '') +
     `<div class="kpis">${kpi('بالمتابعة', open.length)}${kpi('لازم تتواصل', base.filter(l => l.due).length, 'مهتم أو اجتماع، أسبوع بدون تواصل', base.some(l => l.due) ? 'red' : '')}${kpi('قيمة متوقعة', jd(sum(open, l => l.expected_fee)), 'شهرياً')}${kpi('تعاقدنا', base.filter(l => l.stage === 'تم التعاقد').length, '', 'hl')}</div>
-    <div class="ltabs" role="tablist">${tabs.map(([k, l]) => { const n = base.filter(x => k === 'all' ? true : k === 'due' ? x.due : x.stage === k).length; return `<button role="tab" aria-selected="${tab === k}" class="ltab ${tab === k ? 'on' : ''} ${k === 'due' && n ? 'due' : ''}" data-act="lTab" data-id="${k}">${l} <em>${n}</em></button>`; }).join('')}</div>
+    <div class="ltabs" role="tablist">${tabs.map(([k, l]) => { const n = k === 'archive' ? nArch : base.filter(x => k === 'all' ? true : k === 'due' ? x.due : x.stage === k).length; return `<button role="tab" aria-selected="${tab === k}" class="ltab ${tab === k ? 'on' : ''} ${k === 'due' && n ? 'due' : ''}" data-act="lTab" data-id="${k}">${l} <em>${n}</em></button>`; }).join('')}</div>
     <div class="card lfil">
       <div class="row">${chips([['all', 'كل الأوقات'], ['today', 'اليوم'], ['7', '7 أيام'], ['month', 'الشهر'], ['custom', 'مدة محددة']], ui.lpMode || 'all', 'lpMode')}
         ${(ui.lpMode === 'custom') ? `<label class="m">من <input type="date" id="lpf" class="inl" value="${esc(ui.lpFrom || '')}" data-chg="lpRange"></label><label class="m">لـ <input type="date" id="lpt" class="inl" value="${esc(ui.lpTo || '')}" data-chg="lpRange"></label>` : ''}</div>
@@ -847,6 +849,7 @@ V.leads = async () => {
         ${sel('lInt', [['hi', 'اهتمام عالي 70%+'], ['mid', 'متوسط 40–69%'], ['lo', 'ضعيف أقل من 40%']], intr, 'كل نسب الاهتمام', 'data-chg="lInt" aria-label="الاهتمام"')}
         ${sel('lType', types.map(t => [t, t]), typ, 'كل الأنواع', 'data-chg="lType" aria-label="النوع"')}
         <input id="lQ" class="inl" type="search" placeholder="بحث بالاسم أو الرقم" value="${esc(ui.lQ || '')}" data-chg="lQ" aria-label="بحث"></div></div>
+    ${K.bulkBar ? K.bulkBar('lead', rows.map(l => l.id), arch) : ''}
     <div class="llist">${shown.map(l => leadRow(l)).join('') || `<p class="empty card">${tab === 'due' ? 'ما في حدا لازم تتواصل معه هلأ 👌' : 'ما في عملاء محتملين بهالصفحة'}</p>`}</div>
     ${rows.length > shown.length ? `<div class="row" style="justify-content:center"><button class="btn" data-act="lMore">عرض ${Math.min(LPAGE, rows.length - shown.length)} كمان (من ${rows.length})</button></div>` : rows.length ? `<p class="m" style="text-align:center">${rows.length} عميل</p>` : ''}
     <details class="card"><summary><b>أداء الفريق</b></summary>${table([{h:'الموظف', f:([k]) => esc(k)}, {h:'عملاء محتملين', f:([, x]) => x.n}, {h:'لازم يتواصل', f:([, x]) => x.due ? `<b class="neg">${x.due}</b>` : '0'}, {h:'تعاقد', f:([, x]) => x.won}, {h:'نسبة النجاح', f:([, x]) => x.n ? pct(x.won / x.n) : '—'}, {h:'دخل شهري جابوه', f:([, x]) => jd(x.fee)}], Object.entries(by))}</details>`;
@@ -854,7 +857,7 @@ V.leads = async () => {
 function leadRow(l) {
   const closed = ['تم التعاقد','خسرناه'].includes(l.stage), late = l.next_followup && l.next_followup < today() && !closed, ed = can('leads', 'edit');
   return `<div class="lrow ${l.due ? 'due' : ''} ${late ? 'late' : ''}">
-    <div class="lmain"><b>${esc(l.company)}</b> <span class="pill">${esc(l.stage)}</span>${l.due ? ' <span class="pill bad">لازم تتواصل</span>' : ''}
+    <div class="lmain"><b>${K.selBox ? K.selBox('lead', l.id) : ''} ${esc(l.company)}</b> <span class="pill">${esc(l.stage)}</span>${l.due ? ' <span class="pill bad">لازم تتواصل</span>' : ''}
       <small class="m">${esc(l.type || '')}${l.contact_name ? ' · ' + esc(l.contact_name) : ''}${l.phone ? ' · <span dir="ltr">' + esc(l.phone) + '</span>' : ''}</small>
       <small class="m">${esc(l.owner_name || 'بدون مسؤول')} · ${l.last_contact ? 'آخر تواصل قبل ' + N(l.silent_days) + ' يوم' : 'ما في تواصل مسجّل'}${l.next_followup ? ' · <span class="' + (late ? 'neg' : '') + '">المتابعة ' + l.next_followup + '</span>' : ''}${N(l.expected_fee) ? ' · ' + jd(l.expected_fee) + '/شهر' : ''}</small>
       ${l.request_no || l.contract_no ? `<small>${l.request_no ? `<button class="lnk" data-act="oreqOpen" data-id="${l.request_id}">عرض #${l.request_no}</button>` : ''}${l.contract_no ? ` · <button class="lnk" data-act="ctOpen" data-id="${l.contract_id}">عقد #${l.contract_no} (${esc(l.contract_status)})</button>` : ''}</small>` : ''}</div>

@@ -419,3 +419,10 @@ details.adv summary{cursor:pointer;font-weight:600}
 .sigprev{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.sigprev img{max-height:90px;max-width:300px;background:#fff;border-radius:8px;border:1px solid var(--line);padding:4px}
 .cdone{border-color:var(--good)}.sigs{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:10px 0}.sigs>div{display:grid;gap:4px;justify-items:start}.sigs img{max-height:80px;max-width:240px;background:#fff;border-radius:8px;padding:4px}
 @media (max-width:820px){.drow{grid-template-columns:1fr}.dnum{text-align:start}.sigs{grid-template-columns:1fr}}
+
+/* ===== تحديد وأرشفة ===== */
+.bulk{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 12px;margin:0 0 10px;border:1px dashed var(--line);border-radius:10px;background:var(--surface)}
+.bulk.on{border-style:solid;border-color:var(--brand);background:var(--brand-soft,var(--surface-2));position:sticky;top:8px;z-index:5}
+.bulk .ck{display:flex;gap:6px;align-items:center;margin:0;font-weight:600}
+.selck{width:18px;height:18px;vertical-align:middle;accent-color:var(--brand);cursor:pointer}
+.btn.danger{background:var(--bad);border-color:var(--bad);color:#fff}

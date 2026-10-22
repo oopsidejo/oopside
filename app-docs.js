@@ -29,6 +29,39 @@ function inRange(d) {
 }
 const openWa = (phone, msg) => { const n = waNum(phone); const url = 'https://wa.me/' + n + '?text=' + encodeURIComponent(msg); const w = window.open(url, '_blank'); if (!w) location.href = url; };
 
+
+/* ================= تحديد أكثر من وحدة: أرشفة / حذف ================= */
+const KIND_NAME = {request: 'طلب', lead: 'عميل محتمل', contract: 'عقد'};
+const selSet = k => { ui.sel = ui.sel || {}; return ui.sel[k] = ui.sel[k] || new Set(); };
+K.selBox = (kind, id) => can('leads', 'edit') ? `<input type="checkbox" class="selck" data-selk="${kind}" data-id="${id}" aria-label="تحديد" ${selSet(kind).has(id) ? 'checked' : ''}>` : '';
+K.bulkBar = (kind, ids, archivedView) => {
+  if (!can('leads', 'edit') || !ids.length) return '';
+  const S = selSet(kind); [...S].forEach(id => { if (!ids.includes(id)) S.delete(id); });
+  ui.selIds = ui.selIds || {}; ui.selIds[kind] = ids;
+  const n = S.size, all = n && n === ids.length;
+  return `<div class="bulk ${n ? 'on' : ''}" data-bulk="${kind}" data-arch="${archivedView ? 1 : 0}"><label class="ck"><input type="checkbox" data-selall="${kind}" ${all ? 'checked' : ''} aria-label="حدد الكل"> <span>${n ? 'حددت ' + n : 'حدد الكل'}</span></label>
+    ${n ? `${archivedView ? `<button class="btn sm" data-act="bulkDo" data-id="${kind}|unarchive">رجّعهم من الأرشيف</button>` : `<button class="btn sm" data-act="bulkDo" data-id="${kind}|archive">أرشفة</button>`}${K.isAdmin() ? `<button class="btn sm danger" data-act="bulkDo" data-id="${kind}|delete">حذف نهائي</button>` : ''}<button class="btn sm ghost" data-act="bulkClear" data-id="${kind}">إلغاء التحديد</button>` : '<span class="m">حدد اللي ما إله داعي، وأرشفه أو احذفه</span>'}</div>`;
+};
+const paintBulk = kind => { $$(`[data-bulk="${kind}"]`).forEach(b => { const tmp = document.createElement('div'); tmp.innerHTML = K.bulkBar(kind, ui.selIds?.[kind] || [], b.dataset.arch === '1'); if (tmp.firstElementChild) b.replaceWith(tmp.firstElementChild); }); };
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.classList?.contains('selck')) { const S = selSet(t.dataset.selk); t.checked ? S.add(t.dataset.id) : S.delete(t.dataset.id); paintBulk(t.dataset.selk); return; }
+  if (t.dataset?.selall) { const k = t.dataset.selall, S = selSet(k), ids = ui.selIds?.[k] || []; if (t.checked) ids.forEach(i => S.add(i)); else S.clear(); $$(`.selck[data-selk="${k}"]`).forEach(c => { c.checked = S.has(c.dataset.id); }); paintBulk(k); }
+});
+Object.assign(ACT_SEC, {bulkDo: 'leads', bulkClear: 'leads'});
+Object.assign(A, {
+  bulkClear: k => { selSet(k).clear(); K.render(); },
+  bulkDo: async v => {
+    const [kind, act] = v.split('|'), ids = [...selSet(kind)]; if (!ids.length) return;
+    const nm = KIND_NAME[kind] || '';
+    if (act === 'delete' && !confirm(`أكيد بدك تحذف ${ids.length} ${nm} نهائياً؟ ما برجعوا.${kind === 'lead' ? '\nسجل التواصل تبعهم بينحذف كمان.' : ''}\nإذا مش متأكد، أرشفهم أحسن.`)) return;
+    const r = await db.rpc('docs_bulk', {kind, ids, act});
+    selSet(kind).clear();
+    toast(`${act === 'delete' ? 'انحذف' : act === 'archive' ? 'انأرشف' : 'رجع'} ${N(r?.n)} ${nm}${N(r?.skipped) ? ` · ${N(r.skipped)} ما انحذفوا لأنهم مربوطين بعقد موقّع (أرشفهم)` : ''}`, N(r?.skipped) > 0);
+    K.render();
+  }
+});
+
 /* ================= الأرشيف ================= */
 V.docs = async () => {
   const tab = ui.dTab || 'contracts';
@@ -46,21 +79,21 @@ V.docs = async () => {
       <input class="inl" type="search" data-dchg="q" placeholder="بحث بالاسم أو الرقم" value="${esc(ui.dQ || '')}" aria-label="بحث" style="flex:1;min-width:180px"></div></div>`;
   const kp = tab === 'contracts' ? `<div class="kpis">${kpi('عقود موقّعة', cons.filter(c => c.status === 'موقّع').length, jd(cons.filter(c => c.status === 'موقّع').reduce((a, c) => a + net(c), 0)) + ' شهرياً', 'hl')}${kpi('بانتظار التوقيع', cons.filter(c => c.status === 'مرسل').length, '', cons.some(c => c.status === 'مرسل' && c.sign_deadline && c.sign_deadline <= addDays(today(), 2)) ? 'red' : '')}${kpi('مسودات', cons.filter(c => c.status === 'مسودة').length)}</div>`
     : tab === 'quotes' ? `<div class="kpis">${kpi('عروض مرسلة', quotes.filter(r => r.status === 'عرض مرسل').length, quotes.filter(r => r.status === 'عرض مرسل' && !r.viewed_at).length + ' لسا ما فتحوه')}${kpi('مقبولة', quotes.filter(r => r.status === 'مقبول').length, '', 'hl')}${kpi('مسودات', quotes.filter(r => r.status === 'مسودة عرض').length)}</div>` : '';
-  const qRows = qs.map(r => `<div class="drow"><div><b>عرض #${r.no} · ${esc(r.company)}</b> ${pill(r.status, CLS[r.status])}
+  const qRows = qs.map(r => `<div class="drow"><div>${K.selBox('request', r.id)} <b>عرض #${r.no} · ${esc(r.company)}</b> ${pill(r.status, CLS[r.status])}
       <small class="m">${esc(r.contact || '')} ${r.phone ? '· <span dir="ltr">' + esc(r.phone) + '</span>' : ''} · ${fmtDT(r.created_at)}${r.status === 'عرض مرسل' ? ' · ' + (r.viewed_at ? 'فتحه ' + fmtDT(r.viewed_at) : 'لسا ما فتحه') + (r.valid_until ? ' · صالح لـ ' + r.valid_until : '') : ''}</small></div>
     <div class="dnum"><b>${jd(net(r))}</b><small class="m">شهرياً${N(r.discount_pct) ? ' · خصم ' + N(r.discount_pct) + '%' : ''}</small></div>
     <div class="lact"><button class="btn sm" data-act="oreqOpen" data-id="${r.id}">فتح</button>${r.phone ? `<button class="btn sm ghost" data-act="dWa" data-id="q|${r.id}">واتساب</button>` : ''}<button class="btn sm ghost" data-act="dCopy" data-id="q|${r.token}">نسخ الرابط</button><a class="btn sm ghost" href="${esc(qUrl(r.token))}&print=1" target="_blank" rel="noopener">تنزيل PDF</a>
       ${['عرض مرسل', 'مقبول'].includes(r.status) && can('leads', 'edit') ? `<button class="btn sm" data-act="ctFromQuote" data-id="${r.id}">عقد</button>` : ''}${can('leads', 'edit') ? `<button class="btn sm ghost" data-act="dArch" data-id="quote|${r.id}|${arch ? 0 : 1}">${arch ? 'رجّعه' : 'أرشفة'}</button>` : ''}</div></div>`).join('');
-  const cRows = cs.map(c => `<div class="drow"><div><b>عقد #${c.no} · ${esc(c.party?.company || '')}</b> ${pill(c.status, CLS[c.status])}
+  const cRows = cs.map(c => `<div class="drow"><div>${K.selBox('contract', c.id)} <b>عقد #${c.no} · ${esc(c.party?.company || '')}</b> ${pill(c.status, CLS[c.status])}
       <small class="m">${esc(c.party?.contact || '')} · ${fmtDT(c.created_at)}${c.status === 'مرسل' ? ' · ' + (c.viewed_at ? 'فتحه ' + fmtDT(c.viewed_at) : 'لسا ما فتحه') + ' · آخر يوم للتوقيع ' + (c.sign_deadline || '') : ''}${c.status === 'موقّع' ? ' · وقّعه ' + esc(c.signer_name || '') + ' ' + fmtDT(c.signed_at) : ''}</small></div>
     <div class="dnum"><b>${jd(net(c))}</b><small class="m">شهرياً</small></div>
     <div class="lact"><button class="btn sm" data-act="ctOpen" data-id="${c.id}">فتح</button>${c.status !== 'مسودة' && c.party?.phone ? `<button class="btn sm ghost" data-act="dWa" data-id="c|${c.id}">واتساب</button>` : ''}<button class="btn sm ghost" data-act="dCopy" data-id="c|${c.token}">نسخ الرابط</button><a class="btn sm ghost" href="${esc(cUrl(c.token))}&print=1" target="_blank" rel="noopener">تنزيل PDF</a>
       ${can('leads', 'edit') ? `<button class="btn sm ghost" data-act="dArch" data-id="contract|${c.id}|${arch ? 0 : 1}">${arch ? 'رجّعه' : 'أرشفة'}</button>` : ''}</div></div>`).join('');
   ui.dCache = {quotes, cons};
   return docsHead(tab) + kp + filters +
-    (tab === 'quotes' ? `<div class="llist">${qRows || '<p class="empty card">ما في عروض سعر هون. اعمل عرض من "العملاء المحتملين ← عرض سعر"</p>'}</div>`
-      : tab === 'contracts' ? `<div class="llist">${cRows || '<p class="empty card">ما في عقود. افتح عرض سعر مرسل أو مقبول واضغط "اعمل عقد"</p>'}</div>`
-      : `<h2 style="margin:6px 0">العقود المؤرشفة</h2><div class="llist">${cRows || '<p class="m">—</p>'}</div><h2 style="margin:14px 0 6px">العروض المؤرشفة</h2><div class="llist">${qRows || '<p class="m">—</p>'}</div>`);
+    (tab === 'quotes' ? K.bulkBar('request', qs.map(r => r.id), false) + `<div class="llist">${qRows || '<p class="empty card">ما في عروض سعر هون. اعمل عرض من "العملاء المحتملين ← عرض سعر"</p>'}</div>`
+      : tab === 'contracts' ? K.bulkBar('contract', cs.map(c => c.id), false) + `<div class="llist">${cRows || '<p class="empty card">ما في عقود. افتح عرض سعر مرسل أو مقبول واضغط "اعمل عقد"</p>'}</div>`
+      : `<h2 style="margin:6px 0">العقود المؤرشفة</h2>${K.bulkBar('contract', cs.map(c => c.id), true)}<div class="llist">${cRows || '<p class="m">—</p>'}</div><h2 style="margin:14px 0 6px">العروض المؤرشفة</h2>${K.bulkBar('request', qs.map(r => r.id), true)}<div class="llist">${qRows || '<p class="m">—</p>'}</div>`);
 };
 const docsHead = tab => head('العروض والعقود', 'كل عروض الأسعار والعقود بمكان واحد: تنبعت واتساب، تتنزل PDF، وتتأرشف') +
   `<div class="ltabs" role="tablist">${[['contracts', 'العقود'], ['quotes', 'عروض الأسعار'], ['archive', 'الأرشيف'], ['settings', 'إعدادات العقد']].map(([k, l]) => `<button role="tab" aria-selected="${tab === k}" class="ltab ${tab === k ? 'on' : ''}" data-act="dTab" data-id="${k}">${l}</button>`).join('')}</div>`;

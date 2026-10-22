@@ -70,6 +70,7 @@ nav.links a:hover{color:var(--ink);background:var(--lilac)}
 .qgifts{margin:16px 0;border:1px dashed var(--mint);background:var(--mint-bg);border-radius:12px;padding:12px 14px;display:grid;gap:6px}.qgifts h3{margin:0 0 4px;font-size:16px}.qgifts div{display:flex;justify-content:space-between;gap:10px}.qgifts b{color:var(--mint);white-space:nowrap}.qgifts s{color:var(--muted);font-weight:400}
 .qplan3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}.qplan3>div{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--lilac)}.qplan3 em{font-style:normal;display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--indigo);color:var(--on);font-weight:700;font-size:13px;margin-inline-end:6px}.qplan3 ul{margin:8px 0 0;padding-inline-start:18px;display:grid;gap:4px;font-size:14px}
 .qsugg{margin:8px 0 0;padding-inline-start:20px;display:grid;gap:4px}
+.adsx{color:var(--indigo);font-weight:600;border:1px dashed var(--indigo);border-radius:8px;padding:4px 8px;margin-top:4px}
 .qdead{margin-top:12px;background:var(--coral-bg);color:var(--coral);padding:8px 12px;border-radius:10px}
 .qsign{margin-top:14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;border:2px solid var(--indigo);border-radius:12px;padding:12px 14px}
 @media (max-width:700px){.qplan3{grid-template-columns:1fr}}
@@ -767,14 +768,24 @@ async function quotePage(tok) {
     <table><thead><tr><th>الخدمة</th><th>الكمية</th><th>شهري</th><th>مرة وحدة</th></tr></thead><tbody>
     ${(q.items || []).map(i => `<tr><td>${esc(i.name)}${i.duration ? `<br><small class="m">المدة: ${esc(i.duration)}</small>` : ''}${i.includes ? `<br><small class="m">${esc(i.includes)}</small>` : ''}${i.note ? `<br><small class="m">${esc(i.note)}</small>` : ''}</td><td class="n">${i.ptype === 'team' ? i.qty + ' موظفة' : i.qty}</td><td class="n">${i.quote ? 'بعد الجلسة' : N(i.monthly) ? jd(i.monthly) : '—'}</td><td class="n">${N(i.one_time) ? jd(i.one_time) : '—'}${N(i.waived) ? `<br><small style="color:var(--mint)">إعداد <s>${jd(i.waived)}</s> مجاناً</small>` : ''}</td></tr>`).join('')}</tbody></table>
     ${ready && (q.gifts || []).length ? `<div class="qgifts"><h3>🎁 هدايا مجانية مع العرض</h3>${q.gifts.map(g => `<div><span>${esc(g.name)}</span><b>${N(g.value) ? `<s>${jd(g.value)}</s> ` : ''}مجاناً</b></div>`).join('')}${q.gifts.some(g => N(g.value)) ? `<small class="m">قيمتها ${jd(q.gifts.reduce((a, g) => a + N(g.value), 0))}، علينا</small>` : ''}</div>` : ''}
-        <div class="rsum" style="max-width:380px;margin-inline-start:auto"><div><span>أتعاب شهرية</span><b>${jd(q.fees_monthly)}</b></div>${N(q.discount) ? `<div class="gift"><span>خصم${N(q.discount_pct) ? ' ' + N(q.discount_pct) + '%' : ' شهري'}</span><b>−${jd(q.discount)}</b></div>` : ''}
-      ${N(q.one_time) ? `<div><span>رسوم لمرة وحدة</span><b>${jd(q.one_time)}</b></div>` : ''}${(q.items || []).some(i => N(i.waived)) ? `<div class="gift"><span>رسوم الإعداد <s>${jd((q.items || []).reduce((a, i) => a + N(i.waived), 0))}</s></span><b>مجاناً</b></div>` : ''}<div class="ads"><span>ميزانية الإعلانات (للمنصات مباشرة)</span><b>${jd(q.ad_budget)}</b></div>
-      ${(() => { const vr = N(q.vat_rate) / 100, base = total + N(q.one_time);
-        if (!ready || !q.vat_mode || q.vat_mode === 'none') return '';
-        if (q.vat_mode === 'excl') return `<div><span>ضريبة المبيعات ${N(q.vat_rate)}% <small class="m">(على الأتعاب)</small></span><b>${jd(base * vr)}</b></div><div><span>الأتعاب مع الضريبة <small class="m">(أول شهر)</small></span><b>${jd(base * (1 + vr))}</b></div>`;
-        if (q.vat_mode === 'incl') return `<div><span>الأسعار شاملة ضريبة ${N(q.vat_rate)}%</span><b>✓</b></div>`;
-        return '<div><span>معفي من الضريبة</span><b>✓</b></div>'; })()}
-      <div class="tot"><span>صرفك الشهري كامل</span><b>${jd(total + N(q.ad_budget))}</b></div></div>
+        ${(() => {
+      // الضريبة على الأتعاب بس (مش على ميزانية الإعلانات)
+      const vm = ready ? (q.vat_mode || 'none') : 'none', vr = N(q.vat_rate) / 100, one = N(q.one_time), ad = N(q.ad_budget);
+      const vatOf = x => vm === 'excl' ? x * vr : 0;
+      const monthly = total + vatOf(total), first = monthly + one + vatOf(one);
+      const waived = (q.items || []).reduce((a, i) => a + N(i.waived), 0);
+      const row = (l, v, cls = '') => `<div class="${cls}"><span>${l}</span><b>${v}</b></div>`;
+      return `<div class="rsum" style="max-width:400px;margin-inline-start:auto">
+        ${row('أتعاب شهرية', jd(q.fees_monthly))}
+        ${N(q.discount) ? row('خصم' + (N(q.discount_pct) ? ' ' + N(q.discount_pct) + '%' : ' شهري'), '−' + jd(q.discount), 'gift') + row('الأتعاب بعد الخصم', jd(total)) : ''}
+        ${vm === 'excl' ? row(`ضريبة المبيعات ${N(q.vat_rate)}%`, jd(vatOf(total))) : ''}
+        ${vm === 'incl' ? row(`شاملة ضريبة المبيعات ${N(q.vat_rate)}%`, '✓') : vm === 'exempt' ? row('معفي من الضريبة', '✓') : ''}
+        ${waived ? row(`رسوم الإعداد <s>${jd(waived)}</s>`, 'مجاناً', 'gift') : ''}
+        ${ad ? row('ميزانية الإعلانات <small class="m">(بتدفعها للمنصات مباشرة)</small>', jd(ad), 'ads') : ''}
+        <div class="tot"><span>السعر النهائي شهرياً${vm === 'excl' ? ' <small class="m">(شامل الضريبة)</small>' : ''}${ad ? ' <small class="m">+ الإعلانات</small>' : ''}</span><b>${jd(monthly + ad)}</b></div>
+        ${ad ? '' : '<div class="adsx"><span>+ مصاريف الإعلانات</span><b>حسب ميزانيتك</b></div><small class="m" style="display:block;text-align:start">ميزانية الإعلانات بتدفعها للمنصات (فيسبوك، تيك توك، جوجل...) مباشرة، ومش من ضمن السعر.</small>'}
+        ${one ? `<div style="margin-top:6px"><span>رسوم لمرة وحدة${vm === 'excl' ? ' مع الضريبة' : ''} <small class="m">(أول شهر بس)</small></span><b>${jd(one + vatOf(one))}</b></div><div class="tot"><span>السعر النهائي لأول شهر${ad ? '' : ' <small class="m">+ الإعلانات</small>'}</span><b>${jd(first + ad)}</b></div>` : ''}
+      </div>`; })()}
     ${ready && (q.plan || []).length ? `<h3 style="margin-top:22px">🗓️ خطتنا معك لـ 3 شهور</h3><div class="qplan3">${q.plan.map((m, i) => `<div><em>${i + 1}</em><b>${esc(m.title || 'الشهر ' + (i + 1))}</b><ul>${(m.points || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`).join('')}</div>` : ''}
     ${ready && q.suggestions ? `<h3 style="margin-top:20px">💡 اقتراحاتنا إلك</h3><ul class="qsugg">${String(q.suggestions).split('\n').map(x => x.trim()).filter(Boolean).map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
     ${ready && q.terms ? `<h3 style="margin-top:20px">الشروط</h3><p class="m" style="white-space:pre-line;margin-top:6px">${esc(q.terms)}</p>` : ''}
