@@ -14,16 +14,31 @@ const CITIES = {ps: ['نابلس', 'رام الله', 'الخليل', 'جنين'
   ae: ['دبي', 'أبوظبي', 'الشارقة', 'عجمان', 'العين', 'رأس الخيمة'], kw: ['مدينة الكويت', 'حولي', 'السالمية', 'الفروانية', 'الجهراء'], qa: ['الدوحة', 'الريان', 'الوكرة'],
   bh: ['المنامة', 'المحرق', 'الرفاع'], om: ['مسقط', 'صلالة', 'صحار', 'نزوى'], iq: ['بغداد', 'أربيل', 'البصرة', 'النجف', 'السليمانية'], eg: ['القاهرة', 'الجيزة', 'الإسكندرية', 'المنصورة'], lb: ['بيروت', 'طرابلس', 'صيدا', 'جونيه']};
 const cName = c => (COUNTRIES.find(x => x[0] === c)?.[1] || '');
+// أرقام الموبايل لكل بلد (بدون الصفر) ورمز الاتصال
+const MOB = {jo: ['962', /^7[789]\d{7}$/], ps: ['970', /^5[69]\d{7}$/], sa: ['966', /^5\d{8}$/], ae: ['971', /^5[0-8]\d{7}$/], kw: ['965', /^[569]\d{7}$/], qa: ['974', /^[3567]\d{7}$/],
+  bh: ['973', /^[36]\d{7}$/], om: ['968', /^[79]\d{7}$/], iq: ['964', /^7[3-9]\d{8}$/], eg: ['20', /^1[0125]\d{8}$/], lb: ['961', /^(3\d{6}|7[01689]\d{6}|81\d{6})$/], il: ['972', /^5\d{8}$/]};
+function waOf(phone, cc = 'jo') {
+  const conv = String(phone || '').replace(/[٠-٩]/g, c => '٠١٢٣٤٥٦٧٨٩'.indexOf(c)); let d = conv.replace(/\D/g, '');
+  const intl = /^\s*(\+|00)/.test(conv); d = d.replace(/^00/, '');
+  for (const k of [cc, ...Object.keys(MOB).filter(x => x !== cc)]) { const [dial, re] = MOB[k]; if (d.startsWith(dial) && re.test(d.slice(dial.length))) return dial + d.slice(dial.length); }
+  if (intl) return /^[1-9]\d{7,14}$/.test(d) ? d : null;
+  const [dial, re] = MOB[cc] || MOB.jo, nat = d.replace(/^0/, '');
+  return re.test(nat) ? dial + nat : null;
+}
+// أرقام فلسطين: نفس الرقم ممكن يكون على واتساب بـ 970 أو 972
+const altWa = w => { const m = /^(970|972)(5[69]\d{7})$/.exec(String(w || '')); return m ? (m[1] === '970' ? '972' : '970') + m[2] : null; };
+
 const AREAS = ['عمّان', 'عبدون', 'الصويفية', 'خلدا', 'تلاع العلي', 'الشميساني', 'جبل عمّان', 'مرج الحمام', 'الزرقاء', 'إربد', 'العقبة', 'السلط', 'مادبا', 'المفرق', 'جرش'];
 const scoreCls = s => s >= 60 ? 'good' : s >= 35 ? 'warn' : '';
 
 document.addEventListener('change', e => { if (e.target?.dataset?.hcc) { ui.hCc = e.target.value; const a = $('#h_area'); ui.hQ = $('#h_q')?.value.trim() || ui.hQ; ui.hArea = ui.hCc === 'jo' ? 'عمّان' : (CITIES[ui.hCc] || [''])[0]; K.render(); } });
-Object.assign(ACT_SEC, {hSearch: 'leads', hMsgs: 'leads', hMsgOne: 'leads', hWa: 'leads', hImg: 'leads', hLead: 'leads', hCfgSave: 'leads', hImgDel: 'leads', hSelAll: 'leads', hFilter: 'leads', hShow: 'leads', hDiag: 'leads', hErrX: 'leads', hErrCopy: 'leads', hTplOne: 'leads', hTplSel: 'leads', hNext: 'leads', hPurge: 'leads'});
+Object.assign(ACT_SEC, {hSearch: 'leads', hMsgs: 'leads', hMsgOne: 'leads', hWa: 'leads', hImg: 'leads', hLead: 'leads', hCfgSave: 'leads', hImgDel: 'leads', hSelAll: 'leads', hFilter: 'leads', hShow: 'leads', hDiag: 'leads', hErrX: 'leads', hErrCopy: 'leads', hTplOne: 'leads', hTplSel: 'leads', hNext: 'leads', hPurge: 'leads', hWaAlt: 'leads', hOk: 'leads', hBad: 'leads', hEdit: 'leads'});
 
 V.hunt = async () => {
   const f = ui.hFilter || 'جديد';
   const o = {order: ['score', false], order2: ['created_at', false], limit: 300};
-  if (f !== 'all' && f !== 'wa') o.eq = {status: f};
+  if (f !== 'all' && f !== 'wa' && f !== 'bad') o.eq = {status: f};
+  if (f === 'bad') o.eq = {wa_bad: true};
   if (ui.hSid) { o.eq = {search_id: ui.hSid}; }
   const [rows, stats, cfg, hist] = await Promise.all([
     db.q('prospects', f === 'wa' && !ui.hSid ? {...o, eq: {status: 'جديد'}} : o).catch(() => null),
@@ -33,7 +48,7 @@ V.hunt = async () => {
   ST.hHist = hist || [];
   if (!rows) return head('صيد العملاء', '') + '<div class="card"><p class="note">هالشاشة بتحتاج ملف <b>20_prospects.sql</b> على Supabase، ودالة <b>prospects</b>.</p></div>';
   ST.hCfg = cfg || {};
-  const list = f === 'wa' && !ui.hSid ? rows.filter(r => r.wa) : rows;
+  const list = f === 'wa' && !ui.hSid ? rows.filter(r => r.wa && !r.wa_bad) : rows;
   const curS = ui.hSid && ST.hHist.find(h => h.id === ui.hSid);
   ui.hRows = list;
   const s = stats || {};
@@ -68,7 +83,7 @@ V.hunt = async () => {
       {h: 'إمتى', f: h => `<small>${K.fmtDT(h.at)}${h.by_name ? ' · ' + esc(h.by_name) : ''}</small>`}, {h: 'لقى', f: h => N(h.found) + ` <small class="m">(${N(h.new_count)} جديدة)</small>`},
       {h: '', f: h => `<button class="btn sm" data-act="hShow" data-id="${h.id}">اعرض نتائجه</button>`}], ST.hHist)}</details>` : ''}
     ${curS ? `<div class="card" style="border-color:var(--info)"><div class="row" style="justify-content:space-between"><span>عم تشوف نتائج: <b>${esc(curS.query)}</b> ${esc(curS.area || '')} · ${K.fmtDT(curS.at)}</span><button class="btn sm" data-act="hShow" data-id="">رجوع للكل</button></div></div>` : ''}
-    <div class="row" style="margin:12px 0 6px;justify-content:space-between">${chips([['جديد', 'جديد'], ['wa', 'جديد وعليه واتساب'], ['انبعتت', 'انبعتت'], ['رد', 'رد'], ['مهتم', 'مهتم'], ['اجتماع', 'اجتماع'], ['عميل', 'عميل'], ['مش مهتم', 'مش مهتم'], ['all', 'الكل']], f, 'hFilter')}
+    <div class="row" style="margin:12px 0 6px;justify-content:space-between">${chips([['جديد', 'جديد'], ['wa', 'جديد وعليه واتساب'], ['انبعتت', 'انبعتت'], ['رد', 'رد'], ['مهتم', 'مهتم'], ['اجتماع', 'اجتماع'], ['عميل', 'عميل'], ['مش مهتم', 'مش مهتم'], ['bad', '📵 بحاجة تصليح رقم' + (N(s.bad) ? ' (' + N(s.bad) + ')' : '')], ['all', 'الكل']], f, 'hFilter')}
       <span class="row" style="gap:6px"><button class="btn sm ghost" data-act="hPurge" title="بيشيل الشركات الجديدة اللي ما إلها رقم">🧹 شيل اللي بدون رقم</button><button class="btn sm" data-act="hSelAll">${sel.size ? 'ألغِ التحديد (' + sel.size + ')' : 'حدد أول 20'}</button><button class="btn sm" data-act="hTplSel" ${sel.size ? '' : 'disabled'}>📝 حط القالب للمحدد</button><button class="btn sm" data-act="hMsgs" ${sel.size ? '' : 'disabled'}>✨ اكتب بالذكاء للمحدد</button><button class="btn sm pri" data-act="hNext" title="بيفتح واتساب لأول شركة جاهزة (عليها رقم ورسالة ولسا ما انبعتلها)">▶ ابعت للي بعده</button></span></div>
     ${list.length ? `<div class="hgrid">${list.map(card).join('')}</div>` : '<div class="card"><p class="note">ما في شركات هون. دوّر من فوق.</p></div>'}`;
 };
@@ -79,12 +94,14 @@ function card(p) {
     <div class="m">${p.country && p.country !== 'jo' ? esc(cName(p.country)) + ' · ' : ''}${esc(p.address || p.area || '')}</div>
     <div class="row" style="gap:6px;margin:6px 0">${p.rating ? pill('★ ' + p.rating + ' (' + N(p.reviews) + ')', '') : ''}${p.website ? `<a href="${esc(p.website)}" target="_blank" rel="noopener" class="m">الموقع</a>` : pill('بدون موقع', 'warn')}${p.maps_url ? `<a href="${esc(p.maps_url)}" target="_blank" rel="noopener" class="m">الخريطة</a>` : ''}${p.source === 'osm' ? pill('OSM') : ''}</div>
     ${(p.reasons || []).length ? `<small class="m">ليش فرصة: ${p.reasons.map(esc).join('، ')}</small>` : ''}
-    <div class="row" style="gap:6px;margin:6px 0">${p.wa ? `<b dir="ltr">+${esc(p.wa)}</b>` : p.phone ? `<span dir="ltr">${esc(p.phone)}</span> <small class="m">أرضي</small>` : '<small class="m">ما في رقم</small>'}
+    ${p.wa_bad ? `<div class="hbad">📵 الرقم ما عليه واتساب${N(p.wa_tries) > 1 ? ' (' + N(p.wa_tries) + ' محاولات)' : ''}. عدّله أو جرّب الصيغة الثانية وابعت من جديد.</div>` : ''}
+    <div class="row" style="gap:6px;margin:6px 0">${p.wa ? `<b dir="ltr">+${esc(p.wa)}</b>` : p.phone ? `<span dir="ltr">${esc(p.phone)}</span> <small class="m">أرضي</small>` : '<small class="m">ما في رقم</small>'}<button class="btn sm ghost" data-act="hEdit" data-id="${p.id}" aria-label="عدّل الرقم">✏️ عدّل الرقم</button>
       <select class="inl hstatus" data-id="${p.id}" aria-label="الحالة">${STATUSES.map(x => `<option ${x === p.status ? 'selected' : ''}>${x}</option>`).join('')}</select>${p.sent_at ? `<small class="m">${esc(p.sent_by_name || '')}</small>` : ''}</div>
     <textarea class="hmsg" rows="5" style="width:100%" placeholder="اضغط ✨ عشان يكتب رسالة مخصصة، أو اكتبها بإيدك">${esc(p.msg || '')}</textarea>
     <div class="row" style="gap:4px;margin-top:6px"><button class="btn sm" data-act="hTplOne" data-id="${p.id}">📝 قالب</button><button class="btn sm" data-act="hMsgOne" data-id="${p.id}">✨ اكتب</button>
-      ${p.wa ? `<button class="btn sm pri" data-act="hWa" data-id="${p.id}">واتساب</button>` : ''}${ST.hCfg?.image ? `<button class="btn sm" data-act="hImg">انسخ الصورة</button>` : ''}
-      ${p.phone ? `<a class="btn sm ghost" href="tel:${esc(p.phone.replace(/\s/g, ''))}">اتصل</a>` : ''}${p.lead_id ? `<button class="btn sm" data-act="leadQuote" data-id="${p.lead_id}">عرض سعر</button>` : `<button class="btn sm ghost" data-act="hLead" data-id="${p.id}">← عميل محتمل</button>`}</div></div>`;
+      ${p.wa ? `<button class="btn sm pri" data-act="hWa" data-id="${p.id}">واتساب${altWa(p.wa) ? ' +' + p.wa.slice(0, 3) : ''}</button>${altWa(p.wa) ? `<button class="btn sm" data-act="hWaAlt" data-id="${p.id}">جرّب +${altWa(p.wa).slice(0, 3)}</button>` : ''}` : ''}${ST.hCfg?.image ? `<button class="btn sm" data-act="hImg">انسخ الصورة</button>` : ''}
+      ${p.phone ? `<a class="btn sm ghost" href="tel:${esc(p.phone.replace(/\s/g, ''))}">اتصل</a>` : ''}${p.lead_id ? `<button class="btn sm" data-act="leadQuote" data-id="${p.lead_id}">عرض سعر</button>` : `<button class="btn sm ghost" data-act="hLead" data-id="${p.id}">← عميل محتمل</button>`}</div>
+    ${ui.hPending?.id === p.id ? `<div class="hconf" role="status"><b>وصلت الرسالة على +${esc(ui.hPending.used)}؟</b><div class="row" style="gap:4px;margin-top:6px"><button class="btn sm pri" data-act="hOk" data-id="${p.id}">✓ انبعتت</button><button class="btn sm danger" data-act="hBad" data-id="${p.id}">✗ ما عليه واتساب</button>${altWa(ui.hPending.used) ? `<button class="btn sm" data-act="hWaAlt" data-id="${p.id}">جرّب +${altWa(ui.hPending.used).slice(0, 3)}</button>` : ''}</div></div>` : ''}</div>`;
 }
 
 async function shrinkImg(file) {
@@ -138,7 +155,7 @@ Object.assign(A, {
   hTplOne: async id => { const n = await applyTpl([id]); if (n) toast('انحط القالب. راجعه وابعت'); },
   hTplSel: async () => { const n = await applyTpl([...(ui.hSel || [])]); if (n) { ui.hSel = new Set(); toast(`انحط القالب على ${n} شركة. اضغط "▶ ابعت للي بعده"`); K.render(); } },
   hNext: async () => {
-    const p = (ui.hRows || []).find(r => r.wa && r.status === 'جديد' && (msgOf(r.id) || r.msg));
+    const p = (ui.hRows || []).find(r => r.wa && !r.wa_bad && r.status === 'جديد' && r.id !== ui.hPending?.id && (msgOf(r.id) || r.msg));
     if (!p) { toast('ما في شركة جاهزة: لازم يكون عليها واتساب ورسالة ولسا ما انبعتلها. حط القالب أول', true); return; }
     const c = $$('.hcard').find(x => x.dataset.id === p.id); c?.scrollIntoView?.({behavior: 'smooth', block: 'center'}); c?.classList.add('hnow');
     await A.hWa(p.id);
@@ -154,15 +171,39 @@ Object.assign(A, {
     ui.hSel = new Set(); toast('جهزت الرسائل. راجعها وابعت'); K.render();
   },
   hMsgOne: async id => { if (!ST.hCfg?.offer) { toast('اكتب العرض أول (العرض والصورة والرسالة)', true); return; } toast('عم يكتب…'); await db.fn('prospects', {action: 'messages', ids: [id]}); K.render(); },
-  hWa: async id => {
+  hWa: async (id, num) => {
     const p = (ui.hRows || []).find(r => r.id === id); if (!p?.wa) return;
     const txt = msgOf(id); if (!txt) { toast('اكتب الرسالة أول، أو اضغط ✨', true); return; }
-    window.open('https://wa.me/' + p.wa + '?text=' + encodeURIComponent(txt), '_blank', 'noopener');
-    const r = await db.rpc('prospect_sent', {pid: id, txt});
-    if (N(r?.today) >= N(r?.limit)) toast(`وصلت ${N(r.today)} رسالة اليوم (الحد ${N(r.limit)}). وقّف لبكرة عشان الرقم ما يتسكّر`, true);
-    else toast(ST.hCfg?.image ? 'انفتح واتساب. الصق الصورة (Ctrl+V) وابعت' : 'انفتح واتساب. ابعت الرسالة');
+    if (ui.hPending && ui.hPending.id !== id) await A.hOk(ui.hPending.id, true);
+    const used = typeof num === 'string' && num ? num : p.wa;
+    window.open('https://wa.me/' + used + '?text=' + encodeURIComponent(txt), '_blank', 'noopener');
+    ui.hPending = {id, used, txt};
+    toast((ST.hCfg?.image ? 'انفتح واتساب. الصق الصورة (Ctrl+V) وابعت. ' : 'انفتح واتساب. ') + 'بعدين ارجع واضغط "✓ انبعتت" أو "✗ ما عليه واتساب"');
     if (ST.hCfg?.image) A.hImg(true);
-    setTimeout(() => K.render(), 600);
+    setTimeout(() => K.render(), 400);
+  },
+  hWaAlt: async id => { const p = (ui.hRows || []).find(r => r.id === id); if (!p) return; const cur = ui.hPending?.id === id ? ui.hPending.used : p.wa; const alt = altWa(cur); if (alt) await A.hWa(id, alt); },
+  hOk: async (id, quiet) => {
+    const pd = ui.hPending?.id === id ? ui.hPending : {used: (ui.hRows || []).find(r => r.id === id)?.wa, txt: msgOf(id)};
+    const r = await db.rpc('prospect_wa_result', {pid: id, ok: true, used: pd.used || null, txt: pd.txt || msgOf(id)});
+    if (ui.hPending?.id === id) ui.hPending = null;
+    if (N(r?.today) >= N(r?.limit)) toast(`وصلت ${N(r.today)} رسالة اليوم (الحد ${N(r.limit)}). وقّف لبكرة عشان الرقم ما يتسكّر`, true);
+    else if (quiet !== true) toast('انحسبت انبعتت ✓');
+    if (quiet !== true) K.render();
+  },
+  hBad: async id => {
+    const pd = ui.hPending?.id === id ? ui.hPending : {txt: msgOf(id)};
+    await db.rpc('prospect_wa_result', {pid: id, ok: false, used: pd.used || null, txt: pd.txt || msgOf(id)});
+    ui.hPending = null; toast('رجعت لقائمة "بحاجة تصليح رقم". عدّل الرقم وابعت من جديد'); K.render();
+  },
+  hEdit: async id => {
+    const p = (ui.hRows || []).find(r => r.id === id); if (!p) return;
+    const cc = p.country || 'jo';
+    K.openForm('تعديل رقم ' + p.name, [{k: 'ph', l: 'الرقم (محلي مثل 0599123456 أو دولي مثل +972599123456)', def: p.wa ? '+' + p.wa : (p.phone || ''), req: 1}], null, async v => {
+      const w = waOf(v.ph, cc); if (!w && !/\d{6,}/.test(v.ph)) return 'الرقم مش واضح';
+      await db.rpc('prospect_set_phone', {pid: id, ph: v.ph, w: w || null}); if (ui.hPending?.id === id) ui.hPending = null;
+      toast(w ? 'انحفظ الرقم: +' + w + (altWa(w) ? ' (وبتقدر تجرب +' + altWa(w).slice(0, 3) + ')' : '') : 'انحفظ كرقم أرضي (بدون واتساب)'); K.render();
+    });
   },
   hImg: async quiet => {
     const src = ST.hCfg?.image; if (!src) return;
