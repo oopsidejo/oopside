@@ -426,3 +426,6 @@ details.adv summary{cursor:pointer;font-weight:600}
 .bulk .ck{display:flex;gap:6px;align-items:center;margin:0;font-weight:600}
 .selck{width:18px;height:18px;vertical-align:middle;accent-color:var(--brand);cursor:pointer}
 .btn.danger{background:var(--bad);border-color:var(--bad);color:#fff}
+.qff{display:grid;gap:6px;margin:8px 0}.qff>div{display:grid;grid-template-columns:120px 1fr 50px 50px;gap:8px;align-items:center;font-size:14px}
+.qff i{display:block;height:12px;border-radius:6px;background:var(--brand)}.qff b{text-align:end}
+@media (max-width:600px){.qff>div{grid-template-columns:95px 1fr 40px 40px}}

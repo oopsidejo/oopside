@@ -255,7 +255,7 @@ function visitorCard(v, live) {
     ${items.length ? `<div class="kv"><span>الباقة (${items.length})</span><b>${jd(d.fees)} شهري${N(d.one) ? ' + ' + jd(d.one) : ''}</b></div><small class="m">${items.map(i => esc(i.n) + (N(i.q) > 1 ? ' ×' + N(i.q) : '')).join('، ')}</small>` : ''}</div>`;
 }
 V.olive = async () => {
-  const r = await db.rpc('oops_live').catch(e => ({err: e.message}));
+  const [r, qs] = await Promise.all([db.rpc('oops_live').catch(e => ({err: e.message})), db.rpc('oops_qf_stats').catch(() => null)]);
   if (!r || r.err) return head('زوار الموقع الآن', '') + `<div class="card"><p class="note">هالشاشة بتحتاج ملف <b>19_live_visitors.sql</b> على Supabase، وملف o.html الجديد على موقع الوكالة.</p></div>`;
   const now = r.now || [], t = r.today || {};
   const building = now.filter(v => N(v.step) >= 4).length;
@@ -263,9 +263,27 @@ V.olive = async () => {
     `<div class="kpis"><div class="kpi hl bignow"><span>على الموقع هلأ</span><b>${now.length}</b><small><span class="live"><i></i>مباشر</span></small></div>
       ${kpi('عم يبنوا باقة هلأ', building, 'وصلوا للخدمات أو التواصل')}${kpi('زوار اليوم', N(t.visits), N(t.started) + ' بلّشوا الباني')}
       ${kpi('وصلوا الميزانية', N(t.budget), N(t.services) + ' وصلوا الخدمات')}${kpi('بعتوا طلب اليوم', N(t.sent), N(t.visits) ? 'تحويل ' + Math.round(N(t.sent) / N(t.visits) * 100) + '%' : '')}</div>
+    ${qfCard(qs)}
     <h2 style="margin:14px 0 8px">هلأ على الموقع</h2>${now.length ? `<div class="vgrid">${now.map(v => visitorCard(v, true)).join('')}</div>` : '<div class="card"><p class="note">ما في حدا على الموقع هلأ.</p></div>'}
     ${(r.recent || []).length ? `<h2 style="margin:18px 0 8px">طلعوا آخر 24 ساعة بعد ما وصلوا الميزانية أو أكثر</h2><div class="vgrid">${r.recent.map(v => visitorCard(v, false)).join('')}</div>` : ''}`;
 };
+function qfCard(q) {
+  if (!q) return '<div class="card"><p class="note">لتشوف قمع الفورم السريع (مين شافه، مين كتب، مين بعت) شغّل ملف <b>28_quick_form_funnel.sql</b>.</p></div>';
+  const w = q.week || {}, steps = [['visits', 'زاروا الموقع'], ['seen', 'شافوا الفورم'], ['focus', 'بلّشوا يكتبوا'], ['try', 'ضغطوا إرسال'], ['ok', 'انحفظوا كعملاء']];
+  const mx = Math.max(1, N(w.visits));
+  const warn = [];
+  if (q.live === false) warn.push('الموقع <b>مطفي</b>، والفورم ما بيحفظ إشي. شغّله من "موقع الوكالة والأسعار".');
+  if (q.quick_on === false) warn.push('الفورم السريع <b>مطفي</b> من إعدادات البروفايل.');
+  if (!q.rpc_ok) warn.push('ملف <b>24_quick_lead.sql</b> مش منشغّل، فالفورم ما بيحفظ العملاء.');
+  if (N(w.visits) >= 20 && !N(w.tracked)) warn.push('ولا زائر وصلت منه أحداث للفورم. غالباً ملف <b>o.html</b> الجديد مش مرفوع على ريبو oopside، أو المتصفح عنده كاش (Ctrl+F5).');
+  if (N(w.err)) warn.push(`${N(w.err)} زائر ضغط إرسال وصار خطأ بالحفظ. شوف الأخطاء تحت.`);
+  return `<div class="card"><div class="head" style="margin-bottom:6px"><h2>قمع الفورم السريع (آخر 7 أيام)</h2><span class="m">اليوم: ${N(q.today?.seen)} شافوه · ${N(q.today?.try)} ضغطوا إرسال · ${N(q.today?.ok)} انحفظوا</span></div>
+    ${warn.map(x => `<p class="warnbar" style="margin:6px 0">${x}</p>`).join('')}
+    <div class="qff">${steps.map(([k, l], i) => `<div><span>${l}</span><i style="width:${Math.max(2, N(w[k]) / mx * 100)}%"></i><b>${N(w[k])}</b>${i ? `<small class="m">${N(w[steps[i - 1][0]]) ? Math.round(N(w[k]) / N(w[steps[i - 1][0]]) * 100) + '%' : '—'}</small>` : '<small class="m">' + N(w.mobile) + ' جوال</small>'}</div>`).join('')}</div>
+    ${N(w.bad) ? `<p class="m">${N(w.bad)} زائر ضغط إرسال ووقف عند خطأ بالاسم أو الرقم وما كمّل.</p>` : ''}
+    <p class="m">عملاء انحفظوا من الموقع آخر 7 أيام: <b>${N(q.leads)}</b></p>
+    ${(q.errors || []).length ? `<details><summary><b>آخر الأخطاء (${q.errors.length})</b></summary>${q.errors.map(e => `<div class="m" style="font-size:13px">${fmtDT(e.at)} · ${esc(e.device || '')} · ${esc(e.source || '')} · <b>${esc(e.err || '')}</b></div>`).join('')}</details>` : ''}</div>`;
+}
 setInterval(() => { if (ui.view === 'olive' && K.me && document.visibilityState === 'visible') K.softRender(); }, 10000);
 
 V.funnel = async () => {

@@ -9,9 +9,15 @@ const db = new Proxy({}, {get: (_, k) => { const d = K.db; const v = d[k]; retur
 const STATUSES = ['جديد', 'انبعتت', 'رد', 'مهتم', 'اجتماع', 'عميل', 'مش مهتم', 'رقم غلط'];
 const ST_CLS = {'جديد': '', 'انبعتت': 'info', 'رد': 'brand', 'مهتم': 'good', 'اجتماع': 'good', 'عميل': 'good', 'مش مهتم': 'bad', 'رقم غلط': 'bad'};
 const IDEAS = ['عيادات أسنان', 'عيادات تجميل', 'مطاعم', 'كافيهات', 'صالونات تجميل', 'جيم', 'مراكز تعليمية', 'محلات ملابس', 'مكاتب عقارات', 'معارض سيارات', 'صيدليات', 'فنادق'];
+const COUNTRIES = [['jo', 'الأردن 🇯🇴'], ['ps', 'فلسطين 🇵🇸'], ['sa', 'السعودية 🇸🇦'], ['ae', 'الإمارات 🇦🇪'], ['kw', 'الكويت 🇰🇼'], ['qa', 'قطر 🇶🇦'], ['bh', 'البحرين 🇧🇭'], ['om', 'عُمان 🇴🇲'], ['iq', 'العراق 🇮🇶'], ['eg', 'مصر 🇪🇬'], ['lb', 'لبنان 🇱🇧']];
+const CITIES = {ps: ['نابلس', 'رام الله', 'الخليل', 'جنين', 'بيت لحم', 'طولكرم', 'قلقيلية', 'أريحا', 'غزة'], sa: ['الرياض', 'جدة', 'مكة', 'المدينة المنورة', 'الدمام', 'الخبر', 'أبها', 'تبوك'],
+  ae: ['دبي', 'أبوظبي', 'الشارقة', 'عجمان', 'العين', 'رأس الخيمة'], kw: ['مدينة الكويت', 'حولي', 'السالمية', 'الفروانية', 'الجهراء'], qa: ['الدوحة', 'الريان', 'الوكرة'],
+  bh: ['المنامة', 'المحرق', 'الرفاع'], om: ['مسقط', 'صلالة', 'صحار', 'نزوى'], iq: ['بغداد', 'أربيل', 'البصرة', 'النجف', 'السليمانية'], eg: ['القاهرة', 'الجيزة', 'الإسكندرية', 'المنصورة'], lb: ['بيروت', 'طرابلس', 'صيدا', 'جونيه']};
+const cName = c => (COUNTRIES.find(x => x[0] === c)?.[1] || '');
 const AREAS = ['عمّان', 'عبدون', 'الصويفية', 'خلدا', 'تلاع العلي', 'الشميساني', 'جبل عمّان', 'مرج الحمام', 'الزرقاء', 'إربد', 'العقبة', 'السلط', 'مادبا', 'المفرق', 'جرش'];
 const scoreCls = s => s >= 60 ? 'good' : s >= 35 ? 'warn' : '';
 
+document.addEventListener('change', e => { if (e.target?.dataset?.hcc) { ui.hCc = e.target.value; const a = $('#h_area'); ui.hQ = $('#h_q')?.value.trim() || ui.hQ; ui.hArea = ui.hCc === 'jo' ? 'عمّان' : (CITIES[ui.hCc] || [''])[0]; K.render(); } });
 Object.assign(ACT_SEC, {hSearch: 'leads', hMsgs: 'leads', hMsgOne: 'leads', hWa: 'leads', hImg: 'leads', hLead: 'leads', hCfgSave: 'leads', hImgDel: 'leads', hSelAll: 'leads', hFilter: 'leads', hShow: 'leads', hDiag: 'leads', hErrX: 'leads', hErrCopy: 'leads', hTplOne: 'leads', hTplSel: 'leads', hNext: 'leads', hPurge: 'leads'});
 
 V.hunt = async () => {
@@ -39,7 +45,8 @@ V.hunt = async () => {
     <div class="card"><h2>دوّر على شركات</h2>
       <div class="fgrid">
         <label class="fld"><span>نوع الشغل</span><input id="h_q" list="h_ideas" value="${esc(ui.hQ || '')}" placeholder="مثلاً: عيادات أسنان"><datalist id="h_ideas">${IDEAS.map(x => `<option value="${x}">`).join('')}</datalist></label>
-        <label class="fld"><span>المنطقة أو المدينة</span><input id="h_area" list="h_areas" value="${esc(ui.hArea || 'عمّان')}"><datalist id="h_areas">${AREAS.map(x => `<option value="${x}">`).join('')}</datalist></label>
+        <label class="fld"><span>البلد</span><select id="h_cc" data-hcc="1">${COUNTRIES.map(([k, l]) => `<option value="${k}" ${(ui.hCc || 'jo') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+        <label class="fld"><span>المنطقة أو المدينة</span><input id="h_area" list="h_areas" value="${esc(ui.hArea || 'عمّان')}"><datalist id="h_areas">${((ui.hCc || 'jo') === 'jo' ? AREAS : CITIES[ui.hCc] || []).map(x => `<option value="${x}">`).join('')}</datalist></label>
         <label class="fld"><span>من وين</span><select id="h_src"><option value="serper" ${(ui.hSrc || 'serper') === 'serper' ? 'selected' : ''}>جوجل عن طريق Serper (2500 بحث مجاني، بدون بطاقة)</option><option value="google" ${ui.hSrc === 'google' ? 'selected' : ''}>خرائط جوجل الرسمي (بدها فوترة)</option><option value="osm" ${ui.hSrc === 'osm' ? 'selected' : ''}>OpenStreetMap (مجاني بالكامل، أرقام أقل)</option></select></label>
         <label class="fld"><span>الرقم</span><select id="h_need"><option value="phone" ${(ui.hNeed || 'phone') === 'phone' ? 'selected' : ''}>بس اللي إلهم رقم (إجباري)</option><option value="mobile" ${ui.hNeed === 'mobile' ? 'selected' : ''}>بس اللي إلهم موبايل (واتساب)</option><option value="any" ${ui.hNeed === 'any' ? 'selected' : ''}>الكل حتى بدون رقم</option></select></label>
         <label class="fld"><span>كم شركة بدك (لحد 2000)</span><input id="h_target" type="number" min="20" max="2000" step="10" list="h_targets" value="${N(ui.hTarget) || 60}"><datalist id="h_targets">${[60, 100, 200, 500, 1000, 2000].map(x => `<option value="${x}">`).join('')}</datalist></label>
@@ -69,7 +76,7 @@ V.hunt = async () => {
 function card(p) {
   const sel = ui.hSel?.has(p.id);
   return `<div class="card hcard" data-id="${p.id}"><div class="head" style="margin-bottom:4px"><label class="row" style="gap:6px;align-items:flex-start"><input type="checkbox" class="hsel" value="${p.id}" ${sel ? 'checked' : ''} aria-label="حدد"><b>${esc(p.name)}</b></label>${pill(p.score + '%', scoreCls(p.score))}</div>
-    <div class="m">${esc(p.address || p.area || '')}</div>
+    <div class="m">${p.country && p.country !== 'jo' ? esc(cName(p.country)) + ' · ' : ''}${esc(p.address || p.area || '')}</div>
     <div class="row" style="gap:6px;margin:6px 0">${p.rating ? pill('★ ' + p.rating + ' (' + N(p.reviews) + ')', '') : ''}${p.website ? `<a href="${esc(p.website)}" target="_blank" rel="noopener" class="m">الموقع</a>` : pill('بدون موقع', 'warn')}${p.maps_url ? `<a href="${esc(p.maps_url)}" target="_blank" rel="noopener" class="m">الخريطة</a>` : ''}${p.source === 'osm' ? pill('OSM') : ''}</div>
     ${(p.reasons || []).length ? `<small class="m">ليش فرصة: ${p.reasons.map(esc).join('، ')}</small>` : ''}
     <div class="row" style="gap:6px;margin:6px 0">${p.wa ? `<b dir="ltr">+${esc(p.wa)}</b>` : p.phone ? `<span dir="ltr">${esc(p.phone)}</span> <small class="m">أرضي</small>` : '<small class="m">ما في رقم</small>'}
@@ -106,15 +113,16 @@ Object.assign(A, {
   hFilter: k => { ui.hFilter = k; ui.hSid = null; ui.hSel = new Set(); K.render(); },
   hSearch: async () => {
     if (ui.hBusy) return;
-    ui.hQ = $('#h_q').value.trim(); ui.hArea = $('#h_area').value.trim(); ui.hSrc = $('#h_src').value; ui.hTarget = Math.min(2000, Math.max(20, +$('#h_target').value || 60)); ui.hNeed = $('#h_need')?.value || 'phone';
+    ui.hQ = $('#h_q').value.trim(); ui.hArea = $('#h_area').value.trim(); ui.hSrc = $('#h_src').value; ui.hTarget = Math.min(2000, Math.max(20, +$('#h_target').value || 60)); ui.hNeed = $('#h_need')?.value || 'phone'; ui.hCc = $('#h_cc')?.value || 'jo';
     if (!ui.hQ) { toast('اكتب نوع الشغل', true); return; }
     const norm = x => String(x || '').replace(/[أإآ]/g, 'ا').replace(/ّ/g, '').trim();
-    const dup = (ST.hHist || []).find(h => norm(h.query) === norm(ui.hQ) && norm(h.area) === norm(ui.hArea) && (h.source || 'google') === ui.hSrc);
+    const areaKey = ui.hCc === 'jo' ? ui.hArea : ui.hArea + ' · ' + (cName(ui.hCc).split(' ')[0]);
+    const dup = (ST.hHist || []).find(h => norm(h.query) === norm(ui.hQ) && norm(h.area) === norm(areaKey) && (h.source || 'google') === ui.hSrc);
     if (dup && ui.hConfirm !== dup.id) { ui.hConfirm = dup.id; toast(`دوّرت على "${dup.query}" بـ${dup.area || ''} قبل (${K.fmtDT(dup.at)}) ولقيت ${N(dup.found)}. غالباً رح يطلع نفس الشركات. جرّب منطقة أصغر، أو اضغط دوّر مرة ثانية إذا متأكد`, true); return; }
     ui.hConfirm = null;
     ui.hBusy = true; await K.render();
     ui.hErr = ''; ui.hOk = '';
-    try { const r = await db.fn('prospects', {action: 'search', query: ui.hQ, area: ui.hArea, source: ui.hSrc, target: ui.hTarget, need: ui.hNeed});
+    try { const r = await db.fn('prospects', {action: 'search', query: ui.hQ, area: ui.hArea, source: ui.hSrc, target: ui.hTarget, need: ui.hNeed, country: ui.hCc || 'jo'});
       ui.hOk = N(r.found) ? `لقيت ${N(r.found)} شركة إلها رقم (${N(r.new)} جديدة)${N(r.skipped) ? ' · تجاهلت ' + N(r.skipped) + ' بدون رقم' : ''}` : (N(r.skipped) ? `لقيت ${N(r.skipped)} شركة بس ولا وحدة إلها رقم. جرّب جوجل أو منطقة ثانية` : '');
       toast(N(r.found) ? `لقيت ${N(r.found)} شركة: ${N(r.new)} جديدة، والباقي كانت عندك من قبل${N(r.calls) ? ' · استخدم ' + N(r.calls) + ' بحث من المجاني' : ''}` : 'ما لقيت شركات. جرّب كلمة ثانية أو منطقة أكبر', !N(r.new)); ui.hFilter = 'جديد'; ui.hSid = r.search_id || null; ui.hHistOpen = false; }
     catch (e) { ui.hErr = e.message; }
