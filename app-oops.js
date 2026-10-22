@@ -259,7 +259,9 @@ V.olive = async () => {
   if (!r || r.err) return head('زوار الموقع الآن', '') + `<div class="card"><p class="note">هالشاشة بتحتاج ملف <b>19_live_visitors.sql</b> على Supabase، وملف o.html الجديد على موقع الوكالة.</p></div>`;
   const now = r.now || [], t = r.today || {};
   const building = now.filter(v => N(v.step) >= 4).length;
-  return head('زوار الموقع الآن', 'مين على موقع الوكالة هلأ، وين وصل، وشو الباقة اللي عم يبنيها. بتتحدّث لحالها كل 10 ثواني', `<a class="btn" href="${esc(siteUrl())}" target="_blank" rel="noopener">افتح الموقع</a>`) +
+  const clar = String(ST.settings?.tracking?.agency_clarity || ST.oSite?.config?.clarity || '').replace(/[^a-z0-9]/gi, '');
+  const cl = p => `https://clarity.microsoft.com/projects/view/${clar}/${p}`;
+  return head('زوار الموقع الآن', 'مين على موقع الوكالة هلأ، وين وصل، وشو الباقة اللي عم يبنيها. بتتحدّث لحالها كل 10 ثواني', `${clar ? `<a class="btn pri" href="${cl('impressions')}" target="_blank" rel="noopener">📹 تسجيلات الزوار</a><a class="btn" href="${cl('heatmaps')}" target="_blank" rel="noopener">🔥 خريطة الكبسات</a><a class="btn" href="${cl('dashboard')}" target="_blank" rel="noopener">ملخص Clarity</a>` : '<button class="btn" data-act="go" data-id="settings">ربط Clarity (تسجيل الزوار)</button>'}<a class="btn" href="${esc(siteUrl())}" target="_blank" rel="noopener">افتح الموقع</a>`) +
     `<div class="kpis"><div class="kpi hl bignow"><span>على الموقع هلأ</span><b>${now.length}</b><small><span class="live"><i></i>مباشر</span></small></div>
       ${kpi('عم يبنوا باقة هلأ', building, 'وصلوا للخدمات أو التواصل')}${kpi('زوار اليوم', N(t.visits), N(t.started) + ' بلّشوا الباني')}
       ${kpi('وصلوا الميزانية', N(t.budget), N(t.services) + ' وصلوا الخدمات')}${kpi('بعتوا طلب اليوم', N(t.sent), N(t.visits) ? 'تحويل ' + Math.round(N(t.sent) / N(t.visits) * 100) + '%' : '')}</div>
