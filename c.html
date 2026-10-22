@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>عقد خدمات</title>
+<meta name="theme-color" content="#2f3b82">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alexandria:wght@500;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ink:#16183d; --indigo:#2f3b82; --paper:#eef0f7; --card:#ffffff; --lilac:#ecebfa; --line:#dcdcee; --on:#ffffff; --muted:#5d6080;
+  --mint:#1e8c63; --mint-bg:#e1f4ec; --coral:#c8402f; --coral-bg:#fbe5e1; --sun:#ffc83d;
+  --f-d:"Alexandria","IBM Plex Sans Arabic",Tahoma,sans-serif; --f-b:"IBM Plex Sans Arabic",Tahoma,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--paper:#10122a; color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#10122a; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 16px/1.8 var(--f-b);-webkit-text-size-adjust:100%}
+h1,h2,h3{font-family:var(--f-d);margin:0;line-height:1.4}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:10px;max-width:860px;margin:0 auto;padding:14px 16px}
+.bar b{font:800 18px var(--f-d)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .bar{color:#ecebff}}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:600 15px var(--f-b);padding:10px 16px;border-radius:10px;cursor:pointer;text-decoration:none;min-height:44px}
+.btn.pri{background:var(--indigo);border-color:var(--indigo);color:var(--on)}
+.btn.ok{background:var(--mint);border-color:var(--mint);color:#fff}
+.btn:disabled{opacity:.6;cursor:wait}
+.wrap{max-width:860px;margin:0 auto;padding:0 16px 40px}
+.sheet{background:var(--card);color:var(--ink);border-radius:14px;box-shadow:0 10px 40px rgba(22,24,61,.08);overflow:hidden}
+.lh{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 28px 16px;border-top:8px solid var(--indigo);border-bottom:2px solid var(--indigo)}
+.lh .who{display:flex;gap:12px;align-items:center}.lh img{height:56px;max-width:170px;object-fit:contain}
+.lh .who b{display:block;font:800 22px var(--f-d)}.lh .who small{color:var(--muted)}
+.lh .meta{font-size:13px;color:var(--muted);line-height:1.7;text-align:end}
+.body{padding:22px 28px 28px}
+.ttl{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start;margin-bottom:14px}
+.ttl h1{font-size:24px}.ttl p{margin:2px 0 0;color:var(--muted);font-size:14px}
+.stamp{font:700 13px var(--f-d);padding:4px 12px;border-radius:20px;background:var(--lilac);color:var(--indigo);white-space:nowrap}
+.stamp.good{background:var(--mint-bg);color:var(--mint)}.stamp.bad{background:var(--coral-bg);color:var(--coral)}
+.banner{padding:10px 14px;border-radius:10px;margin:0 0 14px;font-weight:600}.banner.warn{background:#fff4d6;color:#7a5600}.banner.bad{background:var(--coral-bg);color:var(--coral)}.banner.good{background:var(--mint-bg);color:var(--mint)}
+.parties{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0 16px}
+.party{border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:14px}.party h3{font-size:15px;color:var(--indigo);margin-bottom:4px}.party div{display:flex;gap:6px}.party span{color:var(--muted);min-width:96px}
+h2.sec{font-size:17px;margin:20px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--line)}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:start;vertical-align:top}th{color:var(--muted);font-weight:600;font-size:13px}td.n,th.n{text-align:end;white-space:nowrap}
+.sum{break-inside:avoid;max-width:400px;margin:10px 0 0 auto;display:grid;gap:4px;font-size:14px}.sum div{display:flex;justify-content:space-between;gap:10px}.sum .tot{border-top:2px solid var(--ink);padding-top:6px;font-weight:700;font-size:16px}.sum .g{color:var(--mint)}
+.gifts{break-inside:avoid;border:1px dashed var(--mint);background:var(--mint-bg);border-radius:12px;padding:10px 14px;margin-top:12px;font-size:14px}.gifts div{display:flex;justify-content:space-between;gap:10px}.gifts b{color:var(--mint)}
+ul.chk{margin:6px 0 0;padding-inline-start:20px}
+ol.cl{margin:0;padding:0;list-style:none;counter-reset:c}ol.cl li{counter-increment:c;margin:0 0 12px;break-inside:avoid}
+ol.cl li h3{font-size:15px}ol.cl li h3::before{content:"البند " counter(c) ": ";color:var(--indigo)}ol.cl li p{margin:2px 0 0;white-space:pre-line;text-align:justify}
+.plan{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.plan>div{border:1px solid var(--line);border-radius:10px;padding:10px;font-size:14px;break-inside:avoid}.plan ul{margin:6px 0 0;padding-inline-start:18px}
+.sigs{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px}.sigbox{border:1px solid var(--line);border-radius:12px;padding:12px;min-height:170px;display:grid;align-content:start;gap:2px;break-inside:avoid}
+.sigbox h3{font-size:14px;color:var(--indigo)}.sigbox img{max-height:90px;max-width:100%;object-fit:contain;margin:6px 0}.sigbox small{color:var(--muted);font-size:12px}.sigbox .wait{color:var(--muted);margin:24px 0}
+.audit{margin-top:14px;font-size:12px;color:var(--muted);border-top:1px dashed var(--line);padding-top:8px;line-height:1.7;overflow-wrap:anywhere}.audit code{display:block;direction:ltr;text-align:left;word-break:break-all;font-size:11px}
+.lf{padding:10px 28px;background:var(--indigo);color:#fff;font-size:12px;display:flex;flex-wrap:wrap;gap:4px 14px;justify-content:center}
+.signf{margin-top:18px;background:var(--card);border-radius:14px;padding:20px 22px;border:2px solid var(--indigo)}
+.signf h2{font-size:20px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.fld{display:grid;gap:4px;font-size:14px}.fld span{font-weight:600}.fld input{font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:#16183d;min-height:44px}.fld.wide{grid-column:1/-1}
+.pad{display:block;width:100%;height:190px;border:2px dashed var(--indigo);border-radius:12px;background:#fff;touch-action:none;cursor:crosshair;margin-top:6px}
+.ck{display:flex;gap:10px;align-items:flex-start;margin:12px 0;font-size:15px}.ck input{width:22px;height:22px;margin-top:3px;flex:none}
+.err{color:var(--coral);font-weight:600;min-height:1.4em;margin:6px 0 0}
+.center{min-height:70vh;display:grid;place-items:center;text-align:center;padding:20px}
+@media (max-width:700px){.parties,.sigs,.grid,.plan{grid-template-columns:1fr}.lh,.body{padding-inline:16px}.lh .meta{text-align:start}.ttl h1{font-size:20px}}
+@media print{
+  @page{size:A4;margin:12mm 12mm 16mm}
+  body{background:#fff;font-size:12.5px;line-height:1.7}
+  .noprint{display:none!important}
+  .wrap{padding:0;max-width:none}.sheet{box-shadow:none;border-radius:0}
+  .lh{padding:0 0 10px}.body{padding:14px 0 0}.lf{margin-top:16px;padding:6px;background:none;color:#5d6080;border-top:1px solid #dcdcee}
+  h2.sec{break-after:avoid}.plan{grid-template-columns:repeat(3,1fr)}.parties,.sigs{grid-template-columns:1fr 1fr}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+<div class="bar noprint"><b id="bBrand"></b><button class="btn" type="button" onclick="print()">تنزيل PDF أو طباعة</button></div>
+<main class="wrap" id="app"><div class="center"><p>جاري تحميل العقد…</p></div></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+const N = v => Number(v) || 0;
+const jd = n => (Math.round(N(n) * 1000) / 1000).toLocaleString('en-US') + ' د.أ';
+const dt = t => t ? new Date(t).toLocaleString('en-GB', {timeZone: 'Asia/Amman', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'}) : '';
+const day = t => t ? String(t).slice(0, 10) : '';
+const qs = new URLSearchParams(location.search), tok = qs.get('c') || '';
+const cfg = window.SABER_CONFIG || {};
+let sb, C;
+
+function pad(cv) {
+  const ctx = cv.getContext('2d'); let down = false, last = null, empty = true;
+  const fit = () => { const r = cv.getBoundingClientRect(), d = window.devicePixelRatio || 1; cv.width = r.width * d; cv.height = r.height * d; ctx.setTransform(d, 0, 0, d, 0, 0); ctx.lineWidth = 2.6; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#141a4d'; empty = true; };
+  fit(); addEventListener('resize', () => { if (empty) fit(); });
+  const pt = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  cv.addEventListener('pointerdown', e => { down = true; last = pt(e); cv.setPointerCapture?.(e.pointerId); e.preventDefault(); });
+  cv.addEventListener('pointermove', e => { if (!down) return; const p = pt(e); ctx.beginPath(); ctx.moveTo(...last); ctx.lineTo(...p); ctx.stroke(); last = p; empty = false; e.preventDefault(); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => cv.addEventListener(ev, () => { down = false; }));
+  return {clear: () => { ctx.clearRect(0, 0, cv.width, cv.height); empty = true; }, empty: () => empty, data: () => cv.toDataURL('image/png')};
+}
+
+function vatRows(c, base) {
+  const vr = N(c.vat_rate) / 100;
+  if (c.vat_mode === 'excl') return `<div><span>ضريبة المبيعات ${N(c.vat_rate)}%</span><b>${jd(base * vr)}</b></div><div class="tot"><span>المجموع مع الضريبة (أول شهر)</span><b>${jd(base * (1 + vr))}</b></div>`;
+  if (c.vat_mode === 'incl') return `<div class="tot"><span>المجموع (شامل ضريبة ${N(c.vat_rate)}%)</span><b>${jd(base)}</b></div>`;
+  if (c.vat_mode === 'exempt') return `<div class="tot"><span>المجموع (معفي من الضريبة)</span><b>${jd(base)}</b></div>`;
+  return `<div class="tot"><span>المجموع (أول شهر)</span><b>${jd(base)}</b></div>`;
+}
+
+function render() {
+  const c = C, a = c.agency || {}, p = c.party || {}, net = N(c.fees_monthly) - N(c.discount), base = net + N(c.one_time);
+  const agencyName = a.legal_name || c.brand;
+  document.title = 'عقد #' + c.no + ' · ' + (p.company || '');
+  $('#bBrand').textContent = c.brand;
+  const st = {'موقّع': ['موقّع ✓', 'good'], 'مرسل': ['بانتظار توقيعك', ''], 'منتهي': ['انتهت مدة التوقيع', 'bad'], 'ملغي': ['ملغي', 'bad'], 'مسودة': ['مسودة', '']}[c.status] || [c.status, ''];
+  const banner = c.status === 'مسودة' ? '<div class="banner warn">هاي مسودة للمعاينة، لسا مش جاهزة للتوقيع.</div>'
+    : c.status === 'منتهي' ? '<div class="banner bad">انتهت مدة التوقيع (7 أيام). تواصل معنا نجددلك العقد.</div>'
+    : c.status === 'ملغي' ? '<div class="banner bad">هالعقد ملغي.</div>'
+    : c.status === 'مرسل' ? `<div class="banner warn noprint">اقرأ العقد، وبآخر الصفحة وقّع بإصبعك. آخر يوم للتوقيع: <b>${esc(c.sign_deadline)}</b></div>`
+    : `<div class="banner good">العقد موقّع من الطرفين بتاريخ ${esc(dt(c.signed_at))}</div>`;
+  const items = c.items || [];
+  $('#app').innerHTML = `<article class="sheet">
+    <header class="lh"><div class="who">${c.logo ? `<img src="${esc(c.logo)}" alt="${esc(c.brand)}">` : ''}<div><b>${esc(c.brand)}</b>${a.legal_name && a.legal_name !== c.brand ? `<small>${esc(a.legal_name)}</small>` : ''}</div></div>
+      <div class="meta">${[a.cr_no ? 'سجل تجاري: ' + esc(a.cr_no) : '', a.tax_no ? 'الرقم الضريبي: ' + esc(a.tax_no) : '', a.address ? esc(a.address) : '', a.phone ? '<span dir="ltr">' + esc(a.phone) + '</span>' : '', a.email ? esc(a.email) : ''].filter(Boolean).join('<br>')}</div></header>
+    <div class="body">
+      <div class="ttl"><div><h1>${esc(c.title || 'عقد تقديم خدمات تسويق رقمي')}</h1><p>رقم العقد #${c.no}${c.quote_no ? ' · مبني على عرض السعر #' + c.quote_no : ''} · تاريخ الإصدار ${esc(day(c.sent_at || c.created_at))}</p></div><span class="stamp ${st[1]}">${st[0]}</span></div>
+      ${banner}
+      <div class="parties">
+        <div class="party"><h3>الطرف الأول (مقدّم الخدمة)</h3><div><span>الاسم</span><b>${esc(agencyName)}</b></div>${a.cr_no ? `<div><span>السجل التجاري</span>${esc(a.cr_no)}</div>` : ''}${a.address ? `<div><span>العنوان</span>${esc(a.address)}</div>` : ''}${c.agency_signer ? `<div><span>يمثّله</span>${esc(c.agency_signer)}${c.agency_signer_title ? '، ' + esc(c.agency_signer_title) : ''}</div>` : ''}${a.phone ? `<div><span>الهاتف</span><span dir="ltr" style="min-width:0;color:inherit">${esc(a.phone)}</span></div>` : ''}</div>
+        <div class="party"><h3>الطرف الثاني (العميل)</h3><div><span>الاسم</span><b>${esc(p.company || '')}</b></div>${p.cr_no ? `<div><span>السجل التجاري</span>${esc(p.cr_no)}</div>` : ''}${p.address ? `<div><span>العنوان</span>${esc(p.address)}</div>` : ''}${p.contact ? `<div><span>يمثّله</span>${esc(p.contact)}${p.signer_title ? '، ' + esc(p.signer_title) : ''}</div>` : ''}${p.phone ? `<div><span>الهاتف</span><span dir="ltr" style="min-width:0;color:inherit">${esc(p.phone)}</span></div>` : ''}${p.email ? `<div><span>الإيميل</span>${esc(p.email)}</div>` : ''}</div>
+      </div>
+      <p>اتفق الطرفان، وهما بكامل الأهلية القانونية للتعاقد، على أن يقدّم الطرف الأول للطرف الثاني الخدمات التالية حسب البنود المذكورة بهالعقد:</p>
+      <h2 class="sec">الخدمات والأسعار</h2>
+      <table><thead><tr><th>الخدمة</th><th class="n">الكمية</th><th class="n">شهري</th><th class="n">مرة وحدة</th></tr></thead><tbody>
+      ${items.map(i => `<tr><td>${esc(i.name)}${i.includes ? `<br><small style="color:var(--muted)">${esc(i.includes)}</small>` : ''}</td><td class="n">${N(i.qty) || 1}</td><td class="n">${N(i.monthly) ? jd(i.monthly) : '—'}</td><td class="n">${N(i.one_time) ? jd(i.one_time) : '—'}</td></tr>`).join('')}</tbody></table>
+      <div class="sum"><div><span>الأتعاب الشهرية</span><b>${jd(c.fees_monthly)}</b></div>${N(c.discount) ? `<div class="g"><span>خصم${N(c.discount_pct) ? ' ' + N(c.discount_pct) + '%' : ''}</span><b>−${jd(c.discount)}</b></div><div><span>الأتعاب الشهرية بعد الخصم</span><b>${jd(net)}</b></div>` : ''}
+        ${N(c.one_time) ? `<div><span>رسوم لمرة وحدة</span><b>${jd(c.one_time)}</b></div>` : ''}${vatRows(c, base)}
+        ${N(c.ad_budget) ? `<div style="color:var(--muted);font-size:13px"><span>ميزانية الإعلانات المقترحة (بتندفع للمنصات مباشرة)</span><b>${jd(c.ad_budget)}</b></div>` : ''}</div>
+      ${(c.gifts || []).length ? `<div class="gifts"><b>🎁 هدايا مجانية ضمن العقد</b>${c.gifts.map(g => `<div><span>${esc(g.name)}</span><b>${N(g.value) ? '<s style="color:var(--muted);font-weight:400">' + jd(g.value) + '</s> ' : ''}مجاناً</b></div>`).join('')}</div>` : ''}
+      ${c.scope ? `<h2 class="sec">شو رح نقدّم</h2><ul class="chk">${String(c.scope).split('\n').map(x => x.trim()).filter(Boolean).map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+      <h2 class="sec">بنود العقد</h2>
+      <ol class="cl">${(c.clauses || []).map(x => `<li><h3>${esc(x.h)}</h3><p>${esc(x.t)}</p></li>`).join('')}</ol>
+      ${(c.plan || []).length ? `<h2 class="sec">ملحق: خطة أول 3 شهور</h2><div class="plan">${c.plan.map(m => `<div><b>${esc(m.title)}</b><ul>${(m.points || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`).join('')}</div>` : ''}
+      <h2 class="sec">التوقيع</h2>
+      <div class="sigs">
+        <div class="sigbox"><h3>الطرف الأول</h3>${c.agency_signature ? `<img src="${esc(c.agency_signature)}" alt="توقيع الطرف الأول">` : '<div class="wait">—</div>'}<b>${esc(c.agency_signer || agencyName)}</b>${c.agency_signer_title ? `<small>${esc(c.agency_signer_title)}</small>` : ''}${c.agency_signed_at ? `<small>${esc(dt(c.agency_signed_at))}</small>` : ''}</div>
+        <div class="sigbox"><h3>الطرف الثاني</h3>${c.signature ? `<img src="${esc(c.signature)}" alt="توقيع الطرف الثاني"><b>${esc(c.signer_name)}</b>${c.signer_title ? `<small>${esc(c.signer_title)}</small>` : ''}<small>${esc(dt(c.signed_at))}</small>` : `<div class="wait">بانتظار التوقيع</div><b>${esc(p.contact || p.company || '')}</b>`}</div>
+      </div>
+      ${c.status === 'موقّع' ? `<p class="audit">تم توقيع هالعقد إلكترونياً من ${esc(c.signer_name)}${c.signer_phone ? ' (هاتف <span dir="ltr">' + esc(c.signer_phone) + '</span>)' : ''} بتاريخ ${esc(dt(c.signed_at))} بتوقيت عمّان، حسب قانون المعاملات الإلكترونية الأردني رقم 15 لسنة 2015 وتعديلاته. بصمة نص العقد وقت التوقيع (SHA-256):<code>${esc(c.sign_hash || '')}</code></p>` : ''}
+    </div>
+    <footer class="lf">${[c.brand, a.address, a.phone ? '<span dir="ltr">' + esc(a.phone) + '</span>' : '', a.email, a.website].filter(Boolean).map(x => String(x).startsWith('<span') ? x : esc(x)).join(' · ')}</footer>
+  </article>
+  ${c.status === 'مرسل' ? `<form class="signf noprint" id="sf" novalidate><h2>✍️ وقّع العقد</h2><p style="margin:4px 0 0;color:var(--muted)">عبّي بياناتك وارسم توقيعك بالمربع (بإصبعك أو بالماوس).</p>
+    <div class="grid"><label class="fld"><span>اسمك الكامل</span><input id="sName" autocomplete="name" value="${esc(p.contact || '')}" required></label><label class="fld"><span>صفتك</span><input id="sTitle" placeholder="المالك، المدير..." value="${esc(p.signer_title || '')}"></label>
+      <label class="fld"><span>رقم هاتفك</span><input id="sPhone" inputmode="tel" dir="ltr" autocomplete="tel" value="${esc(p.phone || '')}"></label><label class="fld"><span>رقم السجل التجاري (اختياري)</span><input id="sCr" value="${esc(p.cr_no || '')}"></label>
+      <label class="fld wide"><span>العنوان (اختياري)</span><input id="sAddr" value="${esc(p.address || '')}"></label></div>
+    <div class="fld" style="margin-top:12px"><span>التوقيع</span><canvas class="pad" id="pad" aria-label="مربع التوقيع"></canvas></div>
+    <button type="button" class="btn" id="padClear" style="margin-top:8px">امسح التوقيع</button>
+    <label class="ck"><input type="checkbox" id="sAgree"><span>قرأت العقد كامل وموافق على كل بنوده، وبقرّ إن توقيعي الإلكتروني ملزم وإله نفس أثر التوقيع بخط إيدي.</span></label>
+    <button class="btn ok" id="sGo" type="submit" style="width:100%;font-size:17px">وقّع العقد</button><p class="err" id="sErr" role="alert"></p></form>` : ''}
+  ${c.status === 'موقّع' ? '<div class="noprint" style="text-align:center;margin-top:16px"><button class="btn pri" type="button" onclick="print()">تنزيل نسخة PDF</button></div>' : ''}`;
+  if (c.status === 'مرسل') {
+    const P = pad($('#pad'));
+    $('#padClear').onclick = () => P.clear();
+    $('#sf').onsubmit = async e => {
+      e.preventDefault(); const err = m => { $('#sErr').textContent = m; };
+      const name = $('#sName').value.trim();
+      if (name.length < 3) return err('اكتب اسمك الكامل');
+      if (P.empty()) return err('ارسم توقيعك بالمربع');
+      if (!$('#sAgree').checked) return err('لازم توافق على بنود العقد');
+      const b = $('#sGo'); b.disabled = true; b.textContent = 'جاري التوقيع…'; err('');
+      const {error} = await sb.rpc('contract_sign', {tok, p: {name, title: $('#sTitle').value.trim(), phone: $('#sPhone').value.trim(), cr_no: $('#sCr').value.trim(), address: $('#sAddr').value.trim(), signature: P.data(), agree: true, ua: navigator.userAgent}});
+      if (error) { b.disabled = false; b.textContent = 'وقّع العقد'; return err(String(error.message || 'صار خطأ، جرّب مرة ثانية').replace(/^.*?: /, '')); }
+      await load(); scrollTo(0, 0);
+    };
+  }
+}
+
+async function load() {
+  const {data, error} = await sb.rpc('contract_public', {tok});
+  if (error || !data) { $('#app').innerHTML = '<div class="center"><div><h2>الرابط مش صحيح</h2><p style="color:var(--muted)">تأكد إنك فتحت الرابط كامل، أو تواصل معنا.</p></div></div>'; return false; }
+  C = data; render(); return true;
+}
+
+(async () => {
+  if (!cfg.url || !cfg.key || !window.supabase?.createClient || tok.length < 30) { $('#app').innerHTML = '<div class="center"><div><h2>الرابط مش صحيح</h2></div></div>'; return; }
+  sb = window.supabase.createClient(cfg.url, cfg.key, {auth: {persistSession: false}});
+  if (await load() && qs.get('print')) setTimeout(() => print(), 900);
+})();
+})();
+</script>
+</body>
+</html>

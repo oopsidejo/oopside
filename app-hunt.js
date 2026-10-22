@@ -77,7 +77,7 @@ function card(p) {
     <textarea class="hmsg" rows="5" style="width:100%" placeholder="اضغط ✨ عشان يكتب رسالة مخصصة، أو اكتبها بإيدك">${esc(p.msg || '')}</textarea>
     <div class="row" style="gap:4px;margin-top:6px"><button class="btn sm" data-act="hTplOne" data-id="${p.id}">📝 قالب</button><button class="btn sm" data-act="hMsgOne" data-id="${p.id}">✨ اكتب</button>
       ${p.wa ? `<button class="btn sm pri" data-act="hWa" data-id="${p.id}">واتساب</button>` : ''}${ST.hCfg?.image ? `<button class="btn sm" data-act="hImg">انسخ الصورة</button>` : ''}
-      ${p.phone ? `<a class="btn sm ghost" href="tel:${esc(p.phone.replace(/\s/g, ''))}">اتصل</a>` : ''}${p.lead_id ? pill('بالعملاء المحتملين', 'good') : `<button class="btn sm ghost" data-act="hLead" data-id="${p.id}">← عميل محتمل</button>`}</div></div>`;
+      ${p.phone ? `<a class="btn sm ghost" href="tel:${esc(p.phone.replace(/\s/g, ''))}">اتصل</a>` : ''}${p.lead_id ? `<button class="btn sm" data-act="leadQuote" data-id="${p.lead_id}">عرض سعر</button>` : `<button class="btn sm ghost" data-act="hLead" data-id="${p.id}">← عميل محتمل</button>`}</div></div>`;
 }
 
 async function shrinkImg(file) {

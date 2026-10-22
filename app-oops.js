@@ -16,11 +16,12 @@ const siteUrl = () => { let u = String(ST.oSite?.config?.site_url || '').trim().
   return u; };
 const storeLandingBase = () => location.href.split(/[?#]/)[0].replace(/[^/]*$/, '') + 'p.html';
 const quoteUrl = tok => siteUrl() + '?q=' + tok;
+K.quoteUrl = quoteUrl;
 const margin = (rev, cost) => rev > 0 ? (rev - cost) / rev : null;
 const sel = (id, list, cur, attrs = '') => `<select id="${id}" class="inl" ${attrs}>${list.map(([v, l]) => `<option value="${esc(v)}" ${String(v) === String(cur ?? '') ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
 
-Object.assign(ACT_SEC, {qSave: 'leads', qSend: 'leads', qAdd: 'leads', qDel: 'leads', qMark: 'leads', svcForm: 'oops', svcPub: 'oops', siteSave: 'oops', siteLive: 'oops',
-  probAdd: 'oops', probDel: 'oops', benchForm: 'oops', benchUse: 'oops', logoDel: 'settings', trackSave: 'settings'});
+Object.assign(ACT_SEC, {qUnlock: 'leads', qLock: 'leads', qSaveSync: 'leads', qGiftAdd: 'leads', qGiftDel: 'leads', qPlanBuild: 'leads', ctFromQuote: 'leads', qSave: 'leads', qSend: 'leads', qSendWa: 'leads', leadQuote: 'leads', qAdd: 'leads', qDel: 'leads', qMark: 'leads', svcForm: 'oops', svcPub: 'oops', siteSave: 'oops', siteLive: 'oops',
+  probAdd: 'oops', probDel: 'oops', testAdd: 'oops', testDel: 'oops', caseAdd: 'oops', caseDel: 'oops', profSave: 'oops', benchForm: 'oops', benchUse: 'oops', logoDel: 'settings', trackSave: 'settings'});
 
 async function loadSite() { try { ST.oSite = (await db.q('oops_site', {eq: {id: 1}}))[0] || {config: {}}; } catch (e) { ST.oSite = {config: {}}; } return ST.oSite; }
 const probLabel = k => (ST.oSite?.config?.problems || []).find(p => p.k === k)?.l || k;
@@ -67,13 +68,17 @@ V.oreqd = async () => {
   const [[r], site, svcs] = await Promise.all([db.q('oops_requests', {eq: {id: ui.oreqId}}), loadSite(), db.q('services', {eq: {active: true}, order: ['sort', true]})]);
   if (!r) return head('طلب من الموقع', '') + '<p class="note">الطلب مش موجود.</p><div class="row"><button class="btn" data-act="go" data-id="oreq">رجوع للطلبات</button></div>';
   ST.oSvcs = svcs; ui.oreqCur = r;
-  if (ui.qFor !== r.id || ui.qDirtyFor !== r.id) { ui.qFor = r.id; ui.qDirtyFor = r.id; ui.qL = (r.items || []).map(x => ({...x})); ui.qD = {discount: N(r.discount), valid_until: r.valid_until || addDays(today(), 14), terms: r.terms || site.config?.terms || '', notes: r.notes || '', ad_budget: N(r.ad_budget)}; }
+  if (ui.qFor !== r.id || ui.qDirtyFor !== r.id) { ui.qFor = r.id; ui.qDirtyFor = r.id; ui.qL = (r.items || []).map(x => ({...x})); ui.qD = {discount: N(r.discount), discount_pct: N(r.discount_pct), vat_mode: r.vat_mode || 'excl', vat_rate: r.vat_rate == null ? 16 : N(r.vat_rate), title: r.title || '', scope: r.scope || '', valid_until: r.valid_until || addDays(today(), 14), terms: r.terms || site.config?.terms || '', notes: r.notes || '', ad_budget: N(r.ad_budget), suggestions: r.suggestions || '', gifts: (r.gifts || []).map(g => ({...g})), plan: (r.plan || []).map(m => ({title: m.title || '', points: [...(m.points || [])]})), planEdited: !!(r.plan || []).length}; }
+  if (!ui.qD.plan.length && ui.qL.length) ui.qD.plan = buildPlan();
   const d = r.data || {}, a = d.answers || {}, u = r.utm || {};
   const kv = (l, v) => v ? `<div class="kv"><span>${l}</span><b>${v}</b></div>` : '';
-  const locked = ['مقبول','مرفوض'].includes(r.status);
-  return head(`طلب #${r.no} · ${esc(r.company)}`, `وصل ${fmtDT(r.created_at)}. ${r.status === 'عرض مرسل' ? (r.viewed_at ? 'العميل فتح العرض ' + fmtDT(r.viewed_at) : 'العميل لسا ما فتح العرض') : ''}`,
+  const locked = ['مقبول','مرفوض'].includes(r.status) && !(ui.qUnlock || {})[r.id];
+  let ct = null; try { [ct] = await db.q('contracts', {eq: {request_id: r.id}, in: {status: ['مسودة','مرسل','موقّع','منتهي']}, order: ['created_at', false], limit: 1, select: 'id,no,status'}); } catch (e) {}
+  return head(`${r.data?.source === 'lead' ? 'عرض سعر' : 'طلب'} #${r.no} · ${esc(r.company)}`, `وصل ${fmtDT(r.created_at)}. ${r.status === 'عرض مرسل' ? (r.viewed_at ? 'العميل فتح العرض ' + fmtDT(r.viewed_at) : 'العميل لسا ما فتح العرض') : ''}`,
       `<button class="btn" data-act="go" data-id="oreq">رجوع</button><button class="btn" data-act="oCopyQuote" data-id="${esc(r.token)}">انسخ رابط العميل</button><a class="btn" href="${esc(quoteUrl(r.token))}" target="_blank" rel="noopener">شوف اللي بيشوفه العميل</a>${r.lead_id ? '<button class="btn" data-act="go" data-id="leads">العملاء المحتملين</button>' : ''}`) +
-    `<div class="row">${pill(r.status, RS_CLS[r.status])}${r.answer_note ? `<span class="note" style="margin:0">رد العميل: <b>${esc(r.answer_note)}</b></span>` : ''}</div>
+    `${['مقبول','مرفوض'].includes(r.status) && can('leads', 'edit') ? (locked ? `<p class="warnbar">العرض ${esc(r.status)} ومقفول. بدك تغيّر سعر أو خدمة قبل العقد؟ <button class="btn sm" data-act="qUnlock" data-id="${r.id}">عدّل العرض</button></p>` : '<p class="warnbar">عم تعدّل عرض ' + esc(r.status) + '. بعد الحفظ حدّث العقد من زر "احفظ وحدّث العقد" تحت.</p>') : ''}
+    ${ct ? `<p class="note">${ct.status === 'موقّع' ? `العقد #${ct.no} موقّع. تعديل العرض ما بيغيّر العقد الموقّع.` : `في عقد #${ct.no} (${esc(ct.status)}) مربوط بهالعرض. إذا عدّلت العرض اضغط "احفظ وحدّث العقد".`} <button class="lnk" data-act="ctOpen" data-id="${ct.id}">افتح العقد</button></p>` : ''}
+    <div class="row">${pill(r.status, RS_CLS[r.status])}${r.answer_note ? `<span class="note" style="margin:0">رد العميل: <b>${esc(r.answer_note)}</b></span>` : ''}</div>
     <div class="cols reqinfo"><div class="card"><h2>عن الشركة</h2>${kv('المسؤول', esc(r.contact || ''))}${kv('الهاتف', `<a href="tel:${esc(r.phone)}">${esc(r.phone)}</a> <a href="https://wa.me/${esc(String(r.phone).replace(/\D/g, '').replace(/^0(7)/, '962$1'))}" target="_blank" rel="noopener">واتساب</a>${r.verified_via ? ' ' + pill('مؤكد ' + r.verified_via, 'good') : ''}`)}${kv('الإيميل', r.email ? `<a href="mailto:${esc(r.email)}">${esc(r.email)}</a>` : '')}
       ${kv('شو بيبيع', esc(d.about || ''))}${kv('القطاع', esc(r.sector || ''))}${kv('المدينة', esc(d.city || ''))}${kv('الشركة', esc(d.stage || ''))}${kv('شركة تسويق؟', esc(d.agency_now || ''))}${kv('الصفحة أو الموقع', d.website ? `<a href="${esc(/^https?:/.test(d.website) ? d.website : 'https://' + d.website)}" target="_blank" rel="noopener nofollow">${esc(d.website)}</a>` : '')}
       ${kv('موافق على عروض', d.marketing_ok ? 'نعم' : '')}${kv('المصدر', esc([u.utm_source || u.ref, u.utm_campaign, u.utm_content].filter(Boolean).join(' · ')))}</div>
@@ -86,35 +91,87 @@ V.oreqd = async () => {
         <td><input class="inl" style="width:90px" type="number" step="any" data-ql="${i}" data-k="monthly" value="${N(l.monthly)}" aria-label="شهري" ${locked ? 'disabled' : ''}>${l.quote ? '<br><small class="neg">لازم تسعير</small>' : ''}</td><td><input class="inl" style="width:90px" type="number" step="any" data-ql="${i}" data-k="one_time" value="${N(l.one_time)}" aria-label="مرة وحدة" ${locked ? 'disabled' : ''}>${N(l.waived) ? `<br><small class="pos">إعداد ${jd(l.waived)} مجاناً</small>` : ''}</td>
         <td><input class="inl" style="width:90px" type="number" step="any" data-ql="${i}" data-k="cost" value="${N(l.cost)}" aria-label="التكلفة" ${locked ? 'disabled' : ''}></td><td><input class="inl" data-ql="${i}" data-k="note" value="${esc(l.note || '')}" aria-label="ملاحظة" ${locked ? 'disabled' : ''}></td>
         <td>${locked ? '' : `<button class="btn sm ghost" data-act="qDel" data-id="${i}" aria-label="حذف">✕</button>`}</td></tr>`).join('') || '<tr><td colspan="7" class="empty">ما في بنود</td></tr>'}</tbody></table></div>
-      <div class="fgrid" style="margin-top:12px"><label class="fld" for="qd_discount"><span>خصم شهري (د.أ)</span><input id="qd_discount" data-qd="discount" type="number" step="any" min="0" value="${ui.qD.discount}" ${locked ? 'disabled' : ''}></label>
+      <div class="fgrid" style="margin-top:12px"><label class="fld wide" for="qd_title"><span>عنوان العرض</span><input id="qd_title" data-qd="title" value="${esc(ui.qD.title)}" placeholder="عرض خدمات تسويق لـ ${esc(r.company)}" ${locked ? 'disabled' : ''}></label>
+        <label class="fld wide" for="qd_scope"><span>شو رح نقدملك (كل بند بسطر)</span><textarea id="qd_scope" data-qd="scope" rows="4" placeholder="إدارة إعلانات فيسبوك وإنستغرام يومياً&#10;12 تصميم بالشهر&#10;تقرير أسبوعي بالأرقام" ${locked ? 'disabled' : ''}>${esc(ui.qD.scope)}</textarea></label>
+        <label class="fld" for="qd_pct"><span>نسبة الخصم %</span><input id="qd_pct" data-qd="discount_pct" type="number" step="any" min="0" max="100" value="${ui.qD.discount_pct}" ${locked ? 'disabled' : ''}></label>
+        <label class="fld" for="qd_vat"><span>الضريبة</span><select id="qd_vat" data-qd="vat_mode" ${locked ? 'disabled' : ''}>${[['excl', 'الأسعار غير شاملة الضريبة'], ['incl', 'الأسعار شاملة الضريبة'], ['exempt', 'معفي من الضريبة'], ['none', 'بدون ذكر الضريبة']].map(([v, l]) => `<option value="${v}" ${ui.qD.vat_mode === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+        <label class="fld" for="qd_vatr"><span>نسبة الضريبة %</span><input id="qd_vatr" data-qd="vat_rate" type="number" step="any" min="0" value="${ui.qD.vat_rate}" ${locked ? 'disabled' : ''}></label>
+        <label class="fld" for="qd_discount"><span>خصم بالمبلغ (د.أ، إذا ما في نسبة)</span><input id="qd_discount" data-qd="discount" type="number" step="any" min="0" value="${ui.qD.discount}" ${locked ? 'disabled' : ''}></label>
         <label class="fld" for="qd_ad"><span>ميزانية الإعلانات المقترحة</span><input id="qd_ad" data-qd="ad_budget" type="number" step="any" min="0" value="${ui.qD.ad_budget}" ${locked ? 'disabled' : ''}></label>
-        <label class="fld" for="qd_valid"><span>العرض صالح لـ</span><input id="qd_valid" data-qd="valid_until" type="date" value="${esc(ui.qD.valid_until || '')}" ${locked ? 'disabled' : ''}></label>
+        <div class="fld"><span>مدة توقيع العقد</span><b style="padding:8px 0">${r.sent_at ? '7 أيام، لحد ' + esc(r.valid_until || '') : '7 أيام من تاريخ الإرسال'}</b></div>
         <label class="fld wide" for="qd_notes"><span>رسالة للعميل فوق العرض</span><textarea id="qd_notes" data-qd="notes" rows="2" ${locked ? 'disabled' : ''}>${esc(ui.qD.notes)}</textarea></label>
         <label class="fld wide" for="qd_terms"><span>الشروط</span><textarea id="qd_terms" data-qd="terms" rows="3" ${locked ? 'disabled' : ''}>${esc(ui.qD.terms)}</textarea></label></div>
+      <div class="qx">
+        <div class="qxbox"><div class="head" style="margin:0 0 8px"><h3>🎁 هدايا مجانية</h3>${locked ? '' : '<button class="btn sm" data-act="qGiftAdd">+ هدية</button>'}</div>
+          ${ui.qD.gifts.map((g, i) => `<div class="row" style="margin:0 0 6px;flex-wrap:nowrap"><input class="inl" style="flex:1" data-qg="${i}" data-k="name" value="${esc(g.name)}" aria-label="الهدية" placeholder="مثلاً: تصميم 4 بوستات مجاناً" ${locked ? 'disabled' : ''}><input class="inl" style="width:90px" type="number" step="any" min="0" data-qg="${i}" data-k="value" value="${N(g.value)}" aria-label="قيمتها" title="قيمتها بالدينار" ${locked ? 'disabled' : ''}>${locked ? '' : `<button class="btn sm ghost" data-act="qGiftDel" data-id="${i}" aria-label="حذف">✕</button>`}</div>`).join('') || '<p class="m">ما في هدايا. الهدية بتطلع للعميل بقيمتها وجنبها "مجاناً".</p>'}
+          ${ui.qD.gifts.length ? `<small class="m">قيمة الهدايا: ${jd(sum(ui.qD.gifts, g => g.value))}</small>` : ''}</div>
+        <label class="fld wide qxbox" for="qd_sugg"><span><b>💡 اقتراحاتنا للعميل</b> (كل اقتراح بسطر)</span><textarea id="qd_sugg" data-qd="suggestions" rows="4" placeholder="ابدأ بإعلانات الرسائل بدل المتابعين&#10;صوّر فيديو قصير للمنتج وهو بيستخدم&#10;رد على الرسائل خلال 5 دقائق" ${locked ? 'disabled' : ''}>${esc(ui.qD.suggestions)}</textarea></label>
+        <div class="qxbox wide"><div class="head" style="margin:0 0 8px"><h3>🗓️ خطة 3 شهور</h3>${locked ? '' : '<button class="btn sm" data-act="qPlanBuild">ابنيها من جديد من الخدمات</button>'}</div>
+          <p class="m" style="margin:0 0 8px">بتنبني لحالها من الخدمات اللي اخترتها. بتقدر تعدّل أي سطر.</p>
+          <div class="qplan">${ui.qD.plan.map((m, i) => `<div class="qpm"><input class="inl" data-qp="${i}" data-k="title" value="${esc(m.title)}" aria-label="عنوان الشهر ${i + 1}" ${locked ? 'disabled' : ''}><textarea class="inl" rows="6" data-qp="${i}" data-k="points" aria-label="خطة الشهر ${i + 1}" ${locked ? 'disabled' : ''}>${esc((m.points || []).join('\n'))}</textarea></div>`).join('') || '<p class="m">ضيف خدمات وبتطلع الخطة.</p>'}</div></div>
+      </div>
       <div id="qSum" style="margin-top:12px">${qSum()}</div>
-      ${locked ? '' : `<div class="row" style="margin-top:12px"><button class="btn" data-act="qSave">حفظ مسودة</button><button class="btn pri" data-act="qSend">حفظ وإرسال للعميل</button>${r.status === 'عرض مرسل' ? '<button class="btn ghost" data-act="qMark" data-id="مقبول">وافق بالتلفون</button><button class="btn ghost" data-act="qMark" data-id="مرفوض">رفض</button>' : ''}</div>`}
+      ${!locked && ['مقبول','مرفوض'].includes(r.status) ? `<div class="row" style="margin-top:12px"><button class="btn pri" data-act="qSave">حفظ التعديل</button>${ct && ct.status !== 'موقّع' ? `<button class="btn pri" data-act="qSaveSync" data-id="${ct.id}">احفظ وحدّث العقد</button>` : ''}<button class="btn ghost" data-act="qLock" data-id="${r.id}">خلص، اقفل</button></div>` : ''}
+      ${locked || ['مقبول','مرفوض'].includes(r.status) ? '' : `<div class="row" style="margin-top:12px"><button class="btn" data-act="qSave">حفظ مسودة</button><button class="btn pri" data-act="qSend">حفظ وإرسال للعميل</button><button class="btn pri" data-act="qSendWa" style="background:#1e8c63;border-color:#1e8c63">إرسال واتساب</button>${ct && ct.status !== 'موقّع' ? `<button class="btn" data-act="qSaveSync" data-id="${ct.id}">احفظ وحدّث العقد</button>` : ''}${r.status === 'عرض مرسل' ? '<button class="btn ghost" data-act="qMark" data-id="مقبول">وافق بالتلفون</button><button class="btn ghost" data-act="qMark" data-id="مرفوض">رفض</button>' : ''}</div>`}
+      ${['عرض مرسل','مقبول'].includes(r.status) && can('leads', 'edit') ? `<div class="row" style="margin-top:10px"><button class="btn pri" data-act="ctFromQuote" data-id="${r.id}">📝 اعمل عقد من هالعرض</button><span class="m">العميل لازم يوقّع خلال 7 أيام من تاريخ العرض</span></div>` : ''}
       <p class="note" style="margin-top:10px">التكلفة الداخلية والهامش ما بيطلعوا للعميل. ميزانية الإعلانات مش من دخل الوكالة.</p></div>
     <details class="card"><summary><b>طلب العميل الأصلي (نسخة ثابتة وقت الإرسال)</b></summary>${table([{h:'الخدمة', f:x => esc(x.name)}, {h:'الكمية', f:x => x.ptype === 'team' ? x.qty + ' موظفة · ' + (x.opts?.hours || '') + ' س × ' + (x.opts?.days || '') + ' أيام · ' + esc((x.opts?.channels || []).join('، ')) : x.qty}, {h:'شهري', f:x => x.quote ? 'بعد جلسة' : jd(x.monthly)}, {h:'مرة وحدة', f:x => jd(x.one_time)}, {h:'تكلفتنا', f:x => jd(x.cost)}], r.request_items || [])}</details>`;
 };
+/* خطة 3 شهور بتنبني من الخدمات المختارة */
+function buildPlan() {
+  const L = ui.qL || [], has = re => L.some(l => re.test((l.name || '') + ' ' + (l.category || '')));
+  const plat = [['فيسبوك وإنستغرام', /فيسبوك|إنستغرام|انستغرام|ميتا|meta/i], ['تيك توك', /تيك ?توك|tiktok/i], ['جوجل', /جوجل|google|يوتيوب/i], ['سناب شات', /سناب/i], ['X', /\bX\b|تويتر/i], ['لينكدإن', /لينكد/i]].filter(([, re]) => has(re)).map(([n]) => n);
+  const ads = has(/إعلان|حملات|ممول/) || plat.length, design = L.find(l => /تصميم|بوست|منشور/.test(l.name || '')), video = L.find(l => /فيديو|ريلز|موشن/.test(l.name || ''));
+  const social = has(/إدارة صفحات|إدارة صفحة|سوشال/), team = has(/فريق الرد|الرد على/), pixel = has(/بكسل|تتبع/), landing = has(/صفحة هبوط|موقع/), crm = has(/CRM|متابعة الزبائن/), report = has(/تقرير/);
+  const one = L.filter(l => N(l.one_time) > 0).map(l => l.name);
+  const pf = plat.length ? plat.join(' و') : 'المنصات المناسبة';
+  const m1 = ['جلسة تعارف: الأهداف، الزبون المستهدف، المنافسين والأسعار'];
+  if (one.length) m1.push('تسليم: ' + one.slice(0, 4).join('، '));
+  if (pixel || ads) m1.push('تجهيز الحسابات الإعلانية والبكسل وتتبع الطلبات');
+  if (landing) m1.push('إطلاق صفحة الهبوط وربطها بالإعلانات');
+  if (design || video) m1.push('أول دفعة محتوى: ' + [design ? N(design.qty) + ' تصميم' : '', video ? N(video.qty) + ' فيديو' : ''].filter(Boolean).join(' و'));
+  if (ads) m1.push('إطلاق أول الحملات على ' + pf + ' واختبار 3 لـ 5 إعلانات وجماهير');
+  if (team) m1.push('تدريب فريق الرد على أسلوب البيع والردود الجاهزة');
+  m1.push('تقرير أول أسبوعين بالأرقام');
+  const m2 = [];
+  if (ads) m2.push('وقف الإعلانات الضعيفة وتحويل الميزانية على الأفضل', 'اختبار عروض ورسائل جديدة لتقليل تكلفة الطلب');
+  if (design || video || social) m2.push('محتوى الشهر حسب اللي نجح بالشهر الأول' + (video ? ' (فيديو أكثر)' : ''));
+  if (social) m2.push('نشر منتظم ورد على التعليقات');
+  if (crm) m2.push('تشغيل نظام متابعة الزبائن وربطه بالرسائل');
+  m2.push('مراجعة الرسائل والردود لرفع نسبة البيع', 'تقرير منتصف الشهر وآخره');
+  const m3 = [];
+  if (ads) m3.push('زيادة الميزانية تدريجياً على الحملات الرابحة', 'حملات إعادة استهداف للي تفاعلوا وما اشتروا');
+  if (plat.length && plat.length < 3) m3.push('تجربة منصة إضافية إذا الأرقام بتسمح');
+  if (design || video) m3.push('محتوى تجارب زبائن وقبل وبعد');
+  m3.push('مراجعة النتائج كاملة: الصرف، الطلبات، تكلفة الطلب', 'خطة الشهور الجاية والتوسّع (أسواق أو منتجات جديدة)');
+  if (report) m3.push('تقرير شهري مفهوم مع التوصيات');
+  return [{title: 'الشهر الأول: التأسيس والانطلاق', points: m1}, {title: 'الشهر الثاني: التحسين', points: m2}, {title: 'الشهر الثالث: التوسّع والنتائج', points: m3}];
+}
 function qSum() {
-  const fees = sum(ui.qL, l => l.monthly), one = sum(ui.qL, l => l.one_time), cost = sum(ui.qL, l => l.cost), disc = N(ui.qD.discount);
+  const fees = sum(ui.qL, l => l.monthly), one = sum(ui.qL, l => l.one_time), cost = sum(ui.qL, l => l.cost), disc = N(ui.qD.discount_pct) > 0 ? Math.round(fees * N(ui.qD.discount_pct) * 10) / 1000 : N(ui.qD.discount);
+  const vr = N(ui.qD.vat_rate) / 100, vm = ui.qD.vat_mode, base = fees - disc + one;
+  const vatTxt = vm === 'excl' ? `ضريبة ${N(ui.qD.vat_rate)}%: ${jd(base * vr)} · المجموع مع الضريبة ${jd(base * (1 + vr))}` : vm === 'incl' ? `الأسعار شاملة ضريبة ${N(ui.qD.vat_rate)}% (منها ${jd(base - base / (1 + vr))})` : vm === 'exempt' ? 'معفي من الضريبة' : '';
   const rev = fees - disc + one, g = margin(rev, cost), mm = N(ST.oSite?.config?.min_margin ?? 30) / 100;
   return `<div class="kpis">${kpi('أتعاب شهرية بعد الخصم', jd(fees - disc), disc ? 'قبل الخصم ' + jd(fees) : '', 'hl')}${kpi('رسوم لمرة وحدة', jd(one))}${kpi('تكلفتنا التقديرية', jd(cost))}
     ${kpi('الهامش', g == null ? '—' : pct(g), g != null && g < mm ? 'أقل من الحد (' + pct(mm) + ')' : 'الحد ' + pct(mm), g != null && g < mm ? 'red' : '')}${kpi('صرف العميل الشهري', jd(fees - disc + N(ui.qD.ad_budget)), 'مع الإعلانات')}</div>
-    ${disc && g != null ? `<p class="note" style="margin-top:6px">الخصم بيقلل ربحك ${jd(disc)} بالشهر.</p>` : ''}${ui.qL.some(l => l.quote && !N(l.monthly) && !N(l.one_time)) ? '<p class="warnbar" style="margin-top:8px">في بند "بعد جلسة" لسا بدون سعر. حطله سعر قبل الإرسال.</p>' : ''}`;
+    ${vatTxt ? `<p class="note" style="margin-top:6px">${vatTxt}</p>` : ''}${disc && g != null ? `<p class="note" style="margin-top:6px">الخصم${N(ui.qD.discount_pct) ? ' (' + N(ui.qD.discount_pct) + '%)' : ''} بيقلل ربحك ${jd(disc)} بالشهر.</p>` : ''}${ui.qL.some(l => l.quote && !N(l.monthly) && !N(l.one_time)) ? '<p class="warnbar" style="margin-top:8px">في بند "بعد جلسة" لسا بدون سعر. حطله سعر قبل الإرسال.</p>' : ''}`;
 }
 document.addEventListener('input', e => {
   const t = e.target;
   if (t.dataset.ql != null) { const l = ui.qL[N(t.dataset.ql)]; if (!l) return; const k = t.dataset.k; l[k] = ['qty','monthly','one_time','cost'].includes(k) ? N(t.value) : t.value; if (['monthly','one_time'].includes(k) && N(t.value)) l.quote = false; const s = $('#qSum'); if (s) s.innerHTML = qSum(); return; }
-  if (t.dataset.qd) { ui.qD[t.dataset.qd] = ['discount','ad_budget'].includes(t.dataset.qd) ? N(t.value) : t.value; const s = $('#qSum'); if (s) s.innerHTML = qSum(); }
+  if (t.dataset.qg != null && ui.qD) { const g = ui.qD.gifts[N(t.dataset.qg)]; if (g) g[t.dataset.k] = t.dataset.k === 'value' ? N(t.value) : t.value; return; }
+  if (t.dataset.qp != null && ui.qD) { const m = ui.qD.plan[N(t.dataset.qp)]; if (m) { if (t.dataset.k === 'points') m.points = t.value.split('\n'); else m.title = t.value; ui.qD.planEdited = true; } return; }
+  if (t.dataset.qd) { ui.qD[t.dataset.qd] = ['discount','ad_budget','discount_pct','vat_rate'].includes(t.dataset.qd) ? N(t.value) : t.value; const s = $('#qSum'); if (s) s.innerHTML = qSum(); }
 });
+document.addEventListener('change', e => { const t = e.target; if (t.dataset?.qd === 'vat_mode' && ui.qD) { ui.qD.vat_mode = t.value; const q = $('#qSum'); if (q) q.innerHTML = qSum(); } });
 async function qPersist(status) {
   const r = ui.oreqCur;
-  const saved = await db.rpc('oops_quote_save', {rid: r.id, p: {items: ui.qL, discount: N(ui.qD.discount), ad_budget: N(ui.qD.ad_budget), valid_until: ui.qD.valid_until || null, terms: ui.qD.terms, notes: ui.qD.notes, status}});
+  const saved = await db.rpc('oops_quote_save', {rid: r.id, p: {items: ui.qL, discount: N(ui.qD.discount), discount_pct: N(ui.qD.discount_pct), vat_mode: ui.qD.vat_mode, vat_rate: N(ui.qD.vat_rate), title: ui.qD.title, scope: ui.qD.scope, ad_budget: N(ui.qD.ad_budget), suggestions: ui.qD.suggestions, gifts: ui.qD.gifts.filter(g => (g.name || '').trim()), plan: ui.qD.plan.map(m => ({title: m.title, points: (m.points || []).map(x => String(x).trim()).filter(Boolean)})), terms: ui.qD.terms, notes: ui.qD.notes, status}});
   ui.qFor = null; return saved;
 }
 Object.assign(A, {
   oreqF: k => { ui.oreqF = k; K.render(); },
+  leadQuote: async id => { const rid = await db.rpc('quote_from_lead', {lid: id}); ui.oreqId = rid; ui.qFor = null; ui.view = 'oreqd'; K.render(); window.scrollTo?.(0, 0); },
   oreqOpen: id => { ui.oreqId = id; ui.qFor = null; ui.view = 'oreqd'; K.render(); window.scrollTo?.(0, 0); },
   oCopySite: () => copyText(siteUrl()),
   oCopyQuote: tok => copyText(quoteUrl(tok)),
@@ -123,10 +180,31 @@ Object.assign(A, {
     if (v === '__free') { ui.qL.push({name: 'خدمة إضافية', qty: 1, monthly: 0, one_time: 0, cost: 0}); K.render(); return; }
     const s = ST.oSvcs.find(x => x.id === v); const pr = window.OopsPrice ? window.OopsPrice.price(s, null, N(ui.qD.ad_budget), {}) : {qty: 1, monthly: N(s.price), one_time: 0, cost: N(s.cost)};
     ui.qL.push({service_id: s.id, name: s.name, category: s.category, ptype: s.ptype, unit: s.unit, qty: pr.qty, monthly: pr.monthly, one_time: pr.one_time, cost: pr.cost, quote: pr.quote, includes: s.includes, duration: s.duration});
-    K.render();
+    if (!ui.qD.planEdited) ui.qD.plan = buildPlan(); K.render();
   },
-  qDel: i => { ui.qL.splice(N(i), 1); K.render(); },
+  qDel: i => { ui.qL.splice(N(i), 1); if (!ui.qD.planEdited) ui.qD.plan = buildPlan(); K.render(); },
+  qGiftAdd: () => { ui.qD.gifts.push({name: '', value: 0}); K.render(); setTimeout(() => $(`[data-qg="${ui.qD.gifts.length - 1}"][data-k=name]`)?.focus(), 30); },
+  qGiftDel: i => { ui.qD.gifts.splice(N(i), 1); K.render(); },
+  qPlanBuild: () => { ui.qD.plan = buildPlan(); ui.qD.planEdited = false; K.render(); toast('انبنت الخطة من الخدمات'); },
+  qUnlock: id => { ui.qUnlock = {...(ui.qUnlock || {}), [id]: true}; K.render(); },
+  qLock: id => { if (ui.qUnlock) delete ui.qUnlock[id]; K.render(); },
+  qSaveSync: async cid => { await qPersist(ui.oreqCur.status === 'جديد' ? 'مسودة عرض' : ui.oreqCur.status); const reset = confirm('انحفظ العرض. بدك كمان ترجع بنود العقد للنص الافتراضي بالأرقام الجديدة؟\n(موافق = بنود جديدة، إلغاء = بس الأسعار والخدمات، وبتضل تعديلاتك عالبنود)'); await db.rpc('contract_sync_quote', {cid, reset_clauses: !!reset}); toast('انحدّث العقد من العرض'); A.ctOpen(cid); },
+  ctFromQuote: async id => { const cid = await db.rpc('contract_from_quote', {rid: id}); A.ctOpen(cid); },
   qSave: async () => { await qPersist(ui.oreqCur.status === 'جديد' ? 'مسودة عرض' : ui.oreqCur.status); toast('انحفظ العرض'); K.render(); oBadge(); },
+  qSendWa: async () => {
+    if (!ui.qL.length) return toast('أضف بند واحد على الأقل', true);
+    if (ui.qL.some(l => l.quote && !N(l.monthly) && !N(l.one_time))) return toast('في بند لسا بدون سعر', true);
+    const cur = ui.oreqCur, d = String(cur.phone || '').replace(/\D/g, '');
+    const num = /^07[789]\d{7}$/.test(d) ? '962' + d.slice(1) : /^7[789]\d{7}$/.test(d) ? '962' + d : d.replace(/^00/, '');
+    const w = window.open('', '_blank');
+    const r = await qPersist('عرض مرسل'), url = quoteUrl(r.token || cur.token);
+    const brand = ST.settings?.agency_name || 'OOPSIDE';
+    const gifts = ui.qD.gifts.filter(g => (g.name || '').trim());
+    const msg = `مرحبا ${cur.contact || cur.company} 👋\nهاد عرض السعر من ${brand}${ui.qD.discount_pct ? ' مع خصم ' + N(ui.qD.discount_pct) + '%' : ''}${gifts.length ? ' و' + gifts.length + ' هدايا مجانية 🎁' : ''}، ومعه خطة 3 شهور:\n${url}\nالعرض صالح 7 أيام. بتقدر تقبله أو تحكيلنا ملاحظاتك من نفس الرابط.`;
+    const wa = 'https://wa.me/' + num + '?text=' + encodeURIComponent(msg);
+    if (w) w.location.href = wa; else location.href = wa;
+    toast('انبعت العرض. كمّل الإرسال من واتساب'); K.render(); oBadge();
+  },
   qSend: async () => {
     if (!ui.qL.length) return toast('أضف بند واحد على الأقل', true);
     if (ui.qL.some(l => l.quote && !N(l.monthly) && !N(l.one_time))) return toast('في بند لسا بدون سعر', true);
@@ -245,6 +323,36 @@ V.oops = async () => {
       <p class="note" style="margin-top:8px">كل خدمة بتحدد هي مقترحة لأي مشاكل (من تعديل الخدمة). هيك محرك الاقتراح بيشتغل بقواعد إنت بتحددها.</p></div>
       ${can('oops', 'edit') ? '<div class="row"><button class="btn pri" data-act="siteSave">حفظ إعدادات الموقع</button></div>' : ''}`;
   }
+  if (tab === 'prof') {
+    const fi = (k, l, v, ph = '') => `<label class="fld" for="pf_${k}"><span>${l}</span><input id="pf_${k}" value="${esc(v ?? '')}" placeholder="${esc(ph)}"></label>`;
+    const ta = (k, l, v, rows = 3, hint = '', ph = '') => `<label class="fld wide" for="pf_${k}"><span>${l}</span><textarea id="pf_${k}" rows="${rows}" placeholder="${esc(ph)}">${esc(v ?? '')}</textarea>${hint ? `<small class="m">${hint}</small>` : ''}</label>`;
+    ui.tests = ui.testsFor === site.updated_at ? ui.tests : (c.testimonials || []).map(t => ({...t})); ui.cases = ui.testsFor === site.updated_at ? ui.cases : (c.cases || []).map(t => ({...t})); ui.testsFor = site.updated_at;
+    const prof = siteUrl().replace(/[^/]*$/, '') + 'profile.html';
+    body = `<div class="card"><h2>الفورم السريع بأول الموقع</h2><p class="m">أول ما يفوت الزائر بيشوف فورم صغير (اسم، رقم، نوع الشغل) مع العرض. لما يبعت، بينحفظ عميل محتمل وبنفس الكبسة بيفتحله واتساب الوكالة.</p>
+      <label class="toggle" style="display:flex;gap:10px;align-items:center;margin:8px 0"><input type="checkbox" id="pf_quick_on" ${c.quick_on === false ? '' : 'checked'}><b>شغّل الفورم السريع</b></label>
+      <div class="fgrid">${fi('quick_title', 'العنوان', c.quick_title, 'زيد مبيعاتك 🚀')}${fi('quick_offer', 'العرض', c.quick_offer, 'اشترك الآن واحصل على خصم 50% على خدماتنا')}
+      ${ta('quick_points', 'المغريات (كل وحدة بسطر، لحد 4)', (c.quick_points || []).join('\n'), 3, '', 'استشارة مجانية لصفحاتك وإعلاناتك\nخطة إعلانات على قد ميزانيتك\nإعلانات بالأردن ودول الخليج')}
+      ${fi('quick_btn', 'نص الزر', c.quick_btn, 'احجز الخصم وكلّمنا واتساب')}${ta('quick_wa_msg', 'الرسالة اللي بتطلع بواتساب', c.quick_wa_msg, 2, 'بيتبدّل: {الاسم} {الشغل} {العرض}', 'مرحبا، أنا {الاسم}{الشغل}. عبّيت الفورم وبدي أستفيد من العرض: {العرض}')}</div>
+      ${c.whatsapp ? '' : '<p class="note">⚠ حط رقم الواتساب بـ "نصوص الموقع والمشاكل" عشان الزر يحوّل عليه.</p>'}</div>
+    <div class="card"><div class="head" style="margin-bottom:6px"><h2>بروفايل الوكالة</h2><span class="row" style="gap:6px"><a class="btn sm" href="${esc(prof)}" target="_blank" rel="noopener">افتح البروفايل</a><button class="btn sm" data-act="copyProf" data-id="${esc(prof)}">انسخ الرابط</button></span></div>
+      <p class="m">صفحة بتبعتها للزباين: المنصات اللي بتعلن عليها، خدماتك (من "الخدمات والأسعار")، أفكار إعلانات، آراء العملاء، والعرض. وفيها زر "حفظ PDF".</p>
+      <div class="fgrid">${fi('profile_title', 'العنوان', c.profile_title, 'وسّع شغلك بالأردن ودول الخليج')}${ta('profile_sub', 'التعريف', c.profile_sub, 2, '', 'منخطط ومندير إعلاناتك على كل المنصات، بأرقام واضحة...')}
+      ${ta('markets', 'الدول اللي بتعلن فيها (كل وحدة بسطر)', (c.markets || []).join('\n'), 3, '', 'الأردن\nالسعودية\nالإمارات\nالكويت\nقطر\nالبحرين\nعُمان')}
+      ${ta('clients', 'أسماء عملاء اشتغلت معهم (كل اسم بسطر، اختياري)', (c.clients || []).join('\n'), 3)}
+      ${ta('ad_ideas', 'أفكار إعلانات (كل فكرة بسطر، اختياري)', (c.ad_ideas || []).join('\n'), 3, 'إذا فاضية بتطلع 6 أفكار جاهزة')}</div></div>
+    <div class="card"><div class="head" style="margin-bottom:6px"><h2>آراء العملاء</h2><button class="btn sm" data-act="testAdd">+ رأي</button></div>
+      <p class="m">حط آراء حقيقية من عملائك بإذنهم. بتطلع بالبروفايل بس إذا فيها اسم ورأي أو نتيجة.</p>
+      ${ui.tests.length ? ui.tests.map((t, i) => `<div class="fgrid" style="border-top:1px solid var(--line);padding-top:8px;margin-top:8px">
+        <label class="fld"><span>الاسم</span><input data-tt="${i}" data-k="name" value="${esc(t.name || '')}"></label><label class="fld"><span>الشغل</span><input data-tt="${i}" data-k="business" value="${esc(t.business || '')}"></label>
+        <label class="fld"><span>التقييم</span><select data-tt="${i}" data-k="stars">${[5, 4, 3].map(n => `<option ${N(t.stars || 5) === n ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+        <label class="fld"><span>النتيجة (اختياري)</span><input data-tt="${i}" data-k="result" value="${esc(t.result || '')}" placeholder="مثلاً: الطلبات زادت 3 أضعاف"></label>
+        <label class="fld wide"><span>الرأي</span><textarea rows="2" data-tt="${i}" data-k="quote">${esc(t.quote || '')}</textarea></label><div><button class="btn sm ghost" data-act="testDel" data-id="${i}">احذف</button></div></div>`).join('') : '<p class="note">ما في آراء لسا.</p>'}</div>
+    <div class="card"><div class="head" style="margin-bottom:6px"><h2>شغل عملناه</h2><button class="btn sm" data-act="caseAdd">+ شغل</button></div>
+      ${ui.cases.length ? ui.cases.map((t, i) => `<div class="fgrid" style="border-top:1px solid var(--line);padding-top:8px;margin-top:8px">
+        <label class="fld"><span>العميل أو نوع الشغل</span><input data-cs="${i}" data-k="client" value="${esc(t.client || '')}"></label><label class="fld"><span>المشكلة</span><input data-cs="${i}" data-k="problem" value="${esc(t.problem || '')}"></label>
+        <label class="fld"><span>النتيجة</span><input data-cs="${i}" data-k="result" value="${esc(t.result || '')}" placeholder="مثلاً: تكلفة الطلب نزلت من 4 لـ 1.5 دينار"></label><div><button class="btn sm ghost" data-act="caseDel" data-id="${i}">احذف</button></div></div>`).join('') : '<p class="note">اختياري.</p>'}</div>
+    ${can('oops', 'edit') ? '<div class="row"><button class="btn pri" data-act="profSave">حفظ</button></div>' : ''}`;
+  }
   if (tab === 'bench') {
     const [bench, pub] = await Promise.all([db.q('oops_bench', {order: ['sector', true]}), db.rpc('oops_site_data').catch(() => null)]);
     const act = pub?.actual || []; ui.benchCache = bench; ui.actCache = act;
@@ -257,8 +365,16 @@ V.oops = async () => {
       '<p class="note">الأرقام الفعلية جاية من حملات عملاء الوكالة (الصرف ÷ النتائج)، حسب نوع العميل. سجّل نتائج الحملات من ملف كل عميل عشان تتحسن.</p>';
   }
   return head('موقع الوكالة والأسعار', `الموقع اللي الشركات بتبني منه باقتها. ${site.live ? pill('شغّال', 'good') : pill('مطفي', 'bad')}`, top) +
-    chips([['svc', 'الخدمات والأسعار'], ['site', 'نصوص الموقع والمشاكل'], ['bench', 'أرقام التوقعات']], tab, 'oTab') + body;
+    chips([['svc', 'الخدمات والأسعار'], ['site', 'نصوص الموقع والمشاكل'], ['prof', 'الفورم السريع والبروفايل'], ['bench', 'أرقام التوقعات']], tab, 'oTab') + body;
 };
+// إضافة رأي أو شغل ما بتمسح اللي كتبته بباقي الخانات
+async function keepPf(fn) {
+  const keep = {}; $$('[id^=pf_]').forEach(el => { keep[el.id] = el.type === 'checkbox' ? el.checked : el.value; });
+  fn(); await K.render();
+  Object.entries(keep).forEach(([id, v]) => { const el = document.getElementById(id); if (!el) return; if (el.type === 'checkbox') el.checked = v; else el.value = v; });
+}
+document.addEventListener('input', e => { const t = e.target; if (t.dataset.tt != null && ui.tests?.[N(t.dataset.tt)]) ui.tests[N(t.dataset.tt)][t.dataset.k] = t.value; if (t.dataset.cs != null && ui.cases?.[N(t.dataset.cs)]) ui.cases[N(t.dataset.cs)][t.dataset.k] = t.value; });
+document.addEventListener('change', e => { const t = e.target; if (t.dataset.tt != null && ui.tests?.[N(t.dataset.tt)]) ui.tests[N(t.dataset.tt)][t.dataset.k] = t.value; });
 document.addEventListener('input', e => { const t = e.target; if (t.dataset.pr != null && ui.probs?.[N(t.dataset.pr)]) ui.probs[N(t.dataset.pr)][t.dataset.k] = t.value; });
 document.addEventListener('change', e => { const t = e.target; if (t.dataset.pr != null && ui.probs?.[N(t.dataset.pr)]) ui.probs[N(t.dataset.pr)][t.dataset.k] = t.value; });
 const parseTiers = t => String(t || '').split(/[,،\n]/).map(x => x.split('=').map(y => N(y.trim()))).filter(([a, b]) => a > 0 && b > 0).map(([from, off]) => ({from, off}));
@@ -337,6 +453,19 @@ function svcEditor(id) {
 }
 Object.assign(A, {
   oTab: k => { ui.oTab = k; K.render(); },
+  testAdd: () => keepPf(() => ui.tests.push({stars: 5})),
+  testDel: i => keepPf(() => ui.tests.splice(N(i), 1)),
+  caseAdd: () => keepPf(() => ui.cases.push({})),
+  caseDel: i => keepPf(() => ui.cases.splice(N(i), 1)),
+  copyProf: u => copyText(u),
+  profSave: async () => {
+    const s = await loadSite(), g = k => $('#pf_' + k)?.value.trim() ?? '', lines = k => g(k).split('\n').map(x => x.trim()).filter(Boolean);
+    const config = {...s.config, quick_on: !!$('#pf_quick_on')?.checked, quick_title: g('quick_title'), quick_offer: g('quick_offer'), quick_points: lines('quick_points').slice(0, 4),
+      quick_btn: g('quick_btn'), quick_wa_msg: g('quick_wa_msg'), profile_title: g('profile_title'), profile_sub: g('profile_sub'), markets: lines('markets'), clients: lines('clients'), ad_ideas: lines('ad_ideas'),
+      testimonials: ui.tests.filter(t => (t.name || '').trim()).map(t => ({name: t.name.trim(), business: (t.business || '').trim(), stars: N(t.stars) || 5, quote: (t.quote || '').trim(), result: (t.result || '').trim()})),
+      cases: ui.cases.filter(t => (t.client || '').trim() && (t.result || '').trim())};
+    await db.upd('oops_site', {id: 1}, {config, updated_at: new Date().toISOString()}); ui.testsFor = null; toast('انحفظ'); K.render();
+  },
   svcForm: id => svcEditor(id),
   svcPub: async id => { const s = (ui.svcCache || []).find(x => x.id === id); await db.upd('services', {id}, {public: !s.public}); toast(s.public ? 'انخفت عن الموقع' : 'صارت ظاهرة بالموقع'); K.render(); },
   siteLive: async () => { const s = await loadSite(); await db.upd('oops_site', {id: 1}, {live: !s.live, updated_at: new Date().toISOString()}); toast(s.live ? 'انطفى الموقع' : 'الموقع صار شغّال، والشركات بتقدر تبعت طلبات'); K.render(); },

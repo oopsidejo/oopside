@@ -383,3 +383,39 @@ details.adv summary{cursor:pointer;font-weight:600}
 
 .hcard textarea,.hmsg,#h_tpl,#h_offer,#h_prompt{font-family:inherit}
 .hcard.hnow{outline:2px solid var(--good);outline-offset:2px}
+
+/* ===== العملاء المحتملين: صفحات ومتابعة ===== */
+.ltabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin:4px 0 12px;scrollbar-width:thin}
+.ltab{flex:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:8px 12px;font:inherit;font-weight:600;cursor:pointer}
+.ltab em{font-style:normal;font-size:12px;color:var(--muted);margin-inline-start:4px}
+.ltab.on{background:var(--brand);border-color:var(--brand);color:var(--brand-ink,#fff)}.ltab.on em{color:inherit;opacity:.85}
+.ltab.due:not(.on){border-color:var(--bad);color:var(--bad)}
+.lfil .row{margin:0;gap:8px;flex-wrap:wrap}.lfil .row+.row{margin-top:8px}.lfil input[type=search]{min-width:180px;flex:1}
+.llist{display:grid;gap:8px;margin-bottom:12px}
+.lrow{display:grid;grid-template-columns:minmax(0,1fr) 130px auto;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.lrow.due{border-inline-start:4px solid var(--bad)}.lrow.late:not(.due){border-inline-start:4px solid var(--warn)}
+.lmain{display:grid;gap:3px;min-width:0}.lmain b{font-size:15px}.lmain small{display:block;line-height:1.6}
+.lint{display:grid;gap:6px;justify-items:start}.lint select{width:100%}
+.ibar{display:block;width:100%;height:7px;border-radius:9px;background:var(--surface-2);overflow:hidden}.ibar i{display:block;height:100%;background:var(--muted);border-radius:9px}
+.ibar.hi i{background:var(--good)}.ibar.mid i{background:var(--warn)}.ibar.lo i{background:var(--bad)}
+.lact{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;max-width:420px}
+@media (max-width:820px){.lrow{grid-template-columns:1fr}.lact{justify-content:flex-start;max-width:none}.lint{grid-template-columns:1fr 110px;align-items:center}}
+
+/* ===== عرض السعر: هدايا واقتراحات وخطة ===== */
+.qx{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
+.qxbox{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--surface-2)}
+.qxbox.wide{grid-column:1/-1}.qxbox h3{margin:0;font-size:15px}
+.qplan{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.qpm{display:grid;gap:6px}.qpm input{font-weight:700}.qpm textarea{width:100%;resize:vertical;font:inherit;line-height:1.7}
+@media (max-width:820px){.qx,.qplan{grid-template-columns:1fr}}
+
+/* ===== العروض والعقود ===== */
+.drow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.drow small{display:block;line-height:1.6}.dnum{text-align:end}.dnum b{font-size:16px}
+.ccl{display:grid;gap:10px}.ccli{display:grid;gap:6px;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--surface-2)}
+.ccli textarea{width:100%;resize:vertical;font:inherit;line-height:1.8}
+.cnum{display:inline-grid;place-items:center;min-width:26px;height:26px;border-radius:50%;background:var(--brand);color:var(--brand-ink,#fff);font-size:13px}
+.sigpad{display:block;width:100%;max-width:520px;height:170px;border:2px dashed var(--line);border-radius:12px;background:#fff;touch-action:none;cursor:crosshair}
+.sigprev{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.sigprev img{max-height:90px;max-width:300px;background:#fff;border-radius:8px;border:1px solid var(--line);padding:4px}
+.cdone{border-color:var(--good)}.sigs{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:10px 0}.sigs>div{display:grid;gap:4px;justify-items:start}.sigs img{max-height:80px;max-width:240px;background:#fff;border-radius:8px;padding:4px}
+@media (max-width:820px){.drow{grid-template-columns:1fr}.dnum{text-align:start}.sigs{grid-template-columns:1fr}}

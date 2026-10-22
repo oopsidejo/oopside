@@ -36,21 +36,21 @@ const SECTIONS = [['dash','لوحة التحكم'],['orders','الطلبات و�
   ['agency','الوكالة وعملاءها'],['leads','العملاء المحتملين'],
   ['accounting','المحاسبة'],['expenses','المصاريف'],['staff','الموظفين والرواتب'],
   ['oops','موقع الوكالة والأسعار'],['ai','المساعد الذكي'],['users','المستخدمين والصلاحيات'],['settings','الإعدادات']];
-const SEC_NAME = Object.fromEntries(SECTIONS.concat([['myday','دوامي'],['mytasks','مهامي'],['portal','متابعة الشغل'],['client','ملف العميل'],['agdash','لوحة الوكالة'],['pagesrep','أداء صفحات البيع'],['oreq','طلبات الموقع'],['oreqd','طلب من الموقع'],['funnel','من الإعلان للإيراد'],['agent','الوكيل الذكي'],['olive','زوار الموقع الآن'],['hunt','صيد العملاء']]));
+const SEC_NAME = Object.fromEntries(SECTIONS.concat([['myday','دوامي'],['mytasks','مهامي'],['portal','متابعة الشغل'],['client','ملف العميل'],['agdash','لوحة الوكالة'],['pagesrep','أداء صفحات البيع'],['oreq','طلبات الموقع'],['oreqd','طلب من الموقع'],['funnel','من الإعلان للإيراد'],['agent','الوكيل الذكي'],['olive','زوار الموقع الآن'],['hunt','صيد العملاء'],['docs','العروض والعقود'],['ctd','عقد']]));
 const PERSONAL = new Set(['myday','mytasks']);
 /* مساحتين شغل منفصلات: المتجر الأونلاين ووكالة التسويق. كل وحدة إلها قوائمها وحساباتها */
 const NAVS = {
   store: [['اليومي', ['dash','orders','delivery']], ['شغلي', ['myday','mytasks']], ['الرسائل والفريق', ['inbox','agent','control','team','tasks']],
     ['التسويق', ['ads','pagesrep','landing','page']], ['المخزون', ['products','inventory','purchases']],
     ['المالية', ['accounting','expenses','staff']], ['الإدارة', ['ai','users','settings']]],
-  agency: [['الوكالة', ['agdash','oreq','leads','hunt','agency']], ['النمو', ['olive','funnel','oops']], ['شغلي', ['myday','mytasks']], ['الفريق', ['tasks','team']],
+  agency: [['الوكالة', ['agdash','oreq','leads','docs','hunt','agency']], ['النمو', ['olive','funnel','oops']], ['شغلي', ['myday','mytasks']], ['الفريق', ['tasks','team']],
     ['المالية', ['accounting','expenses','staff']], ['الإدارة', ['ai','users','settings']]]
 };
 const NAV = NAVS.store;
 const WS = {store: {name: 'المتجر الأونلاين', mark: 'م', sub: 'الطلبات والتوصيل والمستودع والرسائل والإعلانات'},
   agency: {name: 'وكالة التسويق', mark: 'و', sub: 'العملاء والحملات والتسليمات والعملاء المحتملين'}};
 const STORE_ONLY = ['dash','orders','delivery','inbox','control','ads','landing','page','products','inventory','purchases'];
-const ALIAS = {agent: 'ai', olive: 'leads', hunt: 'leads', agdash: 'agency', pagesrep: 'dash', oreq: 'leads', oreqd: 'leads', funnel: 'leads'};
+const ALIAS = {docs: 'leads', ctd: 'leads', agent: 'ai', olive: 'leads', hunt: 'leads', agdash: 'agency', pagesrep: 'dash', oreq: 'leads', oreqd: 'leads', funnel: 'leads'};
 const lsGet = k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
 const TEMPLATES = {
@@ -224,6 +224,7 @@ function openForm(title, fields, init, onSave, submitLabel = 'حفظ') {
   $('#mform').onsubmit = async e => {
     e.preventDefault(); const v = {};
     for (const f of fields) {
+      if (f.t === 'info') continue;
       if (f.t === 'image') { v[f.k] = formImg; continue; }
       if (f.t === 'color') { v[f.k] = $(`input[name="${f.k}"]:checked`)?.value || COLORS[0]; continue; }
       if (f.t === 'checks') { v[f.k] = $$(`input[name="${f.k}"]:checked`).map(x => x.value); continue; }
@@ -239,9 +240,10 @@ function openForm(title, fields, init, onSave, submitLabel = 'حفظ') {
 let formImg = null;
 function fieldHtml(f, v) {
   const id = 'f_' + f.k; let inp; const val = v ?? f.def ?? '';
+  if (f.t === 'info') return `<div class="fld wide"><span>${f.l}</span><div>${f.html || ''}</div></div>`;
   if (f.t === 'select') inp = `<select id="${id}">${f.opts.map(o => { const [ov, ol] = Array.isArray(o) ? o : [o, o]; return `<option value="${esc(ov)}" ${String(ov) === String(val) ? 'selected' : ''}>${esc(ol)}</option>`; }).join('')}</select>`;
   else if (f.t === 'checks') inp = `<div class="checks">${f.opts.map((o, i) => { const [ov, ol] = Array.isArray(o) ? o : [o, o]; return `<label class="ck"><input type="checkbox" id="${id}-${i}" name="${f.k}" value="${esc(ov)}" ${(v || []).includes(ov) ? 'checked' : ''}><span>${esc(ol)}</span></label>`; }).join('')}</div>`;
-  else if (f.t === 'textarea') inp = `<textarea id="${id}" rows="${f.rows || 3}">${esc(val)}</textarea>`;
+  else if (f.t === 'textarea') inp = `<textarea id="${id}" rows="${f.rows || 3}" ${f.ph ? `placeholder="${esc(f.ph)}"` : ''}>${esc(val)}</textarea>`;
   else if (f.t === 'image') inp = `<input id="${id}" type="file" accept="image/*" data-img="1">${v ? `<img src="${esc(v)}" alt="" style="max-height:70px;border-radius:6px;margin-top:6px">` : ''}`;
   else if (f.t === 'color') inp = `<div class="checks">${COLORS.map((c, i) => `<label><input type="radio" id="${id}-${i}" name="${f.k}" value="${c}" ${c === (v || COLORS[0]) ? 'checked' : ''}><span class="sw" style="background:${c}"></span></label>`).join('')}</div>`;
   else inp = `<input id="${id}" type="${f.t || 'text'}" ${f.t === 'number' ? 'step="any" inputmode="decimal"' : ''} ${f.min != null ? `min="${f.min}"` : ''} value="${esc(val)}" ${f.req ? 'required' : ''} ${f.ph ? `placeholder="${esc(f.ph)}"` : ''}>`;
@@ -421,7 +423,7 @@ async function render(soft) {
     bar.innerHTML = `<div class="wsin"><i class="${logoOf(ws) ? 'img' : ''}">${markHtml(ws, WS[ws].mark)}</i><div><small>إنت هلأ بـ</small><b>${esc(wsName(ws))}</b></div></div>${other ? `<button class="btn sm wsbtn" data-act="switchWs" type="button"><span aria-hidden="true">⇄</span> روح لـ${esc(wsName(other))}</button>` : ''}`; }
   $('#me').innerHTML = `<div><b>${esc(me.name || me.email)}</b><small>${esc(me.role)}${K.statusLine ? ' · ' + K.statusLine : ''}</small></div><div class="row" style="gap:4px"><button data-act="myPw">كلمة السر</button><button data-act="logout">خروج</button></div>`;
   const nav = isClient() ? [['', ['portal']]] : NAVS[ws].map(([g, ks]) => [g, ks.filter(k => can(k))]).filter(g => g[1].length);
-  $('#nav').innerHTML = nav.map(([g, ks]) => `<div class="grp">${g}</div>` + ks.map(k => `<button class="${ui.view === k || (k === 'agency' && ui.view === 'client') || (k === 'oreq' && ui.view === 'oreqd') ? 'on' : ''}" data-act="go" data-id="${k}"><span>${SEC_NAME[k]}</span>${K.badges[k] ? `<em class="${K.badgeRed[k] ? 'red' : ''}">${K.badges[k]}</em>` : ''}</button>`).join('')).join('');
+  $('#nav').innerHTML = nav.map(([g, ks]) => `<div class="grp">${g}</div>` + ks.map(k => `<button class="${ui.view === k || (k === 'agency' && ui.view === 'client') || (k === 'oreq' && ui.view === 'oreqd') || (k === 'docs' && ui.view === 'ctd') ? 'on' : ''}" data-act="go" data-id="${k}"><span>${SEC_NAME[k]}</span>${K.badges[k] ? `<em class="${K.badgeRed[k] ? 'red' : ''}">${K.badges[k]}</em>` : ''}</button>`).join('')).join('');
   if (!nav.length) { $('#main').innerHTML = '<p class="note">ما إلك صلاحية على أي قسم. راجع المدير.</p>'; return; }
   const slow = soft ? 0 : setTimeout(() => { if (seq === renderSeq) $('#main').classList.add('loading'); }, 180);
   try {

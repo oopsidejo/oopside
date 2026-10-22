@@ -806,29 +806,108 @@ document.addEventListener('change', e => { if (e.target.dataset?.chg === 'dmonth
 
 /* ================= العملاء المحتملين ================= */
 const LSTAGES = ['جديد','تواصلنا','اجتماع','عرض سعر','تم التعاقد','خسرناه'];
+const LKINDS = ['اتصال','واتساب','اجتماع','زيارة','إيميل','ملاحظة'];
+const LPAGE = 25;
+const intCls = n => N(n) >= 70 ? 'hi' : N(n) >= 40 ? 'mid' : N(n) > 0 ? 'lo' : '';
+const leadWa = l => { const d = String(l.phone || '').replace(/\D/g, ''); return /^07[789]\d{7}$/.test(d) ? '962' + d.slice(1) : /^7[789]\d{7}$/.test(d) ? '962' + d : d.replace(/^00/, ''); };
+function leadRange() {
+  const t = today(), m = ui.lpMode || 'all';
+  if (m === 'today') return [t, t];
+  if (m === '7') return [addDays(t, -6), t];
+  if (m === 'month') return [t.slice(0, 8) + '01', t];
+  if (m === 'custom' && ui.lpFrom && ui.lpTo) return [ui.lpFrom, ui.lpTo];
+  return [null, null];
+}
 V.leads = async () => {
   await people();
-  const mine = ui.leadsMine; const o = {order: ['updated_at', false], limit: 500}; if (mine) o.eq = {owner: me().id};
-  const list = await db.q('v_leads', o); ui.leadCache = list;
-  const by = {}; list.forEach(l => { const k = l.owner_name || '—'; const x = by[k] = by[k] || {n: 0, won: 0, fee: 0}; x.n++; if (l.stage === 'تم التعاقد') { x.won++; x.fee += N(l.expected_fee); } });
-  return head('العملاء المحتملين', 'فريق التسويق بيجيب شركات ومطاعم وصفحات، وبيتابعهم مرحلة مرحلة لحد ما يصيروا عملاء للوكالة', '<button class="btn pri" data-act="leadForm">+ عميل محتمل</button>') +
-    `<div class="row">${chips([['', 'الكل'], ['1', 'تبعي بس']], mine ? '1' : '', 'leadsMine')}</div>
-    <div class="kpis">${kpi('بالمتابعة', list.filter(l => !['تم التعاقد','خسرناه'].includes(l.stage)).length)}${kpi('قيمة متوقعة', jd(sum(list.filter(l => !['تم التعاقد','خسرناه'].includes(l.stage)), l => l.expected_fee)), 'شهرياً')}${kpi('تعاقدنا', list.filter(l => l.stage === 'تم التعاقد').length, '', 'hl')}${kpi('متابعة اليوم أو متأخرة', list.filter(l => l.next_followup && l.next_followup <= today() && !['تم التعاقد','خسرناه'].includes(l.stage)).length, '', list.some(l => l.next_followup && l.next_followup < today() && !['تم التعاقد','خسرناه'].includes(l.stage)) ? 'red' : '')}</div>
-    <div class="board">${LSTAGES.map(s => `<div class="col"><h3>${s} <small class="m">${list.filter(l => l.stage === s).length}</small></h3>${list.filter(l => l.stage === s).map(l => `<div class="tcard ${l.next_followup && l.next_followup < today() && !['تم التعاقد','خسرناه'].includes(s) ? 'late' : ''}">
-      <b>${esc(l.company)}</b><small class="m">${esc(l.type)} · ${esc(l.contact_name || '')} ${esc(l.phone || '')}</small><small class="m">${esc(l.owner_name || '')}${N(l.expected_fee) ? ' · ' + jd(l.expected_fee) + '/شهر' : ''}${l.next_followup ? ' · متابعة ' + l.next_followup : ''}</small>${l.request_no ? `<small><button class="lnk" data-act="oreqOpen" data-id="${l.request_id}">طلب الموقع #${l.request_no}</button>${l.source && l.source !== 'موقع الوكالة' ? ' · ' + esc(l.source) : ''}</small>` : ''}
-      <div class="row">${sel('ls_' + l.id, LSTAGES.map(x => [x, x]), l.stage, null, `data-chg="leadStage" data-id="${l.id}" aria-label="المرحلة"`)}<button class="btn sm" data-act="leadForm" data-id="${l.id}">تعديل</button>${l.client_id ? `<button class="btn sm" data-act="openClient" data-id="${l.client_id}">ملف العميل</button>` : s === 'تم التعاقد' || s === 'عرض سعر' ? `<button class="btn sm pri" data-act="leadConvert" data-id="${l.id}">حوّله لعميل</button>` : ''}</div></div>`).join('') || '<p class="m empty">—</p>'}</div>`).join('')}</div>
-    <div class="card"><h2>أداء الفريق</h2>${table([{h:'الموظف', f:([k]) => esc(k)}, {h:'عملاء محتملين', f:([, x]) => x.n}, {h:'تعاقد', f:([, x]) => x.won}, {h:'نسبة النجاح', f:([, x]) => x.n ? pct(x.won / x.n) : '—'}, {h:'دخل شهري جابوه', f:([, x]) => jd(x.fee)}], Object.entries(by))}</div>`;
+  const list = await db.q('v_leads', {order: ['updated_at', false], limit: 2000}); ui.leadCache = list;
+  const tab = ui.lTab || (list.some(l => l.due && l.owner === me().id) ? 'due' : 'جديد'); ui.lTab = tab;
+  const [from, to] = leadRange(), day = l => new Date(new Date(l.created_at).getTime() + 3 * 3600e3).toISOString().slice(0, 10);
+  const who = ui.lWho ?? '', intr = ui.lInt || '', typ = ui.lType || '', qq = (ui.lQ || '').trim().toLowerCase();
+  // الفلاتر (غير المرحلة)
+  const base = list.filter(l => (!from || (day(l) >= from && day(l) <= to)) && (!who || (who === 'me' ? l.owner === me().id : l.owner === who))
+    && (!intr || (intr === 'hi' ? N(l.interest) >= 70 : intr === 'mid' ? N(l.interest) >= 40 && N(l.interest) < 70 : intr === 'lo' ? N(l.interest) < 40 : true))
+    && (!typ || l.type === typ) && (!qq || [l.company, l.contact_name, l.phone, l.notes].some(x => String(x || '').toLowerCase().includes(qq))));
+  const inTab = l => tab === 'all' ? true : tab === 'due' ? l.due : l.stage === tab;
+  const rows = base.filter(inTab).sort((a, b) => tab === 'due' ? N(b.interest) - N(a.interest) || N(b.silent_days) - N(a.silent_days) : 0);
+  const shown = rows.slice(0, (ui.lPage || 1) * LPAGE);
+  const open = base.filter(l => !['تم التعاقد','خسرناه'].includes(l.stage));
+  const myDue = list.filter(l => l.due && l.owner === me().id).length;
+  const types = [...new Set(list.map(l => l.type).filter(Boolean))];
+  const by = {}; base.forEach(l => { const k = l.owner_name || '—'; const x = by[k] = by[k] || {n: 0, won: 0, fee: 0, due: 0}; x.n++; if (l.due) x.due++; if (l.stage === 'تم التعاقد') { x.won++; x.fee += N(l.expected_fee); } });
+  const tabs = [['due', 'لازم تتواصل'], ...LSTAGES.map(s => [s, s]), ['all', 'الكل']];
+  return head('العملاء المحتملين', 'كل مرحلة بصفحة. سجّل كل تواصل، وحط نسبة الاهتمام. اللي مهتم أو باجتماع وما حدا كلّمه من أسبوع بيطلع بـ "لازم تتواصل"', '<button class="btn pri" data-act="leadForm">+ عميل محتمل</button>') +
+    (myDue ? `<p class="warnbar">عندك ${myDue} عميل مهتم أو باجتماع ما تواصلت معه من أسبوع أو أكثر. <button class="lnk" data-act="lTab" data-id="due">افتحهم</button></p>` : '') +
+    `<div class="kpis">${kpi('بالمتابعة', open.length)}${kpi('لازم تتواصل', base.filter(l => l.due).length, 'مهتم أو اجتماع، أسبوع بدون تواصل', base.some(l => l.due) ? 'red' : '')}${kpi('قيمة متوقعة', jd(sum(open, l => l.expected_fee)), 'شهرياً')}${kpi('تعاقدنا', base.filter(l => l.stage === 'تم التعاقد').length, '', 'hl')}</div>
+    <div class="ltabs" role="tablist">${tabs.map(([k, l]) => { const n = base.filter(x => k === 'all' ? true : k === 'due' ? x.due : x.stage === k).length; return `<button role="tab" aria-selected="${tab === k}" class="ltab ${tab === k ? 'on' : ''} ${k === 'due' && n ? 'due' : ''}" data-act="lTab" data-id="${k}">${l} <em>${n}</em></button>`; }).join('')}</div>
+    <div class="card lfil">
+      <div class="row">${chips([['all', 'كل الأوقات'], ['today', 'اليوم'], ['7', '7 أيام'], ['month', 'الشهر'], ['custom', 'مدة محددة']], ui.lpMode || 'all', 'lpMode')}
+        ${(ui.lpMode === 'custom') ? `<label class="m">من <input type="date" id="lpf" class="inl" value="${esc(ui.lpFrom || '')}" data-chg="lpRange"></label><label class="m">لـ <input type="date" id="lpt" class="inl" value="${esc(ui.lpTo || '')}" data-chg="lpRange"></label>` : ''}</div>
+      <div class="row">${sel('lWho', [['me', 'تبعي بس'], ...(ST.people || []).map(p => [p.id, p.name])], who, 'كل الموظفين', 'data-chg="lWho" aria-label="الموظف"')}
+        ${sel('lInt', [['hi', 'اهتمام عالي 70%+'], ['mid', 'متوسط 40–69%'], ['lo', 'ضعيف أقل من 40%']], intr, 'كل نسب الاهتمام', 'data-chg="lInt" aria-label="الاهتمام"')}
+        ${sel('lType', types.map(t => [t, t]), typ, 'كل الأنواع', 'data-chg="lType" aria-label="النوع"')}
+        <input id="lQ" class="inl" type="search" placeholder="بحث بالاسم أو الرقم" value="${esc(ui.lQ || '')}" data-chg="lQ" aria-label="بحث"></div></div>
+    <div class="llist">${shown.map(l => leadRow(l)).join('') || `<p class="empty card">${tab === 'due' ? 'ما في حدا لازم تتواصل معه هلأ 👌' : 'ما في عملاء محتملين بهالصفحة'}</p>`}</div>
+    ${rows.length > shown.length ? `<div class="row" style="justify-content:center"><button class="btn" data-act="lMore">عرض ${Math.min(LPAGE, rows.length - shown.length)} كمان (من ${rows.length})</button></div>` : rows.length ? `<p class="m" style="text-align:center">${rows.length} عميل</p>` : ''}
+    <details class="card"><summary><b>أداء الفريق</b></summary>${table([{h:'الموظف', f:([k]) => esc(k)}, {h:'عملاء محتملين', f:([, x]) => x.n}, {h:'لازم يتواصل', f:([, x]) => x.due ? `<b class="neg">${x.due}</b>` : '0'}, {h:'تعاقد', f:([, x]) => x.won}, {h:'نسبة النجاح', f:([, x]) => x.n ? pct(x.won / x.n) : '—'}, {h:'دخل شهري جابوه', f:([, x]) => jd(x.fee)}], Object.entries(by))}</details>`;
 };
+function leadRow(l) {
+  const closed = ['تم التعاقد','خسرناه'].includes(l.stage), late = l.next_followup && l.next_followup < today() && !closed, ed = can('leads', 'edit');
+  return `<div class="lrow ${l.due ? 'due' : ''} ${late ? 'late' : ''}">
+    <div class="lmain"><b>${esc(l.company)}</b> <span class="pill">${esc(l.stage)}</span>${l.due ? ' <span class="pill bad">لازم تتواصل</span>' : ''}
+      <small class="m">${esc(l.type || '')}${l.contact_name ? ' · ' + esc(l.contact_name) : ''}${l.phone ? ' · <span dir="ltr">' + esc(l.phone) + '</span>' : ''}</small>
+      <small class="m">${esc(l.owner_name || 'بدون مسؤول')} · ${l.last_contact ? 'آخر تواصل قبل ' + N(l.silent_days) + ' يوم' : 'ما في تواصل مسجّل'}${l.next_followup ? ' · <span class="' + (late ? 'neg' : '') + '">المتابعة ' + l.next_followup + '</span>' : ''}${N(l.expected_fee) ? ' · ' + jd(l.expected_fee) + '/شهر' : ''}</small>
+      ${l.request_no || l.contract_no ? `<small>${l.request_no ? `<button class="lnk" data-act="oreqOpen" data-id="${l.request_id}">عرض #${l.request_no}</button>` : ''}${l.contract_no ? ` · <button class="lnk" data-act="ctOpen" data-id="${l.contract_id}">عقد #${l.contract_no} (${esc(l.contract_status)})</button>` : ''}</small>` : ''}</div>
+    <div class="lint"><span class="ibar ${intCls(l.interest)}"><i style="width:${clamp(N(l.interest), 0, 100)}%"></i></span>
+      ${ed ? sel('li_' + l.id, [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(x => [x, x + '%']), N(l.interest), null, `data-chg="leadInt" data-id="${l.id}" aria-label="نسبة الاهتمام"`) : `<b>${N(l.interest)}%</b>`}</div>
+    <div class="lact">${ed ? `<button class="btn sm pri" data-act="leadTouch" data-id="${l.id}">سجّل تواصل</button>` : ''}${l.phone ? `<a class="btn sm ghost" href="https://wa.me/${leadWa(l)}" target="_blank" rel="noopener">واتساب</a>` : ''}
+      ${ed ? sel('ls_' + l.id, LSTAGES.map(x => [x, x]), l.stage, null, `data-chg="leadStage" data-id="${l.id}" aria-label="المرحلة"`) : ''}
+      ${l.phone && ed ? `<button class="btn sm" data-act="leadQuote" data-id="${l.id}">عرض سعر</button>` : ''}
+      ${ed ? `<button class="btn sm ghost" data-act="leadForm" data-id="${l.id}">تعديل</button>` : ''}
+      ${l.client_id ? `<button class="btn sm" data-act="openClient" data-id="${l.client_id}">ملف العميل</button>` : ed && (l.stage === 'تم التعاقد' || l.stage === 'عرض سعر') ? `<button class="btn sm" data-act="leadConvert" data-id="${l.id}">حوّله لعميل</button>` : ''}</div></div>`;
+}
+document.addEventListener('change', async e => {
+  const t = e.target, c = t.dataset?.chg; if (!c) return;
+  if (c === 'lWho') { ui.lWho = t.value; ui.lPage = 1; K.render(); }
+  if (c === 'lInt') { ui.lInt = t.value; ui.lPage = 1; K.render(); }
+  if (c === 'lType') { ui.lType = t.value; ui.lPage = 1; K.render(); }
+  if (c === 'lQ') { ui.lQ = t.value; ui.lPage = 1; K.render(); }
+  if (c === 'lpRange') { const f = $('#lpf')?.value, tt = $('#lpt')?.value; ui.lpFrom = f; ui.lpTo = tt; if (f && tt) { ui.lPage = 1; K.render(); } }
+  if (c === 'leadInt') { try { await db.rpc('lead_interest', {lid: t.dataset.id, v: N(t.value)}); toast('انحفظت نسبة الاهتمام'); K.render(); } catch (x) { toast(K.arabicErr(x), true); } }
+});
+Object.assign(ACT_SEC, {leadTouch: 'leads', lTab: 'leads', lpMode: 'leads', lMore: 'leads'});
 Object.assign(A, {
-  leadsMine: k => { ui.leadsMine = !!k; K.render(); },
+  lTab: k => { ui.lTab = k; ui.lPage = 1; K.render(); window.scrollTo?.(0, 0); },
+  lpMode: k => { ui.lpMode = k; ui.lPage = 1; K.render(); },
+  lMore: () => { ui.lPage = (ui.lPage || 1) + 1; K.render(); },
+  leadsMine: k => { ui.lWho = k ? 'me' : ''; K.render(); },
+  leadTouch: async id => {
+    const l = (ui.leadCache || []).find(x => x.id === id); if (!l) return;
+    const log = await db.q('lead_log', {eq: {lead_id: id}, order: ['at', false], limit: 6});
+    openForm('تواصل مع ' + l.company, [{k:'kind', l:'كيف تواصلت؟', t:'select', opts: LKINDS}, {k:'interest', l:'نسبة الاهتمام هلأ', t:'select', opts: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(x => [x, x + '%']), def: N(l.interest)},
+      {k:'note', l:'شو صار؟', t:'textarea', ph: 'مثلاً: بده يستشير شريكه، رح نحكي الأحد'}, {k:'nxt', l:'موعد المتابعة الجاية', t:'date', def: addDays(today(), 3)},
+      ...(log.length ? [{k:'_log', l:'آخر تواصل', t:'info', html: log.map(x => `<div class="m" style="font-size:13px">${fmtDT(x.at)} · ${esc(x.by_name || '')} · ${esc(x.kind)}${x.note ? ': ' + esc(x.note) : ''}</div>`).join('')}] : [])], null,
+      async v => { await db.rpc('lead_contact', {lid: id, kind: v.kind, note: v.note || null, nxt: v.nxt || null, intr: N(v.interest)}); toast('انسجّل التواصل'); K.render(); refreshLeadsDue(); });
+  },
   leadForm: async id => { await people(); const l = id ? (ui.leadCache || []).find(x => x.id === id) : null;
     openForm(l ? 'تعديل ' + l.company : 'عميل محتمل جديد', [{k:'company', l:'اسم الشركة / المطعم', req: 1}, {k:'type', l:'النوع', t:'select', opts: [...new Set([...(l?.type ? [l.type] : []), ...CL_TYPES, ...(ST.oSite?.config?.sectors || [])])]}, {k:'contact_name', l:'اسم المسؤول'}, {k:'phone', l:'الهاتف'},
-      {k:'source', l:'من وين وصلنا', t:'select', opts: [...new Set([...(l?.source ? [l.source] : []), 'زيارة ميدانية','اتصال','سوشال ميديا','توصية','إعلان','موقع الوكالة','أخرى'])]}, {k:'campaign', l:'الحملة (إذا معروفة)'},
-      {k:'stage', l:'المرحلة', t:'select', opts: LSTAGES}, {k:'owner', l:'المسؤول عنه', t:'select', opts: (ST.people || []).map(p => [p.id, p.name]), def: me().id}, {k:'expected_fee', l:'الاشتراك المتوقع (د.أ/شهر)', t:'number', def: 0},
+      {k:'source', l:'من وين وصلنا', t:'select', opts: [...new Set([...(l?.source ? [l.source] : []), 'زيارة ميدانية','اتصال','سوشال ميديا','توصية','إعلان','موقع الوكالة','خرائط جوجل','أخرى'])]}, {k:'campaign', l:'الحملة (إذا معروفة)'},
+      {k:'stage', l:'المرحلة', t:'select', opts: LSTAGES}, {k:'interest', l:'نسبة الاهتمام', t:'select', opts: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(x => [x, x + '%']), def: 0}, {k:'owner', l:'الموظف المسؤول', t:'select', opts: (ST.people || []).map(p => [p.id, p.name]), def: me().id}, {k:'expected_fee', l:'الاشتراك المتوقع (د.أ/شهر)', t:'number', def: 0},
       {k:'next_followup', l:'موعد المتابعة الجاية', t:'date'}, {k:'lost_reason', l:'سبب الخسارة (إذا خسرناه)', t:'select', opts: [['', '—'], 'السعر غالي', 'راح لشركة ثانية', 'مش وقته', 'ما رد', 'مش مناسب إلنا', 'أخرى']}, {k:'notes', l:'ملاحظات', t:'textarea'}], l,
-      async v => { const row = {...v, expected_fee: N(v.expected_fee), next_followup: v.next_followup || null, campaign: v.campaign || null, lost_reason: v.lost_reason || null, owner: v.owner || me().id, updated_at: new Date().toISOString()}; if (l) await db.upd('leads', {id}, row); else await db.ins('leads', row); toast('انحفظ'); K.render(); }); },
+      async v => { const row = {...v, interest: N(v.interest), expected_fee: N(v.expected_fee), next_followup: v.next_followup || null, campaign: v.campaign || null, lost_reason: v.lost_reason || null, owner: v.owner || me().id, updated_at: new Date().toISOString()}; if (l) await db.upd('leads', {id}, row); else await db.ins('leads', row); toast('انحفظ'); K.render(); refreshLeadsDue(); }); },
   leadConvert: async id => { const cid = await db.rpc('lead_to_client', {lid: id}); toast('صار عميل للوكالة، وانعملتله مراحل البداية'); A.openClient(cid); }
 });
+// شارة وتنبيه "لازم تتواصل" للموظف
+async function refreshLeadsDue(first) {
+  if (!K.me || isClient() || !can('leads')) return;
+  try {
+    const d = await db.rpc('leads_due', {}); setBadge('leads', N(d?.mine) || '', true);
+    const key = 'saber-leads-due-' + me().id + '-' + today();
+    if (first && N(d?.mine)) { let seen = null; try { seen = localStorage.getItem(key); } catch (e) {} if (!seen) { toast(`لازم تتواصل مع ${N(d.mine)} عميل مهتم أو باجتماع: ${(d.names || []).join('، ')}`, true); try { localStorage.setItem(key, '1'); } catch (e) {} } }
+  } catch (e) {}
+}
+setInterval(() => refreshLeadsDue(false), 10 * 60000);
+K.onEnter.push(() => { if (!isClient()) setTimeout(() => refreshLeadsDue(true), 2500); });
 
 /* ================= المساعد الذكي ================= */
 V.ai = async () => head('المساعد الذكي', 'بيقرأ أرقامك الحقيقية (المبيعات، الهامش، المرتجع، الإعلانات، الفريق) وبيعطيك اقتراحات. القرار بالآخر إلك') +
