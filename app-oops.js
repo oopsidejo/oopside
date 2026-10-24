@@ -271,7 +271,7 @@ V.olive = async () => {
 };
 function qfCard(q) {
   if (!q) return '<div class="card"><p class="note">لتشوف قمع الفورم السريع (مين شافه، مين كتب، مين بعت) شغّل ملف <b>28_quick_form_funnel.sql</b>.</p></div>';
-  const w = q.week || {}, steps = [['visits', 'زاروا الموقع'], ['seen', 'شافوا الفورم'], ['focus', 'بلّشوا يكتبوا'], ['try', 'ضغطوا إرسال'], ['ok', 'انحفظوا كعملاء']];
+  const w = q.week || {}, steps = [['visits', 'زاروا الموقع'], ['seen', 'شافوا الفورم'], ['focus', 'كبسوا عالفورم'], ['name', 'كتبوا الاسم'], ['phone', 'كتبوا رقم صحيح'], ['try', 'ضغطوا إرسال'], ['ok', 'انحفظوا كعملاء']];
   const mx = Math.max(1, N(w.visits));
   const warn = [];
   if (q.live === false) warn.push('الموقع <b>مطفي</b>، والفورم ما بيحفظ إشي. شغّله من "موقع الوكالة والأسعار".');
@@ -354,7 +354,7 @@ V.oops = async () => {
       <label class="toggle" style="display:flex;gap:10px;align-items:center;margin:8px 0"><input type="checkbox" id="pf_quick_on" ${c.quick_on === false ? '' : 'checked'}><b>شغّل الفورم السريع</b></label>
       <div class="fgrid">${fi('quick_title', 'العنوان', c.quick_title, 'زيد مبيعاتك 🚀')}${fi('quick_offer', 'العرض', c.quick_offer, 'اشترك الآن واحصل على خصم 50% على خدماتنا')}
       ${ta('quick_points', 'المغريات (كل وحدة بسطر، لحد 4)', (c.quick_points || []).join('\n'), 3, '', 'استشارة مجانية لصفحاتك وإعلاناتك\nخطة إعلانات على قد ميزانيتك\nإعلانات بالأردن ودول الخليج')}
-      ${fi('quick_btn', 'نص الزر', c.quick_btn, 'احجز الخصم وكلّمنا واتساب')}${ta('quick_wa_msg', 'الرسالة اللي بتطلع بواتساب', c.quick_wa_msg, 2, 'بيتبدّل: {الاسم} {الشغل} {العرض}', 'مرحبا، أنا {الاسم}{الشغل}. عبّيت الفورم وبدي أستفيد من العرض: {العرض}')}</div>
+      ${fi('quick_btn', 'نص الزر', c.quick_btn, 'احجز الخصم وكلّمنا واتساب')}${fi('quick_trust', 'سطر الثقة تحت الزر', c.quick_trust, 'مجاني وبدون أي التزام · خبرة +12 سنة بإدارة الإعلانات')}${ta('quick_wa_msg', 'الرسالة اللي بتطلع بواتساب', c.quick_wa_msg, 2, 'بيتبدّل: {الاسم} {الشغل} {العرض}', 'مرحبا، أنا {الاسم}{الشغل}. عبّيت الفورم وبدي أستفيد من العرض: {العرض}')}</div>
       ${c.whatsapp ? '' : '<p class="note">⚠ حط رقم الواتساب بـ "نصوص الموقع والمشاكل" عشان الزر يحوّل عليه.</p>'}</div>
     <div class="card"><div class="head" style="margin-bottom:6px"><h2>بروفايل الوكالة</h2><span class="row" style="gap:6px"><a class="btn sm" href="${esc(prof)}" target="_blank" rel="noopener">افتح البروفايل</a><button class="btn sm" data-act="copyProf" data-id="${esc(prof)}">انسخ الرابط</button></span></div>
       <p class="m">صفحة بتبعتها للزباين: المنصات اللي بتعلن عليها، خدماتك (من "الخدمات والأسعار")، أفكار إعلانات، آراء العملاء، والعرض. وفيها زر "حفظ PDF".</p>
@@ -483,7 +483,7 @@ Object.assign(A, {
   profSave: async () => {
     const s = await loadSite(), g = k => $('#pf_' + k)?.value.trim() ?? '', lines = k => g(k).split('\n').map(x => x.trim()).filter(Boolean);
     const config = {...s.config, quick_on: !!$('#pf_quick_on')?.checked, quick_title: g('quick_title'), quick_offer: g('quick_offer'), quick_points: lines('quick_points').slice(0, 4),
-      quick_btn: g('quick_btn'), quick_wa_msg: g('quick_wa_msg'), profile_title: g('profile_title'), profile_sub: g('profile_sub'), markets: lines('markets'), clients: lines('clients'), ad_ideas: lines('ad_ideas'),
+      quick_btn: g('quick_btn'), quick_trust: g('quick_trust'), quick_wa_msg: g('quick_wa_msg'), profile_title: g('profile_title'), profile_sub: g('profile_sub'), markets: lines('markets'), clients: lines('clients'), ad_ideas: lines('ad_ideas'),
       testimonials: ui.tests.filter(t => (t.name || '').trim()).map(t => ({name: t.name.trim(), business: (t.business || '').trim(), stars: N(t.stars) || 5, quote: (t.quote || '').trim(), result: (t.result || '').trim()})),
       cases: ui.cases.filter(t => (t.client || '').trim() && (t.result || '').trim())};
     await db.upd('oops_site', {id: 1}, {config, updated_at: new Date().toISOString()}); ui.testsFor = null; toast('انحفظ'); K.render();
