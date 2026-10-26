@@ -368,17 +368,27 @@ V.oops = async () => {
       ${ta('markets', 'الدول اللي بتعلن فيها (كل وحدة بسطر)', (c.markets || []).join('\n'), 3, '', 'الأردن\nالسعودية\nالإمارات\nالكويت\nقطر\nالبحرين\nعُمان')}
       ${ta('clients', 'أسماء عملاء اشتغلت معهم (كل اسم بسطر، اختياري)', (c.clients || []).join('\n'), 3)}
       ${ta('ad_ideas', 'أفكار إعلانات (كل فكرة بسطر، اختياري)', (c.ad_ideas || []).join('\n'), 3, 'إذا فاضية بتطلع 6 أفكار جاهزة')}</div></div>
+    <div class="card"><h2>فيديو تعريفي (بأول الموقع)</h2><p class="m">فيديو قصير إلك (30–90 ثانية) بترجمة مكتوبة. ارفعه على يوتيوب كـ "غير مدرج" (Unlisted) أو Shorts، وحط الرابط هون. بيطلع تحت الفورم مباشرة، وما بيشتغل إلا لما الزائر يكبس.</p>
+      <div class="fgrid">${fi('founder_video', 'رابط الفيديو', c.founder_video, 'https://youtube.com/shorts/...')}${fi('founder_title', 'عنوان فوق الفيديو', c.founder_title, 'ليش إعلانك غالي؟')}${fi('founder_name', 'الاسم والصفة تحت الفيديو', c.founder_name, 'وليد الصابر · 12 سنة بإدارة الإعلانات')}</div></div>
     <div class="card"><div class="head" style="margin-bottom:6px"><h2>آراء العملاء</h2><button class="btn sm" data-act="testAdd">+ رأي</button></div>
       <p class="m">حط آراء حقيقية من عملائك بإذنهم. بتطلع بالبروفايل بس إذا فيها اسم ورأي أو نتيجة.</p>
       ${ui.tests.length ? ui.tests.map((t, i) => `<div class="fgrid" style="border-top:1px solid var(--line);padding-top:8px;margin-top:8px">
         <label class="fld"><span>الاسم</span><input data-tt="${i}" data-k="name" value="${esc(t.name || '')}"></label><label class="fld"><span>الشغل</span><input data-tt="${i}" data-k="business" value="${esc(t.business || '')}"></label>
         <label class="fld"><span>التقييم</span><select data-tt="${i}" data-k="stars">${[5, 4, 3].map(n => `<option ${N(t.stars || 5) === n ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
         <label class="fld"><span>النتيجة (اختياري)</span><input data-tt="${i}" data-k="result" value="${esc(t.result || '')}" placeholder="مثلاً: الطلبات زادت 3 أضعاف"></label>
-        <label class="fld wide"><span>الرأي</span><textarea rows="2" data-tt="${i}" data-k="quote">${esc(t.quote || '')}</textarea></label><div><button class="btn sm ghost" data-act="testDel" data-id="${i}">احذف</button></div></div>`).join('') : '<p class="note">ما في آراء لسا.</p>'}</div>
+        <label class="fld wide"><span>الرأي (بكلماته هو)</span><textarea rows="2" data-tt="${i}" data-k="quote">${esc(t.quote || '')}</textarea></label>
+        <label class="fld wide"><span>رابط الفيديو (يوتيوب غير مدرج، أو رابط MP4)</span><input data-tt="${i}" data-k="video" dir="ltr" value="${esc(t.video || '')}" placeholder="https://youtube.com/shorts/..."></label>
+        <label class="fld"><span>المدينة</span><input data-tt="${i}" data-k="city" value="${esc(t.city || '')}"></label><label class="fld"><span>تاريخ النتيجة</span><input data-tt="${i}" data-k="date" value="${esc(t.date || '')}" placeholder="مثلاً: أيلول 2026"></label>
+        <label class="toggle wide" style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-tt="${i}" data-k="consent" ${t.consent !== false ? 'checked' : ''}><span><b>العميل موافق</b> على نشر اسمه ورأيه والفيديو والأرقام (بدونها ما بيطلع بالموقع)</span></label>
+        <div><button class="btn sm ghost" data-act="testDel" data-id="${i}">احذف</button></div></div>`).join('') : '<p class="note">ما في آراء لسا. ولا تحط آراء مش حقيقية: القسم بيختفي من الموقع إذا فاضي.</p>'}</div>
     <div class="card"><div class="head" style="margin-bottom:6px"><h2>شغل عملناه</h2><button class="btn sm" data-act="caseAdd">+ شغل</button></div>
       ${ui.cases.length ? ui.cases.map((t, i) => `<div class="fgrid" style="border-top:1px solid var(--line);padding-top:8px;margin-top:8px">
         <label class="fld"><span>العميل أو نوع الشغل</span><input data-cs="${i}" data-k="client" value="${esc(t.client || '')}"></label><label class="fld"><span>المشكلة</span><input data-cs="${i}" data-k="problem" value="${esc(t.problem || '')}"></label>
-        <label class="fld"><span>النتيجة</span><input data-cs="${i}" data-k="result" value="${esc(t.result || '')}" placeholder="مثلاً: تكلفة الطلب نزلت من 4 لـ 1.5 دينار"></label><div><button class="btn sm ghost" data-act="caseDel" data-id="${i}">احذف</button></div></div>`).join('') : '<p class="note">اختياري.</p>'}</div>
+        <label class="fld"><span>النتيجة</span><input data-cs="${i}" data-k="result" value="${esc(t.result || '')}" placeholder="مثلاً: تكلفة الطلب نزلت من 4 لـ 1.5 دينار"></label>
+        <label class="fld"><span>المقياس</span><input data-cs="${i}" data-k="metric" value="${esc(t.metric || '')}" placeholder="مثلاً: تكلفة الطلب"></label><label class="fld"><span>قبل</span><input data-cs="${i}" data-k="before" value="${esc(t.before || '')}" placeholder="4 د.أ"></label><label class="fld"><span>بعد</span><input data-cs="${i}" data-k="after" value="${esc(t.after || '')}" placeholder="1.5 د.أ"></label>
+        <label class="fld"><span>المدة</span><input data-cs="${i}" data-k="period" value="${esc(t.period || '')}" placeholder="مثلاً: خلال شهرين (آب – أيلول 2026)"></label>
+        <label class="toggle wide" style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-cs="${i}" data-k="consent" ${t.consent !== false ? 'checked' : ''}><span><b>موافقة على النشر موجودة</b> (أو المشروع إلك)</span></label>
+        <div><button class="btn sm ghost" data-act="caseDel" data-id="${i}">احذف</button></div></div>`).join('') : '<p class="note">اختياري. حالة مطعمك صابر جو سناك ممكن تكون أول وحدة، واكتب بالعميل إنه مطعم المؤسس.</p>'}</div>
     ${can('oops', 'edit') ? '<div class="row"><button class="btn pri" data-act="profSave">حفظ</button></div>' : ''}`;
   }
   if (tab === 'bench') {
@@ -401,8 +411,8 @@ async function keepPf(fn) {
   fn(); await K.render();
   Object.entries(keep).forEach(([id, v]) => { const el = document.getElementById(id); if (!el) return; if (el.type === 'checkbox') el.checked = v; else el.value = v; });
 }
-document.addEventListener('input', e => { const t = e.target; if (t.dataset.tt != null && ui.tests?.[N(t.dataset.tt)]) ui.tests[N(t.dataset.tt)][t.dataset.k] = t.value; if (t.dataset.cs != null && ui.cases?.[N(t.dataset.cs)]) ui.cases[N(t.dataset.cs)][t.dataset.k] = t.value; });
-document.addEventListener('change', e => { const t = e.target; if (t.dataset.tt != null && ui.tests?.[N(t.dataset.tt)]) ui.tests[N(t.dataset.tt)][t.dataset.k] = t.value; });
+document.addEventListener('input', e => { const t = e.target; if (t.type === 'checkbox') return; if (t.dataset.tt != null && ui.tests?.[N(t.dataset.tt)]) ui.tests[N(t.dataset.tt)][t.dataset.k] = t.value; if (t.dataset.cs != null && ui.cases?.[N(t.dataset.cs)]) ui.cases[N(t.dataset.cs)][t.dataset.k] = t.value; });
+document.addEventListener('change', e => { const t = e.target; const v = t.type === 'checkbox' ? t.checked : t.value; if (t.dataset.tt != null && ui.tests?.[N(t.dataset.tt)]) ui.tests[N(t.dataset.tt)][t.dataset.k] = v; if (t.dataset.cs != null && ui.cases?.[N(t.dataset.cs)]) ui.cases[N(t.dataset.cs)][t.dataset.k] = v; });
 document.addEventListener('input', e => { const t = e.target; if (t.dataset.pr != null && ui.probs?.[N(t.dataset.pr)]) ui.probs[N(t.dataset.pr)][t.dataset.k] = t.value; });
 document.addEventListener('change', e => { const t = e.target; if (t.dataset.pr != null && ui.probs?.[N(t.dataset.pr)]) ui.probs[N(t.dataset.pr)][t.dataset.k] = t.value; });
 const parseTiers = t => String(t || '').split(/[,،\n]/).map(x => x.split('=').map(y => N(y.trim()))).filter(([a, b]) => a > 0 && b > 0).map(([from, off]) => ({from, off}));
@@ -490,8 +500,11 @@ Object.assign(A, {
     const s = await loadSite(), g = k => $('#pf_' + k)?.value.trim() ?? '', lines = k => g(k).split('\n').map(x => x.trim()).filter(Boolean);
     const config = {...s.config, quick_on: !!$('#pf_quick_on')?.checked, quick_title: g('quick_title'), quick_offer: g('quick_offer'), quick_points: lines('quick_points').slice(0, 4),
       quick_btn: g('quick_btn'), quick_trust: g('quick_trust'), quick_wa_msg: g('quick_wa_msg'), profile_title: g('profile_title'), profile_sub: g('profile_sub'), markets: lines('markets'), clients: lines('clients'), ad_ideas: lines('ad_ideas'),
-      testimonials: ui.tests.filter(t => (t.name || '').trim()).map(t => ({name: t.name.trim(), business: (t.business || '').trim(), stars: N(t.stars) || 5, quote: (t.quote || '').trim(), result: (t.result || '').trim()})),
-      cases: ui.cases.filter(t => (t.client || '').trim() && (t.result || '').trim())};
+      founder_video: g('founder_video'), founder_title: g('founder_title'), founder_name: g('founder_name'),
+      testimonials: ui.tests.filter(t => (t.name || '').trim()).map(t => ({name: t.name.trim(), business: (t.business || '').trim(), stars: N(t.stars) || 5, quote: (t.quote || '').trim(), result: (t.result || '').trim(),
+        video: (t.video || '').trim(), city: (t.city || '').trim(), date: (t.date || '').trim(), consent: t.consent !== false})),
+      cases: ui.cases.filter(t => (t.client || '').trim() && ((t.result || '').trim() || (t.before && t.after))).map(t => ({...t, consent: t.consent !== false}))};
+    const badVid = [config.founder_video, ...config.testimonials.map(t => t.video)].filter(Boolean).find(u => !/^https:\/\//.test(u)); if (badVid) return toast('رابط الفيديو لازم يبلّش بـ https://', true);
     await db.upd('oops_site', {id: 1}, {config, updated_at: new Date().toISOString()}); ui.testsFor = null; toast('انحفظ'); K.render();
   },
   svcForm: id => svcEditor(id),

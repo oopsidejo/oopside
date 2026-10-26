@@ -113,8 +113,8 @@ async function boot() {
   const offer = c.quick_offer || 'اشترك الآن واحصل على خصم 50% على خدماتنا';
   const waUrl = wa ? 'https://wa.me/' + wa + '?text=' + encodeURIComponent('مرحبا، شفت بروفايل ' + brand + ' وبدي أستفيد من العرض: ' + offer) : '';
   const markets = c.markets?.length ? c.markets : MARKETS;
-  const tests = (c.testimonials || []).filter(t => t && (t.quote || t.result) && t.name);
-  const cases = (c.cases || []).filter(x => x && x.client && x.result);
+  const tests = (c.testimonials || []).filter(t => t && t.consent !== false && (t.quote || t.result || t.video) && t.name);
+  const cases = (c.cases || []).filter(x => x && x.consent !== false && x.client && (x.result || (x.before && x.after)));
   const clients = (c.clients || []).filter(Boolean);
   const byCat = {}; (data.services || []).forEach(s => { (byCat[s.category || 'خدمات'] = byCat[s.category || 'خدمات'] || []).push(s); });
   document.title = brand + ' · بروفايل الوكالة';
@@ -136,9 +136,10 @@ async function boot() {
   <section class="sec" style="padding-top:0"><div class="wrap"><h2>أفكار إعلانات بتبيع</h2><p class="m">من الأفكار اللي منشتغل عليها، ومنفصّلها على شغلك.</p>
     <div class="grid" style="margin-top:14px">${(c.ad_ideas?.length ? c.ad_ideas.map(x => [x, '']) : IDEAS).map(([n, d]) => `<div class="card"><h3>${esc(n)}</h3>${d ? `<p class="m" style="margin:4px 0 0">${esc(d)}</p>` : ''}</div>`).join('')}</div></div></section>
   ${tests.length ? `<section class="sec" style="padding-top:0"><div class="wrap"><h2>شو حكوا عنا</h2>
-    <div class="grid" style="margin-top:14px">${tests.map(t => `<div class="card"><div class="stars" aria-label="${N(t.stars) || 5} من 5">${'★'.repeat(Math.min(5, Math.max(1, N(t.stars) || 5)))}</div>${t.quote ? `<p class="quote">"${esc(t.quote)}"</p>` : ''}${t.result ? `<span class="res">${esc(t.result)}</span>` : ''}<p class="m" style="margin:8px 0 0"><b>${esc(t.name)}</b>${t.business ? ' · ' + esc(t.business) : ''}</p></div>`).join('')}</div></div></section>` : ''}
+    <div class="grid" style="margin-top:14px">${tests.map(t => `<div class="card"><div class="stars" aria-label="${N(t.stars) || 5} من 5">${'★'.repeat(Math.min(5, Math.max(1, N(t.stars) || 5)))}</div>${t.quote ? `<p class="quote">"${esc(t.quote)}"</p>` : ''}${t.result ? `<span class="res">${esc(t.result)}</span>` : ''}<p class="m" style="margin:8px 0 0"><b>${esc(t.name)}</b>${[t.business, t.city].filter(Boolean).map(x => ' · ' + esc(x)).join('')}</p>${/^https:\/\//.test(t.video || '') ? `<a href="${esc(t.video)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px">▶ شوف الفيديو</a>` : ''}</div>`).join('')}</div>
+    ${tests.some(t => t.result) || cases.length ? '<p class="m" style="margin-top:10px">هاي نتائج عملاء حقيقية، لا نضمن نتائج محددة والنتائج بتختلف من نشاط لنشاط.</p>' : ''}</div></section>` : ''}
   ${cases.length ? `<section class="sec" style="padding-top:0"><div class="wrap"><h2>شغل عملناه</h2>
-    <div class="grid" style="margin-top:14px">${cases.map(x => `<div class="card"><h3>${esc(x.client)}</h3>${x.problem ? `<p class="m" style="margin:4px 0">${esc(x.problem)}</p>` : ''}<span class="res">${esc(x.result)}</span></div>`).join('')}</div></div></section>` : ''}
+    <div class="grid" style="margin-top:14px">${cases.map(x => `<div class="card"><h3>${esc(x.client)}</h3>${x.problem ? `<p class="m" style="margin:4px 0">${esc(x.problem)}</p>` : ''}${x.before && x.after ? `<p style="margin:6px 0"><b>${esc(x.metric || 'قبل ← بعد')}:</b> ${esc(x.before)} ← <b>${esc(x.after)}</b></p>` : ''}${x.result ? `<span class="res">${esc(x.result)}</span>` : ''}${x.period ? `<p class="m" style="margin:6px 0 0">${esc(x.period)}</p>` : ''}</div>`).join('')}</div></div></section>` : ''}
   ${clients.length ? `<section class="sec" style="padding-top:0"><div class="wrap"><h2>اشتغلنا مع</h2><div class="chips" style="margin-top:12px">${clients.map(x => `<span class="chip">${esc(x)}</span>`).join('')}</div></div></section>` : ''}
   <section class="sec" style="padding-top:0"><div class="wrap"><h2>كيف منشتغل</h2>
     <ol class="steps" style="margin-top:14px"><li><b>منفهم شغلك</b><p class="m" style="margin:4px 0 0">شو بتبيع، لمين، وشو الميزانية</p></li><li><b>منحطلك خطة</b><p class="m" style="margin:4px 0 0">المنصات والجمهور والأفكار وتكلفة الزبون المتوقعة</p></li>

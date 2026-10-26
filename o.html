@@ -100,6 +100,23 @@ nav.links a:hover{color:var(--ink);background:var(--lilac)}
 .qofw{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px}.qofw .qoffer{margin-top:0}
 .qterms{color:#fff;opacity:.85;font-size:13px;text-decoration:underline}
 .qwa{display:block;text-align:center;color:#1fa855;font-weight:700;font-size:15px;text-decoration:underline;padding:2px}
+.proof{padding-top:8px}
+.founder{display:grid;grid-template-columns:minmax(0,300px) 1fr;gap:24px;align-items:center;margin-bottom:28px}
+.founder h2{font-size:28px;margin-bottom:6px}.founder .btn{margin-top:14px}
+.vid{position:relative;display:block;width:100%;aspect-ratio:16/9;border:0;padding:0;border-radius:16px;overflow:hidden;background:#000;cursor:pointer}
+.vid.tall{aspect-ratio:9/16}
+.vid img{width:100%;height:100%;object-fit:cover;opacity:.92}
+.vid i{position:absolute;inset:0;margin:auto;width:64px;height:64px;border-radius:50%;background:rgba(31,168,85,.95);color:#fff;font:700 26px/64px var(--f-d);font-style:normal;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+iframe.vid{cursor:auto}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:12px}
+.tcard{margin:0;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column}
+.tcard .vid{border-radius:0}.tcard figcaption{padding:12px 14px;display:grid;gap:4px}
+.tcard blockquote{margin:0;font-weight:500}.tres{justify-self:start;background:var(--mint-bg);color:var(--mint);font-weight:700;border-radius:8px;padding:2px 10px;font-size:14px}
+.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-top:12px}
+.ccard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;display:grid;gap:6px}
+.ba{display:flex;align-items:center;gap:10px;margin:4px 0}.ba div{display:grid;background:var(--lilac);border-radius:10px;padding:6px 12px}.ba .aft{background:var(--mint-bg);color:var(--mint)}.ba strong{font:800 20px var(--f-d)}.ba small{font-size:12px;opacity:.8}
+.disc{margin-top:14px;color:var(--muted);font-size:13px;text-align:center}
+@media (max-width:700px){.founder{grid-template-columns:1fr}.founder .fvid{max-width:280px;margin:0 auto;width:100%}}
 .qtrust{margin:0;text-align:center;color:var(--mint);font-weight:700;font-size:14px}
 @media (prefers-reduced-motion:reduce){.qoffer{animation:none}}
 .qnote{text-align:center}
@@ -441,10 +458,10 @@ const UTM_KEYS = ['utm_source','utm_medium','utm_campaign','utm_content','utm_te
 const utm = () => { try { return JSON.parse(sessionStorage.getItem('oops-utm') || '{}'); } catch (e) { return {}; } };
 
 /* ---------- التتبع (بدون أي بيانات شخصية) ---------- */
-const CUSTOM = new Set(['OopsStep', 'BuilderDone', 'CalcStart']);
+const CUSTOM = new Set(['OopsStep', 'BuilderDone', 'CalcStart', 'VideoPlay']);
 const track = (ev, data) => {
   try { if (window.fbq) fbq(CUSTOM.has(ev) ? 'trackCustom' : 'track', ev, data || {}); } catch (e) {}
-  try { if (window.gtag) gtag('event', {Lead: 'generate_lead', ViewContent: 'view_item_list', InitiateCheckout: 'begin_checkout', Contact: 'whatsapp_click', BuilderDone: 'builder_completed', CalcStart: 'calculator_started'}[ev] || ev, data || {}); } catch (e) {}
+  try { if (window.gtag) gtag('event', {Lead: 'generate_lead', ViewContent: 'view_item_list', InitiateCheckout: 'begin_checkout', Contact: 'whatsapp_click', BuilderDone: 'builder_completed', CalcStart: 'calculator_started', VideoPlay: 'video_start'}[ev] || ev, data || {}); } catch (e) {}
   try { (window.dataLayer = window.dataLayer || []).push({event: 'oops_' + ev, ...(data || {})}); } catch (e) {}
 };
 function loadClarity(id) {
@@ -537,6 +554,33 @@ async function quickSubmit(e) {
   $('#qform').innerHTML = `<div class="qdone"><b>وصلنا طلبك ✅</b><p>رح نتواصل معك على <span dir="ltr">${esc(phone)}</span> بأقرب وقت.</p></div>`;
 }
 
+/* ---------- الإثبات: فيديو المؤسس، آراء العملاء بالفيديو، قبل وبعد ---------- */
+// يوتيوب: بنعرض صورة بس، والفيديو بيتحمّل لما الزائر يكبس (الصفحة بتضل سريعة)
+const ytId = u => { const m = String(u || '').match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/))([\w-]{11})/); return m ? m[1] : null; };
+function vidHtml(url, title, tall) {
+  const id = ytId(url);
+  if (id) return `<button type="button" class="vid ${tall || /shorts\//.test(url) ? 'tall' : ''}" data-yt="${esc(id)}" aria-label="شغّل الفيديو: ${esc(title || '')}"><img src="https://i.ytimg.com/vi/${esc(id)}/hqdefault.jpg" alt="" loading="lazy" decoding="async"><i aria-hidden="true">▶</i></button>`;
+  if (/^https:\/\/.+\.(mp4|webm|mov)(\?|$)/i.test(url)) return `<video class="vid ${tall ? 'tall' : ''}" src="${esc(url)}" controls playsinline preload="none"></video>`;
+  return '';
+}
+function proofHtml(c) {
+  const tests = (c.testimonials || []).filter(t => t && t.consent !== false && t.name && (t.quote || t.result || t.video));
+  const cases = (c.cases || []).filter(x => x && x.consent !== false && x.client && (x.result || (x.before && x.after)));
+  const fv = vidHtml(c.founder_video, c.founder_title, true);
+  if (!fv && !tests.length && !cases.length) return '';
+  const disc = '<p class="disc">هاي نتائج عملاء حقيقية، لا نضمن نتائج محددة والنتائج بتختلف من نشاط لنشاط.</p>';
+  return `<section class="sec proof" id="results"><div class="wrap">
+    ${fv ? `<div class="founder"><div class="fvid">${fv}</div><div><h2>${esc(c.founder_title || 'ليش إعلانك غالي؟')}</h2>${c.founder_name ? `<p class="m">${esc(c.founder_name)}</p>` : ''}<a class="btn pri" href="#top" data-qgo>احجز تشخيص مجاني</a></div></div>` : ''}
+    ${tests.length ? `<div class="sechead"><div><h2>عملاء بيحكوا</h2><p>بكلماتهم هم، بموافقتهم.</p></div></div>
+      <div class="tgrid">${tests.map(t => `<figure class="tcard">${t.video ? vidHtml(t.video, t.name, true) : ''}<figcaption>${t.quote ? `<blockquote>"${esc(t.quote)}"</blockquote>` : ''}${t.result ? `<span class="tres">${esc(t.result)}</span>` : ''}
+        <b>${esc(t.name)}</b><small class="m">${esc([t.business, t.city, t.date].filter(Boolean).join(' · '))}</small></figcaption></figure>`).join('')}</div>` : ''}
+    ${cases.length ? `<div class="sechead" style="margin-top:28px"><div><h2>أرقام قبل وبعد</h2></div></div>
+      <div class="cgrid">${cases.map(x => `<div class="ccard"><b>${esc(x.client)}</b>${x.problem ? `<small class="m">${esc(x.problem)}</small>` : ''}
+        ${x.before && x.after ? `<div class="ba"><div><small>قبل</small><strong>${esc(x.before)}</strong></div><span aria-hidden="true">←</span><div class="aft"><small>بعد</small><strong>${esc(x.after)}</strong></div></div>${x.metric ? `<small class="m">${esc(x.metric)}</small>` : ''}` : ''}
+        ${x.result ? `<p>${esc(x.result)}</p>` : ''}${x.period ? `<small class="m">${esc(x.period)}</small>` : ''}</div>`).join('')}</div>` : ''}
+    ${tests.some(t => t.result) || cases.length ? disc : ''}
+  </div></section>`;
+}
 function home() {
   const c = SITE.config;
   return `<section class="hero"><div class="wrap">
@@ -546,6 +590,7 @@ function home() {
       <li><div><b>حدد ميزانيتك</b><span>منقترحلك خدمات على قدها، والإعلانات منفصلة عن أتعابنا</span></div></li>
       <li><div><b>شوف السعر فوراً وابعت</b><span>فريقنا بيراجع ويرجعلك بعرض رسمي</span></div></li></ol>` : quickForm()}
   </div></section>
+  ${proofHtml(c)}
   <section class="sec" id="build"><div class="wrap">
     <div class="sechead"><div><h2>ابنِ باقتك</h2><p>كل اختيار بيبيّن سعره دغري. الأرقام تقدير مبدئي، والعرض الرسمي بيوصلك بعد المراجعة.</p></div></div>
     <div class="builder"><div class="panel" id="wiz"></div>${receiptShell()}</div>
@@ -907,6 +952,12 @@ async function quotePage(tok) {
 
 /* ---------- ربط الأحداث ---------- */
 function bind() {
+  document.addEventListener('click', e => {
+    const v = e.target.closest('[data-yt]'); if (v) { e.preventDefault(); const id = v.dataset.yt; const f = document.createElement('iframe');
+      f.src = 'https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&playsinline=1&rel=0'; f.title = v.getAttribute('aria-label') || 'فيديو'; f.allow = 'autoplay; encrypted-media; picture-in-picture'; f.allowFullscreen = true; f.className = v.className; v.replaceWith(f);
+      track('VideoPlay', {id}); try { window.clarity?.('event', 'video_play'); } catch (x) {} return; }
+    if (e.target.closest('[data-qgo]')) { e.preventDefault(); $('#qform')?.scrollIntoView({behavior: 'smooth', block: 'center'}); setTimeout(() => $('#q_name')?.focus(), 500); }
+  });
   let calcOn = false; document.addEventListener('input', e => { if (!calcOn && e.target.closest?.('#toolBody')) { calcOn = true; track('CalcStart', {tool: TOOL}); } });
   document.addEventListener('click', e => {
     const t = e.target.closest('button,a'); if (!t) return;
