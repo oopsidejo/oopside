@@ -283,7 +283,7 @@ function qfCard(q) {
     ${warn.map(x => `<p class="warnbar" style="margin:6px 0">${x}</p>`).join('')}
     <div class="qff">${steps.map(([k, l], i) => `<div><span>${l}</span><i style="width:${Math.max(2, N(w[k]) / mx * 100)}%"></i><b>${N(w[k])}</b>${i ? `<small class="m">${N(w[steps[i - 1][0]]) ? Math.round(N(w[k]) / N(w[steps[i - 1][0]]) * 100) + '%' : '—'}</small>` : '<small class="m">' + N(w.mobile) + ' جوال</small>'}</div>`).join('')}</div>
     ${N(w.bad) ? `<p class="m">${N(w.bad)} زائر ضغط إرسال ووقف عند خطأ بالاسم أو الرقم وما كمّل.</p>` : ''}
-    <p class="m">عملاء انحفظوا من الموقع آخر 7 أيام: <b>${N(q.leads)}</b></p>
+    <p class="m">عملاء انحفظوا من الموقع آخر 7 أيام: <b>${N(q.leads)}</b> · كبسوا واتساب مباشرة (بدون فورم): <b>${N(w.wad)}</b> <small>(بيوصلوك على الواتساب، ورسالتهم فيها المصدر مثل [فيسبوك])</small></p>
     ${(q.errors || []).length ? `<details><summary><b>آخر الأخطاء (${q.errors.length})</b></summary>${q.errors.map(e => `<div class="m" style="font-size:13px">${fmtDT(e.at)} · ${esc(e.device || '')} · ${esc(e.source || '')} · <b>${esc(e.err || '')}</b></div>`).join('')}</details>` : ''}</div>`;
 }
 setInterval(() => { if (ui.view === 'olive' && K.me && document.visibilityState === 'visible') K.softRender(); }, 10000);
@@ -335,11 +335,17 @@ V.oops = async () => {
     body = `<div class="card"><h2>بيانات الشركة والتواصل</h2><p class="m">بتطلع بموقع الوكالة (قسم "تواصل معنا" وتحت الصفحة) وبعروض الأسعار.</p><div class="fgrid">
       ${fi('legal_name', 'الاسم الرسمي للشركة', c.legal_name)}${fi('cr', 'رقم السجل التجاري (اختياري)', c.cr)}${ta('about', 'سطر تعريفي تحت الشعار', c.about, 2)}
       ${fi('whatsapp', 'رقم واتساب (بيطلع زر واتساب عالموقع)', c.whatsapp)}${fi('whatsapp_msg', 'الرسالة الجاهزة لما يضغط الزر', c.whatsapp_msg || 'مرحبا، بدي أستفسر عن خدماتكم')}
-      ${fi('phone', 'هاتف للاتصال', c.phone)}${fi('email', 'الإيميل', c.email, 'email')}${fi('address', 'العنوان', c.address)}${fi('maps_url', 'رابط الموقع على Google Maps', c.maps_url, 'url')}${fi('hours', 'ساعات الدوام', c.hours)}
+      ${fi('phone', 'هاتف للاتصال', c.phone)}${fi('email', 'الإيميل', c.email, 'email')}${fi('address', 'العنوان', c.address)}${fi('maps_url', 'رابط الموقع على Google Maps', c.maps_url, 'url')}${fi('hours', 'ساعات الدوام', c.hours)}${fi('days', 'أيام الدوام (مثلاً: السبت – الخميس)', c.days)}${fi('reply_promise', 'وعد سرعة الرد (اكتبه بس إذا بتلتزموا فيه)', c.reply_promise)}
       ${fi('instagram', 'رابط إنستغرام', c.instagram, 'url')}${fi('facebook', 'رابط فيسبوك', c.facebook, 'url')}${fi('tiktok', 'رابط تيك توك', c.tiktok, 'url')}${fi('linkedin', 'رابط لينكد إن', c.linkedin, 'url')}${fi('youtube', 'رابط يوتيوب', c.youtube, 'url')}
       ${vs}<label class="toggle wide" style="display:flex;gap:10px;align-items:flex-start"><input type="checkbox" id="sc_setupfree" ${c.setup_free ? 'checked' : ''}><span><b>رسوم الإعداد مجاناً</b><br><small class="m">رسوم الإعداد ما بتنحسب على العميل، وبتطلعله "مجاناً" كخصم بالفاتورة وعرض السعر.</small></span></label></div></div>
       <div class="card"><h2>النصوص والإعدادات</h2><div class="fgrid">${ta('headline', 'العنوان الرئيسي', c.headline, 2)}${ta('sub', 'السطر تحت العنوان', c.sub, 2)}${fi('site_url', 'رابط موقع الوكالة (إذا مرفوع على رابط ثاني)', c.site_url || '', 'url')}${fi('min_margin', 'أقل هامش مقبول (%)', c.min_margin ?? 30, 'number')}
       ${ta('privacy', 'سياسة الخصوصية', c.privacy, 4)}${ta('terms', 'الشروط الافتراضية للعروض', c.terms, 3)}${ta('sectors', 'أنواع النشاط (كل نوع بسطر)', (c.sectors || []).join('\n'), 6, 'نفس الأسماء بتنستخدم بأرقام التوقعات وبنوع العميل لما يتعاقد')}</div></div>
+      <div class="card"><div class="head" style="margin-bottom:6px"><h2>العرض والشروط (صفحة شروط الخدمة)</h2><a class="btn sm" href="${esc(siteUrl().replace(/[^/]*$/, 'terms.html'))}" target="_blank" rel="noopener">شوف صفحة الشروط</a></div>
+        ${c.quick_offer && !c.offer_terms ? `<p class="warnbar">عندك عرض "${esc(c.quick_offer)}" بدون شروط مكتوبة. جوجل وميتا ممكن يرفضوا إعلان فيه خصم بدون شروط واضحة. اكتبها هون.</p>` : ''}
+        ${c.offer_until && c.offer_until < today() ? `<p class="warnbar">العرض انتهى بتاريخ ${esc(c.offer_until)} ومخفي هلأ عن الموقع. غيّر التاريخ إذا بدك ترجّعه.</p>` : ''}
+        <div class="fgrid">${ta('offer_terms', 'شروط العرض (بتطلع بصفحة الشروط وبرابط "الشروط" جنب العرض)', c.offer_terms, 3, '', )}${fi('offer_until', 'العرض ساري لحد (بعدها بيختفي لحاله)', c.offer_until, 'date')}
+        ${ta('terms_cancel', 'مدة الاشتراك والإيقاف', c.terms_cancel, 2, 'إذا فاضي: "بعد المدة الأولى بالعقد شهر بشهر، والإيقاف بإشعار قبل 15 يوم" (نفس بند العقد)')}${ta('terms_refund', 'الاسترجاع', c.terms_refund, 2, 'إذا فاضي: "الأتعاب عن شهر بلّش ما بترجع، وعن شهر ما بلّش بترجع كاملة"')}
+        ${fi('terms_updated', 'تاريخ آخر تحديث للشروط', c.terms_updated, 'date')}</div><p class="note" style="margin-top:6px">خلي محامي يراجع صفحتي الشروط والخصوصية مرة وحدة، خصوصاً إذا بتشتغلوا بالخليج.</p></div>
       <div class="card"><div class="head" style="margin-bottom:10px"><h2>المشاكل اللي بيختار منها العميل</h2><button class="btn sm" data-act="probAdd">+ مشكلة</button></div>
       <div class="tw"><table><thead><tr><th>النص اللي بيشوفه العميل</th><th>سؤال إضافي</th><th></th></tr></thead><tbody>${ui.probs.map((p, i) => `<tr><td><input class="inl" style="width:100%" data-pr="${i}" data-k="l" value="${esc(p.l)}" aria-label="المشكلة"></td><td>${sel('pa_' + i, ASK, p.ask || '', `data-pr="${i}" data-k="ask" aria-label="سؤال إضافي"`)}</td><td><button class="btn sm ghost" data-act="probDel" data-id="${i}">حذف</button></td></tr>`).join('')}</tbody></table></div>
       <p class="note" style="margin-top:8px">كل خدمة بتحدد هي مقترحة لأي مشاكل (من تعديل الخدمة). هيك محرك الاقتراح بيشتغل بقواعد إنت بتحددها.</p></div>
@@ -498,7 +504,7 @@ Object.assign(A, {
     const probs = ui.probs.filter(p => p.l.trim()).map(p => ({k: p.k, l: p.l.trim(), ...(p.ask ? {ask: p.ask} : {})}));
     const su = g('site_url'); if (su && !/^https:\/\/[^\s]+$/.test(su)) return toast('رابط الموقع لازم يبلش بـ https://', true);
     const wa = g('whatsapp').replace(/[^\d+]/g, ''); if (wa && wa.replace(/\D/g, '').length < 9) return toast('رقم الواتساب مش صحيح', true);
-    const ex = Object.fromEntries(['legal_name','cr','about','whatsapp_msg','maps_url','hours','instagram','facebook','tiktok','linkedin','youtube'].map(k => [k, g(k)]));
+    const ex = Object.fromEntries(['legal_name','cr','about','whatsapp_msg','maps_url','hours','days','reply_promise','offer_terms','offer_until','terms_cancel','terms_refund','terms_updated','instagram','facebook','tiktok','linkedin','youtube'].map(k => [k, g(k)]));
     const config = {...s.config, ...ex, whatsapp: wa, verify: $('#sc_verify')?.value || 'off', verify_required: $('#sc_vreq')?.value || 'whatsapp', setup_free: !!$('#sc_setupfree')?.checked, site_url: su, headline: g('headline'), sub: g('sub'), phone: g('phone'), email: g('email'), address: g('address'), min_margin: N(g('min_margin')) || 30,
       privacy: g('privacy'), terms: g('terms'), sectors: g('sectors').split('\n').map(x => x.trim()).filter(Boolean), problems: probs};
     await db.upd('oops_site', {id: 1}, {config, updated_at: new Date().toISOString()}); ui.probsFor = null; toast('انحفظت إعدادات الموقع'); K.render();
