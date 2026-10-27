@@ -121,6 +121,9 @@ iframe.vid{cursor:auto}
 @media (prefers-reduced-motion:reduce){.qoffer{animation:none}}
 .qnote{text-align:center}
 .qrow{display:grid;gap:10px}
+.qsec>span{display:block;font-size:14px;font-weight:700;margin-bottom:6px}.qsec small{color:var(--muted);font-weight:500}.qsec div{display:flex;flex-wrap:wrap;gap:6px}
+.qsec button{border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:5px 11px;font:600 13.5px var(--f-b);cursor:pointer;min-height:36px}
+.qsec button.on{background:var(--indigo);border-color:var(--indigo);color:#fff}
 .qmore summary{cursor:pointer;color:var(--muted);font-size:14px;padding:2px 0}.qmore[open] summary{margin-bottom:8px}.qmore .fld{margin-top:8px}
 @media (max-width:700px){.qhead{padding:13px 14px}.qhead b{font-size:19px}.qbody{padding:12px 14px 14px;gap:8px}.qpts{font-size:14px;gap:2px}}
 @media (max-width:860px){body:not(.bshow) .mbar{display:none!important}}
@@ -360,21 +363,21 @@ dialog::backdrop{background:rgba(10,12,40,.5)}
       + '<div class="qhead">' + (logo ? '<img src="' + e(logo) + '" alt="' + e(brand || '') + '">' : '') + '<div><b>' + e(c.quick_title || 'زيد مبيعاتك 🚀') + '</b>'
       + (offerOn(c) ? '<span class="qofw"><button type="button" class="qoffer" data-qfocus>🎁 ' + e(c.quick_offer || 'اشترك الآن واحصل على خصم 50% على خدماتنا') + '</button>' + (c.offer_terms ? '<a class="qterms" href="terms.html#offer" target="_blank" rel="noopener">الشروط' + (c.offer_until ? ' · لحد ' + e(c.offer_until) : '') + '</a>' : '') + '</span>' : '') + '</div></div>'
       + '<div class="qbody"><ul class="qpts">' + pts.map(function (x) { return '<li data-qfocus>' + e(x) + '</li>'; }).join('') + '</ul>'
-      + '<label class="fld qf1"><span>اسمك</span><span class="qin"><i aria-hidden="true">👤</i><input id="q_name" autocomplete="name" maxlength="80" placeholder="مثلاً: محمد" required></span></label>'
+      + '<label class="fld qf1"><span>اسمك</span><span class="qin"><i aria-hidden="true">👤</i><input id="q_name" name="name" autocomplete="name" maxlength="80" placeholder="مثلاً: محمد" required></span></label>'
       + '<label class="fld qf2"><span>رقم الواتساب</span><span class="qin qph"><select id="q_cc" aria-label="رمز الدولة">' + CC.map(function (x) { return '<option value="' + x[0] + '"' + (x[0] === cc ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('') + '</select>'
-      + '<input id="q_phone" type="tel" inputmode="tel" autocomplete="tel-national" maxlength="20" placeholder="' + ph + '" dir="ltr" required><em class="qok" aria-hidden="true">✓</em></span></label>'
+      + '<input id="q_phone" name="tel" type="tel" inputmode="tel" autocomplete="tel-national" maxlength="20" placeholder="' + ph + '" dir="ltr" required><em class="qok" aria-hidden="true">✓</em></span></label>'
+      + '<div class="qsec" role="group" aria-label="نوع شغلك"><span>شو نوع شغلك؟ <small>(كبسة وحدة، اختياري)</small></span><div>' + (sectors.length > 6 ? sectors.slice(0, 5).concat(sectors.slice(-1)) : sectors).map(function (x) { return '<button type="button" data-sec="' + e(x) + '">' + e(x) + '</button>'; }).join('') + '</div><input type="hidden" id="q_sector"></div>'
       + '<p class="err" id="qerr" role="alert"></p>'
       + '<button class="btn qgo" type="submit">' + WA + '<span>' + e(c.quick_btn || 'احجز الخصم وكلّمنا واتساب') + '</span></button>'
       + '<p class="qtrust">✓ ' + e(c.quick_trust || 'مجاني وبدون أي التزام') + '</p>'
       + '<a class="qwa" id="qwaDirect" hidden target="_blank" rel="noopener" data-wa-direct>أو احكينا واتساب مباشرة</a>'
-      + '<details class="qmore"><summary>ضيف اسم شغلك ونوعه (اختياري)</summary><label class="fld"><span>اسم شغلك</span><input id="q_biz" autocomplete="organization" maxlength="120"></label>'
-      + '<label class="fld"><span>نوع الشغل</span><select id="q_sector"><option value="">اختار</option>' + sectors.map(function (x) { return '<option>' + e(x) + '</option>'; }).join('') + '</select></label></details>'
+      + '<details class="qmore"><summary>ضيف اسم شغلك (اختياري)</summary><label class="fld"><span>اسم شغلك</span><input id="q_biz" name="organization" autocomplete="organization" maxlength="120"></label></details>'
       + '<small class="m qnote">بنحفظ رقمك عشان نتواصل معك بخصوص العرض بس. <a href="#build" data-start>أو ابنِ باقتك بنفسك ↓</a></small></div></form>';
   }
   // العرض بيختفي لحاله بعد تاريخ انتهائه
   function offerOn(c) { if (!c || !c.offer_until) return true; var t = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10); return t <= String(c.offer_until).slice(0, 10); }
   // كود المصدر بأول رسالة الواتساب: الفريق بيعرف من وين إجا الزبون
-  function tag() { var q = new URLSearchParams(location.search), src = (q.get('utm_source') || q.get('ref') || '').toLowerCase(), sec = q.get('s') || '';
+  function tag() { var q = new URLSearchParams(location.search), src = (q.get('utm_source') || q.get('ref') || (q.get('gclid') || q.get('gbraid') || q.get('wbraid') ? 'google' : '') || (q.get('fbclid') ? 'fb' : '')).toLowerCase(), sec = q.get('s') || '';
     var m = {fb: 'فيسبوك', facebook: 'فيسبوك', ig: 'إنستغرام', instagram: 'إنستغرام', an: 'فيسبوك', th: 'ثريدز', google: 'جوجل', qr: 'QR', tiktok: 'تيك توك', snap: 'سناب'};
     var secs = {restaurants: 'مطاعم', stores: 'متاجر', 'online-stores': 'متاجر', clinics: 'عيادات'};
     var parts = [m[src] || (src ? src : 'الموقع')]; if (secs[sec]) parts.push(secs[sec]); return '[' + parts.join('-') + ']'; }
@@ -449,9 +452,12 @@ function stepUrl(push) {
 }
 
 /* ---------- utm: بنحفظ مصدر الزيارة أول ما يفوت ---------- */
-const UTM_KEYS = ['utm_source','utm_medium','utm_campaign','utm_content','utm_term','ad','fbclid','gclid','ref'];
+const UTM_KEYS = ['utm_source','utm_medium','utm_campaign','utm_content','utm_term','ad','fbclid','gclid','gbraid','wbraid','ref'];
 (function keepUtm() {
   const got = {}; UTM_KEYS.forEach(k => { const v = qs.get(k); if (v) got[k] = v.slice(0, 120); });
+  // إعلانات جوجل بتضيف gclid لحالها: إذا الرابط ما فيه utm منعتبره جوجل
+  if (!got.utm_source && (got.gclid || got.gbraid || got.wbraid)) { got.utm_source = 'google'; got.utm_medium = got.utm_medium || 'cpc'; }
+  if (!got.utm_source && got.fbclid) got.utm_source = 'fb';
   try { if (Object.keys(got).length) sessionStorage.setItem('oops-utm', JSON.stringify(got)); } catch (e) {}
   if (!got.utm_source && document.referrer && !document.referrer.includes(location.host)) { try { if (!sessionStorage.getItem('oops-utm')) sessionStorage.setItem('oops-utm', JSON.stringify({ref: new URL(document.referrer).host})); } catch (e) {} }
 })();
@@ -530,7 +536,8 @@ function qfWatch() {
   const dw = $('#qwaDirect'), wc = SITE?.config || {};
   if (dw && waNum(wc.whatsapp)) { dw.href = waLink((wc.whatsapp_msg || 'مرحبا، بدي أستفسر عن خدماتكم') + ' ' + window.OopsQF.tag()); dw.hidden = false; }
   // الكبس على العرض أو النقاط بيودّي على خانة الاسم (كانوا ينكبسوا وما يصير إشي)
-  f.addEventListener('click', ev => { if (ev.target.closest('[data-qfocus]')) { ev.preventDefault(); nm?.focus(); } });
+  f.addEventListener('click', ev => { if (ev.target.closest('[data-qfocus]')) { ev.preventDefault(); nm?.focus(); }
+    const sb_ = ev.target.closest('[data-sec]'); if (sb_) { const on = !sb_.classList.contains('on'); f.querySelectorAll('[data-sec]').forEach(x => x.classList.remove('on')); sb_.classList.toggle('on', on); $('#q_sector').value = on ? sb_.dataset.sec : ''; qf('focus'); } });
 }
 async function quickSubmit(e) {
   e.preventDefault();
@@ -538,18 +545,23 @@ async function quickSubmit(e) {
   const name = g('q_name'), raw = g('q_phone'), cc = g('q_cc') || '962', biz = g('q_biz'), sector = g('q_sector');
   const err = $('#qerr'); err.textContent = '';
   qf('try');
-  if (!name) { err.textContent = 'اكتب اسمك'; qf('bad', 'بدون اسم'); $('#q_name').focus(); return; }
+  const c0 = SITE?.config || {};
+  // كبس الزر وما كتب رقم: غالباً بدو واتساب على طول. منفتحله الواتساب بدل ما نوقفه (رقمه بيوصلنا هناك)
+  if (!raw && waNum(c0.whatsapp)) {
+    qf('bad', name ? 'بدون رقم ← واتساب مباشر' : 'فاضي ← واتساب مباشر'); qf('wad'); track('Contact', {content_name: 'quick_form_empty'});
+    const m0 = (name ? 'مرحبا، أنا ' + name + (sector ? ' (' + sector + ')' : '') + '. ' : 'مرحبا، ' + (sector ? 'عندي ' + sector + '. ' : '')) + 'بدي أستفيد من العرض: ' + (c0.quick_offer || 'خصم 50%') + ' ' + window.OopsQF.tag();
+    location.href = waLink(m0); return; }
   const phone = window.OopsQF.norm(raw, cc);
   if (!phone) { const c = window.OopsQF.CC.find(x => x[0] === cc); err.textContent = raw ? 'الرقم مش صحيح. اختار رمز دولتك واكتب الرقم مثل: ' + (c ? c[3] : '') : 'اكتب رقم الواتساب'; qf('bad', 'رقم غلط (+' + cc + '): ' + raw.replace(/\d(?=\d{3})/g, '•')); $('#q_phone').focus(); return; }
   const btn = $('#qform .qgo'); btn.disabled = true; const bl = btn.querySelector('span'); if (bl) bl.textContent = 'لحظة…';
   track('Lead', {content_name: 'quick_form'});
   try {
-    if (sb) { const r = await Promise.race([sb.rpc('oops_quick_lead', {p: {name, phone, business: biz, sector, vid: VID, utm: utm()}}), new Promise(r => setTimeout(() => r({error: {message: 'timeout 5s'}}), 5000))]);
+    if (sb) { const r = await Promise.race([sb.rpc('oops_quick_lead', {p: {name: name || 'زائر الموقع', phone, business: biz, sector, vid: VID, utm: utm()}}), new Promise(r => setTimeout(() => r({error: {message: 'timeout 5s'}}), 5000))]);
       if (r?.error) qf('err', r.error.message); else qf('ok'); }
   } catch (x) { qf('err', x?.message || 'exception'); }
   const c = SITE.config || {};
-  const msg = (c.quick_wa_msg || 'مرحبا، أنا {الاسم}{الشغل}. عبّيت الفورم وبدي أستفيد من العرض: {العرض}')
-    .replace(/\{الاسم\}/g, name).replace(/\{الشغل\}/g, biz ? ' من ' + biz : (sector ? ' (' + sector + ')' : '')).replace(/\{العرض\}/g, c.quick_offer || 'خصم 50%') + ' ' + window.OopsQF.tag();
+  const msg = !name ? 'مرحبا، ' + (biz ? 'أنا من ' + biz + (sector ? ' (' + sector + ')' : '') + '. ' : sector ? 'عندي ' + sector + '. ' : '') + 'عبّيت الفورم وبدي أستفيد من العرض: ' + (c.quick_offer || 'خصم 50%') + ' ' + window.OopsQF.tag() : (c.quick_wa_msg || 'مرحبا، أنا {الاسم}{الشغل}. عبّيت الفورم وبدي أستفيد من العرض: {العرض}')
+    .replace(/\{الاسم\}/g, name || 'زائر').replace(/\{الشغل\}/g, biz ? ' من ' + biz : (sector ? ' (' + sector + ')' : '')).replace(/\{العرض\}/g, c.quick_offer || 'خصم 50%') + ' ' + window.OopsQF.tag();
   if (waNum(c.whatsapp)) { qf('wa'); location.href = waLink(msg); return; }
   $('#qform').innerHTML = `<div class="qdone"><b>وصلنا طلبك ✅</b><p>رح نتواصل معك على <span dir="ltr">${esc(phone)}</span> بأقرب وقت.</p></div>`;
 }
