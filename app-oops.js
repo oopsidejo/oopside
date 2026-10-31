@@ -87,7 +87,7 @@ V.oreqd = async () => {
      <div class="card"><h2>المشكلة والميزانية</h2><ul class="todo" style="margin:0 0 10px">${(d.problems || []).map(k => `<li><span>${esc(probLabel(k))}</span></li>`).join('')}${d.problem_other ? `<li><span>${esc(d.problem_other)}</span></li>` : ''}</ul>
       ${kv('طلبات بالشهر', esc(a.orders || ''))}${kv('متوسط الطلب', a.aov ? jd(a.aov) : '')}${kv('رسائل باليوم', esc(a.msgs || ''))}${kv('ساعات الرد', a.hours ? esc(a.hours) + ' ساعات' : '')}${kv('عن المنتج أو المشروع', esc(a.text || ''))}
       ${kv('الميزانية الشهرية كاملة', jd(d.budget_total) + (d.includes_ads ? ' (بتشمل الإعلانات)' : ' (أتعاب بس)'))}${kv('للخدمات (أتعاب)', jd(d.includes_ads ? Math.max(0, N(d.budget_total) - N(r.ad_budget)) : d.budget_total))}${Object.keys(d.ad_split || {}).length ? kv('توزيع الإعلانات', Object.entries(d.ad_split).map(([k, v]) => esc(({meta: 'فيسبوك وإنستغرام', tiktok: 'تيك توك', google: 'جوجل ويوتيوب', snap: 'سناب شات', other: 'غيرها'})[k] || k) + ' ' + jd(v)).join('، ')) : ''}${kv('للإعلانات', jd(r.ad_budget))}${Object.entries(d.ad_split || {}).map(([k, v]) => kv('— ' + ({meta:'فيسبوك وإنستغرام', tiktok:'تيك توك', google:'جوجل', snap:'سناب', other:'غيرها'})[k], jd(v))).join('')}${kv('لأتعابنا (تقريباً)', d.includes_ads ? jd(Math.max(0, N(d.budget_total) - N(r.ad_budget))) : jd(d.budget_total))}</div></div>
-    <div class="card"><div class="head" style="margin-bottom:10px"><h2>عرض السعر</h2>${locked ? '' : `<div class="row">${sel('qAddSel', [['', 'أضف خدمة من القائمة'], ...svcs.map(s => [s.id, s.name]), ['__free', 'سطر حر']], '')}<button class="btn sm" data-act="qAdd">أضف</button></div>`}</div>
+    <div class="card"><div class="head" style="margin-bottom:10px"><h2>عرض السعر</h2>${locked ? '' : `<div class="row">${sel('qAddSel', [['', 'أضف خدمة من القائمة'], ...svcs.map(s => [s.id, s.category === 'الباقات' ? '📦 ' + s.name + ' · ' + N(s.price) + ' د.أ' : s.name]), ['__free', 'سطر حر']], '')}<button class="btn sm" data-act="qAdd">أضف</button></div>`}</div>
       <div class="tw"><table class="qedit"><thead><tr><th>الخدمة</th><th>الكمية</th><th>شهري</th><th>مرة وحدة</th><th>تكلفتنا (داخلي)</th><th>ملاحظة للعميل</th><th></th></tr></thead><tbody>
       ${ui.qL.map((l, i) => `<tr><td><input class="inl" data-ql="${i}" data-k="name" value="${esc(l.name)}" aria-label="الخدمة" ${locked ? 'disabled' : ''}></td><td><input class="inl" style="width:64px" type="number" min="1" data-ql="${i}" data-k="qty" value="${N(l.qty) || 1}" aria-label="الكمية" ${locked ? 'disabled' : ''}></td>
         <td><input class="inl" style="width:90px" type="number" step="any" data-ql="${i}" data-k="monthly" value="${N(l.monthly)}" aria-label="شهري" ${locked ? 'disabled' : ''}>${l.quote ? '<br><small class="neg">لازم تسعير</small>' : ''}</td><td><input class="inl" style="width:90px" type="number" step="any" data-ql="${i}" data-k="one_time" value="${N(l.one_time)}" aria-label="مرة وحدة" ${locked ? 'disabled' : ''}>${N(l.waived) ? `<br><small class="pos">إعداد ${jd(l.waived)} مجاناً</small>` : ''}</td>
@@ -121,7 +121,7 @@ V.oreqd = async () => {
 };
 /* خطة 3 شهور بتنبني من الخدمات المختارة */
 function buildPlan() {
-  const L = ui.qL || [], has = re => L.some(l => re.test((l.name || '') + ' ' + (l.category || '')));
+  const L = ui.qL || [], has = re => L.some(l => re.test((l.name || '') + ' ' + (l.category || '') + ' ' + (l.category === 'الباقات' ? l.includes || '' : '')));
   const plat = [['فيسبوك وإنستغرام', /فيسبوك|إنستغرام|انستغرام|ميتا|meta/i], ['تيك توك', /تيك ?توك|tiktok/i], ['جوجل', /جوجل|google|يوتيوب/i], ['سناب شات', /سناب/i], ['X', /\bX\b|تويتر/i], ['لينكدإن', /لينكد/i]].filter(([, re]) => has(re)).map(([n]) => n);
   const ads = has(/إعلان|حملات|ممول/) || plat.length, design = L.find(l => /تصميم|بوست|منشور/.test(l.name || '')), video = L.find(l => /فيديو|ريلز|موشن/.test(l.name || ''));
   const social = has(/إدارة صفحات|إدارة صفحة|سوشال/), team = has(/فريق الرد|الرد على/), pixel = has(/بكسل|تتبع/), landing = has(/صفحة هبوط|موقع/), crm = has(/CRM|متابعة الزبائن/), report = has(/تقرير/);
@@ -182,6 +182,11 @@ Object.assign(A, {
     if (v === '__free') { ui.qL.push({name: 'خدمة إضافية', qty: 1, monthly: 0, one_time: 0, cost: 0}); K.render(); return; }
     const s = ST.oSvcs.find(x => x.id === v); const pr = window.OopsPrice ? window.OopsPrice.price(s, null, N(ui.qD.ad_budget), {}) : {qty: 1, monthly: N(s.price), one_time: 0, cost: N(s.cost)};
     ui.qL.push({service_id: s.id, name: s.name, category: s.category, ptype: s.ptype, unit: s.unit, qty: pr.qty, monthly: pr.monthly, one_time: pr.one_time, cost: pr.cost, quote: pr.quote, includes: s.includes, duration: s.duration});
+    // باقة: خدماتها بتنكتب بـ "شو رح نقدملك" والعنوان لحاله (إذا فاضيين)
+    if (s.category === 'الباقات' && s.includes) {
+      if (!(ui.qD.scope || '').trim()) ui.qD.scope = s.includes;
+      if (!(ui.qD.title || '').trim()) ui.qD.title = s.name.replace(/\s+[A-Z][A-Z ]*$/, '') + ' لـ ' + (ui.oreqCur?.company || '');
+    }
     if (!ui.qD.planEdited) ui.qD.plan = buildPlan(); K.render();
   },
   qDel: i => { ui.qL.splice(N(i), 1); if (!ui.qD.planEdited) ui.qD.plan = buildPlan(); K.render(); },
