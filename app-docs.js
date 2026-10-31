@@ -18,6 +18,24 @@ const cUrl = tok => qUrl('x').replace(/[^/]*\?q=x$/, 'c.html?c=') + tok;
 const waNum = p => { const d = String(p || '').replace(/\D/g, ''); return /^07[789]\d{7}$/.test(d) ? '962' + d.slice(1) : /^7[789]\d{7}$/.test(d) ? '962' + d : d.replace(/^00/, ''); };
 const brand = () => ST.settings?.agency_name || 'OOPSIDE';
 const net = r => N(r.fees_monthly) - N(r.discount);
+// السعر النهائي للعميل: إذا الأسعار "غير شاملة الضريبة" منضيف الضريبة
+const vatF = r => r.vat_mode === 'excl' ? 1 + N(r.vat_rate) / 100 : 1;
+const fin = r => Math.round(net(r) * vatF(r) * 1000) / 1000;
+const vatTag = r => r.vat_mode === 'excl' ? 'شامل الضريبة' : r.vat_mode === 'incl' ? 'شامل الضريبة' : r.vat_mode === 'exempt' ? 'معفي من الضريبة' : '';
+const PAY_M = ['كاش', 'CliQ', 'تحويل بنكي', 'زين كاش', 'شيك', 'بطاقة'];
+// حساب الدفعات: قيمة العقد كاملة، المستحق لحد اليوم (أول كل شهر من تاريخ البدء)، المدفوع، الباقي والمتأخر
+function money(c, paid) {
+  const f = vatF(c), m = net(c) * f, one = N(c.one_time) * f, months = Math.max(1, N(c.months) || 1), total = m * months + one;
+  let k = 0;
+  if (c.start_date && c.status === 'موقّع') {
+    const [sy, sm, sd] = c.start_date.split('-').map(Number), [ty, tm, td] = today().split('-').map(Number);
+    if (today() >= c.start_date) k = Math.min(months, (ty - sy) * 12 + (tm - sm) - (td < sd ? 1 : 0) + 1);
+  }
+  const due = k ? one + m * k : 0, r3 = x => Math.round(x * 1000) / 1000;
+  return {m: r3(m), one: r3(one), months, total: r3(total), paid: r3(paid), rest: r3(Math.max(0, total - paid)), due: r3(due), late: r3(Math.max(0, due - paid)), k};
+}
+const payPill = (c, mo) => !mo || c.status !== 'موقّع' && !mo.paid ? '' : mo.paid >= mo.total - 0.001 ? pill('مدفوع بالكامل', 'good')
+  : mo.late > 0.001 ? pill('متأخر ' + jd(mo.late), 'bad') : mo.paid ? pill('مدفوع ' + jd(mo.paid) + ' من ' + jd(mo.total), 'info') : pill('ما في دفعات', 'warn');
 
 function inRange(d) {
   const t = today(), m = ui.dMode || 'all', x = String(d || '').slice(0, 10);
@@ -68,8 +86,12 @@ V.docs = async () => {
   if (tab === 'settings') return docsHead(tab) + await settingsView();
   const arch = tab === 'archive';
   const [quotes, cons] = await Promise.all([
-    db.q('oops_requests', {in: {status: Q_ST}, eq: {archived: arch}, order: ['created_at', false], limit: 500, select: 'id,no,token,company,contact,phone,status,fees_monthly,discount,discount_pct,one_time,valid_until,sent_at,viewed_at,created_at,lead_id,data'}),
-    db.q('contracts', {eq: {archived: arch}, order: ['created_at', false], limit: 500, select: 'id,no,token,status,title,party,fees_monthly,discount,one_time,sign_deadline,sent_at,viewed_at,signed_at,signer_name,created_at,lead_id,request_id'})]);
+    db.q('oops_requests', {in: {status: Q_ST}, eq: {archived: arch}, order: ['created_at', false], limit: 500, select: 'id,no,token,company,contact,phone,status,fees_monthly,discount,discount_pct,one_time,vat_mode,vat_rate,valid_until,sent_at,viewed_at,created_at,lead_id,data'}),
+    db.q('contracts', {eq: {archived: arch}, order: ['created_at', false], limit: 500, select: 'id,no,token,status,title,party,fees_monthly,discount,one_time,vat_mode,vat_rate,months,start_date,sign_deadline,sent_at,viewed_at,signed_at,signer_name,created_at,lead_id,request_id'})]);
+  let pays = []; try { pays = await db.q('contract_payments', {select: 'contract_id,amount', limit: 5000}); } catch (e) {} // إذا ملف 33 مش مشغّل
+  const paidOf = id => pays.filter(p => p.contract_id === id).reduce((a, p) => a + N(p.amount), 0);
+  const MO = {}; cons.forEach(c => { MO[c.id] = money(c, paidOf(c.id)); });
+  const signed = cons.filter(c => c.status === 'موقّع' && !c.archived);
   const qq = (ui.dQ || '').trim().toLowerCase(), stf = ui.dSt || '';
   const qs = quotes.filter(r => inRange(r.created_at) && (!stf || r.status === stf) && (!qq || [r.company, r.contact, r.phone, '#' + r.no].some(x => String(x || '').toLowerCase().includes(qq))));
   const cs = cons.filter(c => inRange(c.created_at) && (!stf || c.status === stf) && (!qq || [c.party?.company, c.party?.contact, c.party?.phone, '#' + c.no].some(x => String(x || '').toLowerCase().includes(qq))));
@@ -77,16 +99,16 @@ V.docs = async () => {
       ${ui.dMode === 'custom' ? `<label class="m">من <input type="date" id="ddf" class="inl" value="${esc(ui.dFrom || '')}" data-dchg="range"></label><label class="m">لـ <input type="date" id="ddt" class="inl" value="${esc(ui.dTo || '')}" data-dchg="range"></label>` : ''}</div>
     <div class="row"><select class="inl" data-dchg="st" aria-label="الحالة"><option value="">كل الحالات</option>${(tab === 'quotes' ? Q_ST : tab === 'contracts' ? C_ST : [...Q_ST, ...C_ST]).map(s => `<option ${s === stf ? 'selected' : ''}>${s}</option>`).join('')}</select>
       <input class="inl" type="search" data-dchg="q" placeholder="بحث بالاسم أو الرقم" value="${esc(ui.dQ || '')}" aria-label="بحث" style="flex:1;min-width:180px"></div></div>`;
-  const kp = tab === 'contracts' ? `<div class="kpis">${kpi('عقود موقّعة', cons.filter(c => c.status === 'موقّع').length, jd(cons.filter(c => c.status === 'موقّع').reduce((a, c) => a + net(c), 0)) + ' شهرياً', 'hl')}${kpi('بانتظار التوقيع', cons.filter(c => c.status === 'مرسل').length, '', cons.some(c => c.status === 'مرسل' && c.sign_deadline && c.sign_deadline <= addDays(today(), 2)) ? 'red' : '')}${kpi('مسودات', cons.filter(c => c.status === 'مسودة').length)}</div>`
+  const kp = tab === 'contracts' ? `<div class="kpis">${kpi('عقود موقّعة', signed.length, jd(signed.reduce((a, c) => a + fin(c), 0)) + ' شهرياً شامل الضريبة', 'hl')}${kpi('انقبض من العقود', jd(signed.reduce((a, c) => a + MO[c.id].paid, 0)), 'الباقي ' + jd(signed.reduce((a, c) => a + MO[c.id].rest, 0)))}${kpi('متأخر على العملاء', jd(signed.reduce((a, c) => a + MO[c.id].late, 0)), signed.filter(c => MO[c.id].late > 0.001).length + ' عقد', signed.some(c => MO[c.id].late > 0.001) ? 'red' : '')}${kpi('بانتظار التوقيع', cons.filter(c => c.status === 'مرسل').length, '', cons.some(c => c.status === 'مرسل' && c.sign_deadline && c.sign_deadline <= addDays(today(), 2)) ? 'red' : '')}${kpi('مسودات', cons.filter(c => c.status === 'مسودة').length)}</div>`
     : tab === 'quotes' ? `<div class="kpis">${kpi('عروض مرسلة', quotes.filter(r => r.status === 'عرض مرسل').length, quotes.filter(r => r.status === 'عرض مرسل' && !r.viewed_at).length + ' لسا ما فتحوه')}${kpi('مقبولة', quotes.filter(r => r.status === 'مقبول').length, '', 'hl')}${kpi('مسودات', quotes.filter(r => r.status === 'مسودة عرض').length)}</div>` : '';
   const qRows = qs.map(r => `<div class="drow"><div>${K.selBox('request', r.id)} <b>عرض #${r.no} · ${esc(r.company)}</b> ${pill(r.status, CLS[r.status])}
       <small class="m">${esc(r.contact || '')} ${r.phone ? '· <span dir="ltr">' + esc(r.phone) + '</span>' : ''} · ${fmtDT(r.created_at)}${r.status === 'عرض مرسل' ? ' · ' + (r.viewed_at ? 'فتحه ' + fmtDT(r.viewed_at) : 'لسا ما فتحه') + (r.valid_until ? ' · صالح لـ ' + r.valid_until : '') : ''}</small></div>
-    <div class="dnum"><b>${jd(net(r))}</b><small class="m">شهرياً${N(r.discount_pct) ? ' · خصم ' + N(r.discount_pct) + '%' : ''}</small></div>
+    <div class="dnum"><b>${jd(fin(r))}</b><small class="m">شهرياً${vatTag(r) ? ' ' + vatTag(r) : ''}${N(r.discount_pct) ? ' · خصم ' + N(r.discount_pct) + '%' : ''}</small></div>
     <div class="lact"><button class="btn sm" data-act="oreqOpen" data-id="${r.id}">فتح</button>${r.phone ? `<button class="btn sm ghost" data-act="dWa" data-id="q|${r.id}">واتساب</button>` : ''}<button class="btn sm ghost" data-act="dCopy" data-id="q|${r.token}">نسخ الرابط</button><a class="btn sm ghost" href="${esc(qUrl(r.token))}&print=1" target="_blank" rel="noopener">تنزيل PDF</a>
       ${['عرض مرسل', 'مقبول'].includes(r.status) && can('leads', 'edit') ? `<button class="btn sm" data-act="ctFromQuote" data-id="${r.id}">عقد</button>` : ''}${can('leads', 'edit') ? `<button class="btn sm ghost" data-act="dArch" data-id="quote|${r.id}|${arch ? 0 : 1}">${arch ? 'رجّعه' : 'أرشفة'}</button>` : ''}</div></div>`).join('');
   const cRows = cs.map(c => `<div class="drow"><div>${K.selBox('contract', c.id)} <b>عقد #${c.no} · ${esc(c.party?.company || '')}</b> ${pill(c.status, CLS[c.status])}
       <small class="m">${esc(c.party?.contact || '')} · ${fmtDT(c.created_at)}${c.status === 'مرسل' ? ' · ' + (c.viewed_at ? 'فتحه ' + fmtDT(c.viewed_at) : 'لسا ما فتحه') + ' · آخر يوم للتوقيع ' + (c.sign_deadline || '') : ''}${c.status === 'موقّع' ? ' · وقّعه ' + esc(c.signer_name || '') + ' ' + fmtDT(c.signed_at) : ''}</small></div>
-    <div class="dnum"><b>${jd(net(c))}</b><small class="m">شهرياً</small></div>
+    <div class="dnum"><b>${jd(fin(c))}</b><small class="m">شهرياً${vatTag(c) ? ' ' + vatTag(c) : ''}</small>${payPill(c, MO[c.id])}</div>
     <div class="lact"><button class="btn sm" data-act="ctOpen" data-id="${c.id}">فتح</button>${c.status !== 'مسودة' && c.party?.phone ? `<button class="btn sm ghost" data-act="dWa" data-id="c|${c.id}">واتساب</button>` : ''}<button class="btn sm ghost" data-act="dCopy" data-id="c|${c.token}">نسخ الرابط</button><a class="btn sm ghost" href="${esc(cUrl(c.token))}&print=1" target="_blank" rel="noopener">تنزيل PDF</a>
       ${can('leads', 'edit') ? `<button class="btn sm ghost" data-act="dArch" data-id="contract|${c.id}|${arch ? 0 : 1}">${arch ? 'رجّعه' : 'أرشفة'}</button>` : ''}</div></div>`).join('');
   ui.dCache = {quotes, cons};
@@ -124,6 +146,8 @@ V.ctd = async () => {
   ui.ctCur = c;
   if (ui.ctFor !== c.id) { ui.ctFor = c.id; ui.ctD = {party: {...(c.party || {})}, clauses: (c.clauses || []).map(x => ({...x})), start_date: c.start_date || '', months: N(c.months) || 3, fees_monthly: N(c.fees_monthly), discount: N(c.discount), one_time: N(c.one_time), ad_budget: N(c.ad_budget), vat_mode: c.vat_mode, vat_rate: N(c.vat_rate), title: c.title, agency_signer: c.agency_signer || site().signer_name || '', agency_signer_title: c.agency_signer_title || site().signer_title || '', sig: undefined}; }
   const D = ui.ctD, lock = !['مسودة', 'مرسل'].includes(c.status) || !can('leads', 'edit'), dis = lock ? 'disabled' : '';
+  let pays = null; try { pays = await db.q('contract_payments', {eq: {contract_id: c.id}, order: ['paid_on', true]}); } catch (e) {}
+  ui.ctPays = pays || [];
   const f = (k, l, v, t = 'text', w = '') => `<label class="fld ${w}"><span>${l}</span><input data-ct="${k}" type="${t}" ${t === 'number' ? 'step="any" min="0"' : ''} value="${esc(v ?? '')}" ${dis}></label>`;
   const p = D.party;
   return head(`عقد #${c.no} · ${esc(p.company || '')}`, c.status === 'مرسل' ? `انبعت ${fmtDT(c.sent_at)} · ${c.viewed_at ? 'العميل فتحه ' + fmtDT(c.viewed_at) : 'لسا ما فتحه'} · آخر يوم للتوقيع ${c.sign_deadline}` : c.status === 'موقّع' ? `وقّعه ${esc(c.signer_name)} ${fmtDT(c.signed_at)}` : 'مسودة: عدّل البنود والبيانات وبعدين ابعته للتوقيع',
@@ -132,11 +156,12 @@ V.ctd = async () => {
     ${c.status === 'موقّع' ? `<div class="card cdone"><h2>✅ العقد موقّع</h2><div class="sigs"><div><small class="m">الطرف الثاني</small>${c.signature ? `<img src="${esc(c.signature)}" alt="توقيع العميل">` : ''}<b>${esc(c.signer_name || '')}</b><small class="m">${esc(c.signer_title || '')} · ${fmtDT(c.signed_at)}${c.signer_phone ? ' · ' + esc(c.signer_phone) : ''}</small></div>
       <div><small class="m">الطرف الأول</small>${c.agency_signature ? `<img src="${esc(c.agency_signature)}" alt="توقيع الشركة">` : '<p class="m">بدون توقيع</p>'}<b>${esc(c.agency_signer || '')}</b><small class="m">${esc(c.agency_signer_title || '')}</small></div></div>
       <div class="row"><button class="btn pri" data-act="ctWa">ابعت نسخة واتساب</button><a class="btn" href="${esc(cUrl(c.token))}&print=1" target="_blank" rel="noopener">تنزيل PDF</a></div></div>` : ''}
+    ${payCard(c, pays)}
     <div class="card"><h2>بيانات العقد</h2><div class="fgrid">${f('title', 'عنوان العقد', D.title, 'text', 'wide')}
       ${f('party.company', 'اسم العميل (الطرف الثاني)', p.company)}${f('party.contact', 'اسم المفوّض بالتوقيع', p.contact)}${f('party.signer_title', 'صفته', p.signer_title)}${f('party.phone', 'الهاتف (واتساب)', p.phone)}${f('party.email', 'الإيميل', p.email, 'email')}${f('party.cr_no', 'رقم السجل التجاري', p.cr_no)}${f('party.address', 'العنوان', p.address, 'text', 'wide')}
       ${f('start_date', 'تاريخ البدء', D.start_date, 'date')}${f('months', 'المدة (أشهر)', D.months, 'number')}${f('fees_monthly', 'الأتعاب الشهرية قبل الخصم', D.fees_monthly, 'number')}${f('discount', 'الخصم الشهري (د.أ)', D.discount, 'number')}${f('one_time', 'رسوم لمرة وحدة', D.one_time, 'number')}${f('ad_budget', 'ميزانية الإعلانات المقترحة', D.ad_budget, 'number')}
       <label class="fld"><span>الضريبة</span><select data-ct="vat_mode" ${dis}>${VAT.map(([v, l]) => `<option value="${v}" ${D.vat_mode === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>${f('vat_rate', 'نسبة الضريبة %', D.vat_rate, 'number')}</div>
-      <p class="m" style="margin-top:8px">الأتعاب بعد الخصم: <b>${jd(N(D.fees_monthly) - N(D.discount))}</b> شهرياً. إذا غيّرت الأرقام أو المدة اضغط "حدّث البنود بالأرقام الجديدة".</p></div>
+      <p class="m" style="margin-top:8px">الأتعاب بعد الخصم: <b>${jd(N(D.fees_monthly) - N(D.discount))}</b> شهرياً${D.vat_mode === 'excl' ? ` · <b>السعر النهائي ${jd((N(D.fees_monthly) - N(D.discount)) * (1 + N(D.vat_rate) / 100))} شامل الضريبة</b>` : ''}. إذا غيّرت الأرقام أو المدة اضغط "حدّث البنود بالأرقام الجديدة".</p></div>
     <div class="card"><div class="head" style="margin-bottom:8px"><h2>بنود العقد (${D.clauses.length})</h2>${lock ? '' : '<div class="row">' + (c.request_id ? '<button class="btn sm" data-act="ctSync">جيب الأسعار والخدمات من العرض</button>' : '') + '<button class="btn sm" data-act="ctReset">حدّث البنود بالأرقام الجديدة</button><button class="btn sm" data-act="ctClAdd">+ بند</button></div>'}</div>
       <div class="ccl">${D.clauses.map((x, i) => `<div class="ccli"><div class="row" style="margin:0;flex-wrap:nowrap"><b class="cnum">${i + 1}</b><input class="inl" style="flex:1;font-weight:700" data-cl="${i}" data-k="h" value="${esc(x.h)}" aria-label="عنوان البند ${i + 1}" ${dis}>${lock ? '' : `<button class="btn sm ghost" data-act="ctClMv" data-id="${i}|-1" aria-label="لفوق" ${i ? '' : 'disabled'}>↑</button><button class="btn sm ghost" data-act="ctClMv" data-id="${i}|1" aria-label="لتحت" ${i < D.clauses.length - 1 ? '' : 'disabled'}>↓</button><button class="btn sm ghost" data-act="ctClDel" data-id="${i}" aria-label="حذف">✕</button>`}</div>
         <textarea class="inl" rows="3" data-cl="${i}" data-k="t" aria-label="نص البند ${i + 1}" ${dis}>${esc(x.t)}</textarea></div>`).join('')}</div></div>
@@ -145,6 +170,24 @@ V.ctd = async () => {
       ${lock ? '' : `<div class="row" style="margin-top:14px"><button class="btn" data-act="ctSave">حفظ</button><button class="btn pri" data-act="ctSend" style="background:#1e8c63;border-color:#1e8c63">${c.status === 'مرسل' ? 'حفظ وإعادة الإرسال واتساب' : 'حفظ وإرسال للتوقيع واتساب'}</button><button class="btn ghost" data-act="ctCopy">نسخ رابط التوقيع</button>${c.status !== 'ملغي' ? '<button class="btn ghost" data-act="ctCancel">إلغاء العقد</button>' : ''}</div>
       <p class="note" style="margin-top:8px">العميل عنده 7 أيام من تاريخ الإرسال ليوقّع. بعدها الرابط بيوقف وبتقدر تبعته من جديد.</p>`}</div>` : ''}`;
 };
+/* دفعات العقد: العميل بيدفع على أجزاء */
+function payCard(c, pays) {
+  if (pays == null) return c.status === 'موقّع' ? '<p class="note">لتسجيل دفعات العميل شغّل ملف 33_packages_payments.sql.</p>' : '';
+  if (c.status !== 'موقّع' && !pays.length) return '';
+  const mo = money(c, pays.reduce((a, p) => a + N(p.amount), 0)), ed = can('leads', 'edit') || can('agency', 'edit');
+  return `<div class="card"><div class="head" style="margin-bottom:8px"><h2>💵 الدفعات</h2>${payPill(c, mo)}</div>
+    <div class="kpis">${kpi('قيمة العقد كاملة', jd(mo.total), mo.months + ' شهر × ' + jd(mo.m) + (mo.one ? ' + ' + jd(mo.one) + ' مرة وحدة' : '') + (c.vat_mode === 'excl' ? ' · شامل الضريبة' : ''))}${kpi('المدفوع', jd(mo.paid), pays.length + ' دفعة', 'hl')}${kpi('الباقي', jd(mo.rest))}${kpi('المستحق لحد اليوم', jd(mo.due), c.start_date ? (mo.k ? 'الشهر ' + mo.k + ' من ' + mo.months : 'العقد ببلش ' + c.start_date) : 'حط تاريخ البدء', mo.late > 0.001 ? 'red' : '')}</div>
+    ${mo.late > 0.001 ? `<p class="warnbar">العميل متأخر <b>${jd(mo.late)}</b>.${c.party?.phone ? ' <button class="btn sm" data-act="cpRemind">ذكّره واتساب</button>' : ''}</p>` : ''}
+    ${pays.length ? `<div class="tw"><table><thead><tr><th>التاريخ</th><th>المبلغ</th><th>الطريقة</th><th>ملاحظة</th><th>سجّلها</th><th></th></tr></thead><tbody>${pays.map(p => `<tr><td>${esc(p.paid_on)}</td><td><b>${jd(p.amount)}</b></td><td>${esc(p.method)}</td><td>${esc(p.note || '')}</td><td class="m">${esc(p.by_name || '')}</td>
+      <td class="row" style="margin:0;flex-wrap:nowrap">${c.party?.phone ? `<button class="btn sm ghost" data-act="cpWa" data-id="${p.id}">إيصال واتساب</button>` : ''}${ed ? `<button class="btn sm ghost" data-act="cpDel" data-id="${p.id}" aria-label="حذف الدفعة">✕</button>` : ''}</td></tr>`).join('')}</tbody></table></div>` : '<p class="m">لسا ما في دفعات مسجّلة.</p>'}
+    ${ed && c.status !== 'ملغي' ? `<div class="row" style="margin-top:10px;align-items:flex-end">
+      <label class="fld" style="margin:0"><span>المبلغ (د.أ)</span><input id="cpAmt" class="inl" type="number" step="any" min="0" style="width:120px" placeholder="${mo.late > 0.001 ? mo.late : mo.m}"></label>
+      <label class="fld" style="margin:0"><span>التاريخ</span><input id="cpDay" class="inl" type="date" value="${today()}"></label>
+      <label class="fld" style="margin:0"><span>الطريقة</span><select id="cpMet" class="inl">${PAY_M.map(x => `<option>${x}</option>`).join('')}</select></label>
+      <label class="fld" style="margin:0;flex:1;min-width:160px"><span>ملاحظة</span><input id="cpNote" class="inl" placeholder="مثلاً: دفعة شهر 11"></label>
+      <button class="btn pri" data-act="cpAdd">سجّل الدفعة</button></div>` : ''}</div>`;
+}
+const payMsg = (c, p, mo) => `مرحبا ${c.party?.contact || c.party?.company || ''} 👋\nاستلمنا منك دفعة بقيمة ${jd(p.amount)} بتاريخ ${p.paid_on} (${p.method}) عن عقد #${c.no} مع ${brand()}.\nالمدفوع لحد هلأ: ${jd(mo.paid)} من ${jd(mo.total)}${mo.rest > 0.001 ? '، والباقي ' + jd(mo.rest) : '. العقد مدفوع بالكامل ✅'}.\nشكراً إلك 🌟`;
 document.addEventListener('input', e => {
   const t = e.target; if (!ui.ctD) return;
   if (t.dataset.ct) { const k = t.dataset.ct, v = t.type === 'number' ? N(t.value) : t.value; if (k.startsWith('party.')) ui.ctD.party[k.slice(6)] = v; else ui.ctD[k] = v; }
@@ -169,7 +212,7 @@ const ctMsg = c => c.status === 'موقّع'
   ? `مرحبا ${c.party?.contact || c.party?.company || ''} 👋\nهاي نسخة العقد #${c.no} الموقّع مع ${brand()}. بتقدر تنزّلها PDF من هون:\n${cUrl(c.token)}\nأهلاً فيك معنا 🌟`
   : `مرحبا ${c.party?.contact || c.party?.company || ''} 👋\nهاد عقد الخدمات #${c.no} مع ${brand()} للتوقيع الإلكتروني:\n${cUrl(c.token)}\nبتقرأ البنود وبتوقّع من الموبايل بدقيقة. الرابط صالح لـ ${c.sign_deadline || '7 أيام'}.`;
 
-Object.assign(ACT_SEC, {ctSync: 'leads', ctSave: 'leads', ctSend: 'leads', ctCancel: 'leads', ctReset: 'leads', ctClAdd: 'leads', ctClDel: 'leads', ctClMv: 'leads', ctSigClear: 'leads', ctSigSaved: 'leads', ctPadClear: 'leads', dArch: 'leads', dSetSave: 'oops', dTplReset: 'oops', dTplAdd: 'oops', dTplDel: 'oops', dGiftAdd: 'oops', dGiftDel: 'oops', dSigClear: 'oops'});
+Object.assign(ACT_SEC, {cpAdd: 'leads', cpDel: 'leads', cpWa: 'leads', cpRemind: 'leads', ctSync: 'leads', ctSave: 'leads', ctSend: 'leads', ctCancel: 'leads', ctReset: 'leads', ctClAdd: 'leads', ctClDel: 'leads', ctClMv: 'leads', ctSigClear: 'leads', ctSigSaved: 'leads', ctPadClear: 'leads', dArch: 'leads', dSetSave: 'oops', dTplReset: 'oops', dTplAdd: 'oops', dTplDel: 'oops', dGiftAdd: 'oops', dGiftDel: 'oops', dSigClear: 'oops'});
 Object.assign(A, {
   dTab: k => { ui.dTab = k; ui.dSt = ''; K.render(); },
   dMode: k => { ui.dMode = k; K.render(); },
@@ -197,7 +240,17 @@ Object.assign(A, {
   ctClMv: v => { const [i, d] = v.split('|').map(Number), L = ui.ctD.clauses, j = i + d; if (j < 0 || j >= L.length) return; [L[i], L[j]] = [L[j], L[i]]; K.render(); },
   ctSigClear: () => { ui.ctD.sig = ''; K.render(); },
   ctSigSaved: () => { ui.ctD.sig = site().agency_sign; K.render(); },
-  ctPadClear: () => { $('#ctPad')?._pad?.clear(); }
+  ctPadClear: () => { $('#ctPad')?._pad?.clear(); },
+  cpAdd: async () => {
+    const amount = N($('#cpAmt')?.value); if (!(amount > 0)) return toast('اكتب مبلغ الدفعة', true);
+    await db.rpc('contract_payment_add', {cid: ui.ctCur.id, amount, paid_on: $('#cpDay')?.value || today(), method: $('#cpMet')?.value || 'كاش', note: $('#cpNote')?.value || ''});
+    toast('انسجلت الدفعة ' + jd(amount)); K.render();
+  },
+  cpDel: async id => { if (!confirm('أكيد بدك تحذف هالدفعة؟')) return; await db.rpc('contract_payment_del', {pid: id}); toast('انحذفت الدفعة'); K.render(); },
+  cpWa: id => { const c = ui.ctCur, P = ui.ctPays || [], p = P.find(x => x.id === id); if (!p) return;
+    openWa(c.party?.phone, payMsg(c, p, money(c, P.reduce((a, x) => a + N(x.amount), 0)))); },
+  cpRemind: () => { const c = ui.ctCur, P = ui.ctPays || [], mo = money(c, P.reduce((a, x) => a + N(x.amount), 0));
+    openWa(c.party?.phone, `مرحبا ${c.party?.contact || c.party?.company || ''} 👋\nتذكير لطيف بخصوص عقد #${c.no} مع ${brand()}: المستحق لحد اليوم ${jd(mo.due)}، ووصلنا منه ${jd(mo.paid)}. الباقي المستحق ${jd(mo.late)}.\nبتقدر تدفع كاش أو CliQ، وإذا في أي استفسار احكينا 🙏`); }
 });
 
 /* ================= إعدادات العقد ================= */
