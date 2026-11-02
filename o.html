@@ -409,7 +409,7 @@ dialog::backdrop{background:rgba(10,12,40,.5)}
   var c = {}; try { c = JSON.parse(localStorage.getItem('oops-qcfg') || '{}') || {}; } catch (x) {}
   if (c.quick_on === false) return;
   document.getElementById('app').innerHTML = hero(c, c.logo, c.brand);
-  if (c.logo) { var bl = document.getElementById('brand'); if (bl) bl.innerHTML = '<img src="' + e(c.logo) + '" alt="' + e(c.brand || '') + '" height="36">'; }
+  if (c.logo) { var bl = document.getElementById('brand'); if (bl) bl.innerHTML = '<img src="' + e(c.logo) + '" alt="' + e(c.brand || '') + '" height="36"><span id="brandName" hidden></span>'; }
   push('seen');
   var f = document.getElementById('qform');
   f.addEventListener('submit', function (ev) { ev.preventDefault(); window.__qEarly = 1; push('try'); var b = this.querySelector('.qgo span'); if (b) b.textContent = 'لحظة…'; this.querySelector('.qgo').disabled = true; });
@@ -1046,7 +1046,7 @@ async function boot() {
   if (error || !data) { $('#app').innerHTML = '<div class="center"><div><h2>ما قدرنا نحمّل الصفحة</h2><p class="m">تأكد من الإنترنت وحدّث الصفحة.</p></div></div>'; return; }
   SITE = data;
   const brand = SITE.brand || 'OOPSIDE';
-  $('#brandName').textContent = brand; $('#fBrand').textContent = brand;
+  if ($('#brandName')) $('#brandName').textContent = brand; if ($('#fBrand')) $('#fBrand').textContent = brand;
   if (SITE.logo) { $('#brand').innerHTML = `<img src="${esc(SITE.logo)}" alt="${esc(brand)}">`; document.querySelector('link[rel=icon]').href = SITE.logo; }
   document.title = brand + ' | وكالة تسويق رقمي: أسعار واضحة وإعلانات بتجيب زباين';
   const c = SITE.config || {};
