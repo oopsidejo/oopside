@@ -13,6 +13,7 @@
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"ProfessionalService","name":"Oopside Agency","alternateName":"OOPSIDE","description":"وكالة تسويق رقمي وإدارة إعلانات للمطاعم والمتاجر والعيادات بالأردن ودول الخليج، بأسعار واضحة.","url":"https://oopsidejo.github.io/oopside/o.html","telephone":"+962796893403","email":"oopsideagency@gmail.com","address":{"@type":"PostalAddress","addressLocality":"Amman","addressCountry":"JO"},"areaServed":["JO","PS","SA","AE","KW","QA","BH","OM"],"priceRange":"$$"}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Alexandria:wght@500;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alexandria:wght@500;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap">
 <style>
 :root{
@@ -46,7 +47,7 @@ p{margin:0}
 /* ---------- header ---------- */
 header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
 header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:62px}
-.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font:800 22px var(--f-d);letter-spacing:.02em}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font:800 22px var(--f-d);letter-spacing:.02em;height:40px}
 .brand img{height:36px;width:auto;max-width:140px;object-fit:contain}
 .brand .dot{width:12px;height:12px;border-radius:50%;background:var(--sun);display:inline-block;margin-inline-start:2px}
 nav.links{display:flex;gap:6px;align-items:center}
@@ -121,7 +122,12 @@ iframe.vid{cursor:auto}
 @media (max-width:700px){.founder{grid-template-columns:1fr}.founder .fvid{max-width:280px;margin:0 auto;width:100%}}
 .qtrust{margin:0;text-align:center;color:var(--mint);font-weight:700;font-size:14px}
 @media (prefers-reduced-motion:reduce){.qoffer{animation:none}}
-.qnote{text-align:center}
+.qnote{text-align:center;font-size:12px;color:var(--muted);opacity:.8}.qnote a{color:inherit}
+.ferr{margin:-4px 2px 0;color:#d92d20;font-weight:700;font-size:14px}.ferr:empty{display:none}
+.qph select{display:none}.qph.ccon select{display:block}
+.qccl{justify-self:start;margin:-6px 2px 0;background:none;border:0;padding:2px 0;color:var(--muted);font:500 13px var(--f-b);text-decoration:underline;cursor:pointer}
+.qlogo{display:block;flex:none;line-height:0}
+.qres{display:flex;gap:10px;align-items:center;background:var(--mint-bg);border-radius:12px;padding:10px 12px}.qres b{font:800 20px var(--f-d);color:var(--mint);white-space:nowrap}.qres span{font-weight:600;font-size:14px}
 .qrow{display:grid;gap:10px}
 .qsec>span{display:block;font-size:14px;font-weight:700;margin-bottom:6px}.qsec small{color:var(--muted);font-weight:500}.qsec div{display:flex;flex-wrap:wrap;gap:6px}
 .qsec button{border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:5px 11px;font:600 13.5px var(--f-b);cursor:pointer;min-height:36px}
@@ -340,19 +346,25 @@ dialog::backdrop{background:rgba(10,12,40,.5)}
 <script>
 /* الفورم السريع: بيطلع فوراً أول ما تفتح الصفحة، قبل ما يتحمّل أي إشي من النت */
 (function () {
-  var CC = [['962', '🇯🇴 +962', /^7[789]\d{7}$/, '7X XXX XXXX'], ['970', '🇵🇸 +970', /^5[69]\d{7}$/, '59X XXX XXX'], ['972', '+972', /^5\d{8}$/, '5X XXX XXXX'],
+  var CC = [['962', '🇯🇴 +962', /^7[789]\d{7}$/, '0791234567'], ['970', '🇵🇸 +970', /^5[69]\d{7}$/, '0599123456'], ['972', '+972', /^5\d{8}$/, '5X XXX XXXX'],
     ['966', '🇸🇦 +966', /^5\d{8}$/, '5X XXX XXXX'], ['971', '🇦🇪 +971', /^5[0-8]\d{7}$/, '5X XXX XXXX'], ['965', '🇰🇼 +965', /^[569]\d{7}$/, 'XXXX XXXX'], ['974', '🇶🇦 +974', /^[3567]\d{7}$/, 'XXXX XXXX'],
-    ['973', '🇧🇭 +973', /^[36]\d{7}$/, 'XXXX XXXX'], ['968', '🇴🇲 +968', /^[79]\d{7}$/, 'XXXX XXXX'], ['964', '🇮🇶 +964', /^7[3-9]\d{8}$/, '7XX XXX XXXX'], ['20', '🇪🇬 +20', /^1[0125]\d{8}$/, '1X XXXX XXXX'], ['961', '🇱🇧 +961', /^(3\d{6}|7[01689]\d{6}|81\d{6})$/, 'XX XXX XXX']];
+    ['973', '🇧🇭 +973', /^[36]\d{7}$/, 'XXXX XXXX'], ['968', '🇴🇲 +968', /^[79]\d{7}$/, 'XXXX XXXX'], ['964', '🇮🇶 +964', /^7[3-9]\d{8}$/, '7XX XXX XXXX'], ['20', '🇪🇬 +20', /^1[0125]\d{8}$/, '1X XXXX XXXX'], ['961', '🇱🇧 +961', /^(3\d{6}|7[01689]\d{6}|81\d{6})$/, 'XX XXX XXX'], ['x', '🌍 دولة ثانية', /^\d{8,15}$/, 'رمز الدولة والرقم']];
   // البلد من توقيت الجهاز (بدون ما نسأل)
   function guess() { var tz = ''; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (x) {}
     return {'Asia/Hebron': '970', 'Asia/Gaza': '970', 'Asia/Jerusalem': '970', 'Asia/Riyadh': '966', 'Asia/Dubai': '971', 'Asia/Kuwait': '965', 'Asia/Qatar': '974', 'Asia/Bahrain': '973', 'Asia/Muscat': '968', 'Asia/Baghdad': '964', 'Africa/Cairo': '20', 'Asia/Beirut': '961'}[tz] || '962'; }
-  // الرقم بصيغة دولية: + رمز الدولة + الرقم بدون الصفر
+  // الرقم بصيغة دولية (+ رمز الدولة + الرقم بدون الصفر). بيقبل أي صيغة: 079… / 79… / +962 79… / 00962… / أرقام عربية / مسافات وشرطات وأقواس
+  // والرقم الأردني أو الفلسطيني بينعرف لحاله حتى لو الدولة المختارة غيرها
   function norm(raw, cc) {
-    var t = String(raw || '').replace(/[٠-٩]/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'.indexOf(d); }), d = t.replace(/\D/g, '');
-    if (/^\s*(\+|00)/.test(t)) { d = d.replace(/^00/, ''); for (var i = 0; i < CC.length; i++) if (d.indexOf(CC[i][0]) === 0 && CC[i][2].test(d.slice(CC[i][0].length))) return '+' + d; return null; }
-    var c = CC.filter(function (x) { return x[0] === cc; })[0] || CC[0], n = d.replace(/^0+/, '');
-    if (n.indexOf(c[0]) === 0 && c[2].test(n.slice(c[0].length))) n = n.slice(c[0].length);
-    return c[2].test(n) ? '+' + c[0] + n : null;
+    var d = String(raw || '').replace(/[٠-٩]/g, function (x) { return '٠١٢٣٤٥٦٧٨٩'.indexOf(x); }).replace(/[۰-۹]/g, function (x) { return '۰۱۲۳۴۵۶۷۸۹'.indexOf(x); }).replace(/\D/g, '');
+    if (d.indexOf('00') === 0) d = d.slice(2);
+    var i, x, rest;
+    for (i = 0; i < CC.length; i++) { x = CC[i]; if (x[0] !== 'x' && d.indexOf(x[0]) === 0) { rest = d.slice(x[0].length).replace(/^0+/, ''); if (x[2].test(rest)) return '+' + x[0] + rest; } }
+    var n = d.replace(/^0+/, ''), c = CC.filter(function (y) { return y[0] === cc; })[0] || CC[0];
+    if (c[0] === 'x') return /^\d{8,15}$/.test(d) ? '+' + d : null;
+    if (c[2].test(n)) return '+' + c[0] + n;
+    if (CC[0][2].test(n)) return '+962' + n;
+    if (CC[1][2].test(n)) return '+970' + n;
+    return null;
   }
   var e = function (t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (x) { return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[x]; }); };
   var WA = '<svg viewBox="0 0 32 32" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M16 3a13 13 0 0 0-11.2 19.6L3 29l6.6-1.7A13 13 0 1 0 16 3zm0 23.6a10.6 10.6 0 0 1-5.4-1.5l-.4-.2-3.9 1 1-3.8-.3-.4A10.6 10.6 0 1 1 16 26.6zm5.8-7.9c-.3-.2-1.9-.9-2.2-1s-.5-.2-.7.2-.8 1-1 1.2-.4.2-.7.1a8.7 8.7 0 0 1-4.3-3.8c-.3-.6.3-.5.9-1.6.1-.2 0-.4 0-.5l-1-2.4c-.3-.6-.5-.5-.7-.5h-.6a1.2 1.2 0 0 0-.9.4 3.6 3.6 0 0 0-1.1 2.7 6.3 6.3 0 0 0 1.3 3.3 14.4 14.4 0 0 0 5.5 4.9c2 .9 2.8 1 3.8.8a3.3 3.3 0 0 0 2.1-1.5 2.7 2.7 0 0 0 .2-1.5c-.1-.2-.3-.3-.6-.4z"/></svg>';
@@ -362,19 +374,21 @@ dialog::backdrop{background:rgba(10,12,40,.5)}
     var pts = (c.quick_points && c.quick_points.length ? c.quick_points : ['استشارة مجانية لصفحاتك وإعلاناتك', 'خطة إعلانات على قد ميزانيتك', 'إعلانات بالأردن ودول الخليج']).slice(0, 3);
     var ph = (CC.filter(function (x) { return x[0] === cc; })[0] || CC[0])[3];
     return '<form class="qcard" id="qform" novalidate>'
-      + '<div class="qhead">' + (logo ? '<img src="' + e(logo) + '" alt="' + e(brand || '') + '">' : '') + '<div><b>' + e(c.quick_title || 'زيد مبيعاتك 🚀') + '</b>'
+      + '<div class="qhead">' + (logo ? '<a href="#top" class="qlogo" data-top aria-label="لأول الصفحة"><img src="' + e(logo) + '" alt="' + e(brand || '') + '" width="46" height="46"></a>' : '') + '<div><b>' + e(c.quick_title || 'زيد مبيعاتك 🚀') + '</b>'
       + (offerOn(c) ? '<span class="qofw"><button type="button" class="qoffer" data-qfocus>🎁 ' + e(c.quick_offer || 'اشترك الآن واحصل على خصم 50% على خدماتنا') + '</button>' + (c.offer_terms ? '<a class="qterms" href="terms.html#offer" target="_blank" rel="noopener">الشروط' + (c.offer_until ? ' · لحد ' + e(c.offer_until) : '') + '</a>' : '') + '</span>' : '') + '</div></div>'
       + '<div class="qbody"><ul class="qpts">' + pts.map(function (x) { return '<li data-qfocus>' + e(x) + '</li>'; }).join('') + '</ul>'
-      + '<label class="fld qf1"><span>اسمك</span><span class="qin"><i aria-hidden="true">👤</i><input id="q_name" name="name" autocomplete="name" maxlength="80" placeholder="مثلاً: محمد" required></span></label>'
-      + '<label class="fld qf2"><span>رقم الواتساب</span><span class="qin qph"><select id="q_cc" aria-label="رمز الدولة">' + CC.map(function (x) { return '<option value="' + x[0] + '"' + (x[0] === cc ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('') + '</select>'
-      + '<input id="q_phone" name="tel" type="tel" inputmode="tel" autocomplete="tel-national" maxlength="20" placeholder="' + ph + '" dir="ltr" required><em class="qok" aria-hidden="true">✓</em></span></label>'
+      + '<label class="fld qf1"><span>اسمك</span><span class="qin"><i aria-hidden="true">👤</i><input id="q_name" name="name" autocomplete="name" maxlength="80" placeholder="مثلاً: محمد"></span></label><p class="ferr" id="qeName" role="alert"></p>'
+      + '<label class="fld qf2"><span>رقم الواتساب</span><span class="qin qph' + (cc === '962' ? '' : ' ccon') + '"><select id="q_cc" aria-label="الدولة">' + CC.map(function (x) { return '<option value="' + x[0] + '"' + (x[0] === cc ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('') + '</select>'
+      + '<input id="q_phone" name="tel" type="tel" inputmode="numeric" autocomplete="tel" maxlength="22" placeholder="' + ph + '" dir="ltr"><em class="qok" aria-hidden="true">✓</em></span></label>'
+      + '<p class="ferr" id="qePhone" role="alert"></p>' + (cc === '962' ? '<button type="button" class="qccl" data-ccshow>رقمك من برا الأردن؟</button>' : '')
       + '<div class="qsec" role="group" aria-label="نوع شغلك"><span>شو نوع شغلك؟ <small>(كبسة وحدة، اختياري)</small></span><div>' + (sectors.length > 6 ? sectors.slice(0, 5).concat(sectors.slice(-1)) : sectors).map(function (x) { return '<button type="button" data-sec="' + e(x) + '">' + e(x) + '</button>'; }).join('') + '</div><input type="hidden" id="q_sector"></div>'
       + '<p class="err" id="qerr" role="alert"></p>'
       + '<button class="btn qgo" type="submit">' + WA + '<span>' + e(c.quick_btn || 'احجز الخصم وكلّمنا واتساب') + '</span></button>'
       + '<p class="qtrust">✓ ' + e(c.quick_trust || 'مجاني وبدون أي التزام') + '</p>'
+      + (c.quick_result ? '<div class="qres"><b>' + e(c.quick_result_num || '📈') + '</b><span>' + e(c.quick_result) + '</span></div>' : '')
       + '<a class="qwa" id="qwaDirect" hidden target="_blank" rel="noopener" data-wa-direct>أو احكينا واتساب مباشرة</a>'
       + '<details class="qmore"><summary>ضيف اسم شغلك (اختياري)</summary><label class="fld"><span>اسم شغلك</span><input id="q_biz" name="organization" autocomplete="organization" maxlength="120"></label></details>'
-      + '<small class="m qnote">بنحفظ رقمك عشان نتواصل معك بخصوص العرض بس. <a href="#build" data-start>أو ابنِ باقتك بنفسك ↓</a></small></div></form>';
+      + '<small class="qnote">رقمك للتواصل بخصوص العرض بس · <a href="privacy.html">الخصوصية</a> · <a href="#build" data-start>أو ابنِ باقتك بنفسك ↓</a></small></div></form>';
   }
   // العرض بيختفي لحاله بعد تاريخ انتهائه
   function offerOn(c) { if (!c || !c.offer_until) return true; var t = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10); return t <= String(c.offer_until).slice(0, 10); }
@@ -383,14 +397,19 @@ dialog::backdrop{background:rgba(10,12,40,.5)}
     var m = {fb: 'فيسبوك', facebook: 'فيسبوك', ig: 'إنستغرام', instagram: 'إنستغرام', an: 'فيسبوك', th: 'ثريدز', google: 'جوجل', qr: 'QR', tiktok: 'تيك توك', snap: 'سناب'};
     var secs = {restaurants: 'مطاعم', stores: 'متاجر', 'online-stores': 'متاجر', clinics: 'عيادات'};
     var parts = [m[src] || (src ? src : 'الموقع')]; if (secs[sec]) parts.push(secs[sec]); return '[' + parts.join('-') + ']'; }
-  window.OopsQF = {html: html, norm: norm, guess: guess, CC: CC, offerOn: offerOn, tag: tag};
+  // نفس شكل الهيرو النهائي (العنوان + الفورم) عشان الصفحة ما تنط لما يتحمّل الباقي
+  function hero(c, logo, brand) { c = c || {};
+    return '<section class="hero"><div class="wrap"><div><h1>' + e(c.headline || 'تسويق على قد شركتك') + '</h1><p class="sub">' + e(c.sub || '') + '</p>'
+      + '<div class="cta"><a class="btn pri" href="#build" data-start>ابنِ باقتك</a><a class="btn ghost" href="#tools">احسب أقصى تكلفة للزبون</a></div></div>' + html(c, logo, brand) + '</div></section>'; }
+  window.OopsQF = {html: html, hero: hero, norm: norm, guess: guess, CC: CC, offerOn: offerOn, tag: tag};
   // أحداث قبل ما يتحمّل الموقع (بنبعتها بعدين)
   window.__qfq = [];
   var push = function (ev) { if (window.__qfq) window.__qfq.push(ev); };
   if (/[?&]q=/.test(location.search)) return;
   var c = {}; try { c = JSON.parse(localStorage.getItem('oops-qcfg') || '{}') || {}; } catch (x) {}
   if (c.quick_on === false) return;
-  document.getElementById('app').innerHTML = '<section class="hero"><div class="wrap">' + html(c) + '</div></section>';
+  document.getElementById('app').innerHTML = hero(c, c.logo, c.brand);
+  if (c.logo) { var bl = document.getElementById('brand'); if (bl) bl.innerHTML = '<img src="' + e(c.logo) + '" alt="' + e(c.brand || '') + '" height="36">'; }
   push('seen');
   var f = document.getElementById('qform');
   f.addEventListener('submit', function (ev) { ev.preventDefault(); window.__qEarly = 1; push('try'); var b = this.querySelector('.qgo span'); if (b) b.textContent = 'لحظة…'; this.querySelector('.qgo').disabled = true; });
@@ -523,7 +542,7 @@ function priceLabel(s) {
 // فورم سريع: اسم ورقم ونوع الشغل، وبنفس الكبسة بيروح على واتساب الوكالة
 function quickForm() { return window.OopsQF.html(SITE?.config || {}, SITE?.logo, SITE?.brand); }
 const qfSent = {};
-function qf(ev, note) { try { window.clarity?.('event', 'qf_' + ev); if (ev === 'ok') window.clarity?.('set', 'lead', 'yes'); } catch (x) {} if (!sb || !VID || (qfSent[ev] && !['bad','err','wad'].includes(ev))) return; qfSent[ev] = 1; try { sb.rpc('oops_qf', {vid: VID, ev, note: note ? String(note).slice(0, 200) : null}).then(() => {}, () => {}); } catch (x) {} }
+function qf(ev, note, cev) { try { window.clarity?.('event', cev || 'qf_' + ev); if (ev === 'ok') window.clarity?.('set', 'lead', 'yes'); } catch (x) {} if (!sb || !VID || (qfSent[ev] && !['bad','err','wad'].includes(ev))) return; qfSent[ev] = 1; try { sb.rpc('oops_qf', {vid: VID, ev, note: note ? String(note).slice(0, 200) : null}).then(() => {}, () => {}); } catch (x) {} }
 function qfWatch() {
   const f = $('#qform'); if (!f) return;
   // أحداث صارت قبل ما يتحمّل الموقع
@@ -534,37 +553,41 @@ function qfWatch() {
   nm?.addEventListener('input', () => { if (nm.value.trim().length >= 2) qf('name'); });
   const chk = () => { const ok = !!window.OopsQF.norm(ph.value, cc.value); ph.closest('.qin')?.classList.toggle('ok', ok); if (ok) qf('phone');
     const c = window.OopsQF.CC.find(x => x[0] === cc.value); if (c) ph.placeholder = c[3]; };
-  ph?.addEventListener('input', chk); cc?.addEventListener('change', chk); if (ph?.value) chk();
+  ph?.addEventListener('input', () => { chk(); if ($('#qePhone')?.textContent && window.OopsQF.norm(ph.value, cc.value)) $('#qePhone').textContent = ''; }); cc?.addEventListener('change', chk); if (ph?.value) chk();
+  ph?.addEventListener('blur', () => { const v = ph.value.trim(); if (v && !window.OopsQF.norm(v, cc.value)) $('#qePhone').textContent = phoneHint(cc.value); });
+  nm?.addEventListener('input', () => { if (nm.value.trim().length >= 2) $('#qeName').textContent = ''; });
   const dw = $('#qwaDirect'), wc = SITE?.config || {};
   if (dw && waNum(wc.whatsapp)) { dw.href = waLink((wc.whatsapp_msg || 'مرحبا، بدي أستفسر عن خدماتكم') + ' ' + window.OopsQF.tag()); dw.hidden = false; }
   // الكبس على العرض أو النقاط بيودّي على خانة الاسم (كانوا ينكبسوا وما يصير إشي)
-  f.addEventListener('click', ev => { if (ev.target.closest('[data-qfocus]')) { ev.preventDefault(); nm?.focus(); }
+  f.addEventListener('click', ev => { if (ev.target.closest('[data-qfocus]')) { ev.preventDefault(); f.scrollIntoView({behavior: 'smooth', block: 'start'}); setTimeout(() => nm?.focus({preventScroll: true}), 350); }
+    if (ev.target.closest('[data-ccshow]')) { ev.preventDefault(); ph.closest('.qph')?.classList.add('ccon'); ev.target.closest('[data-ccshow]').remove(); cc.focus(); }
     const sb_ = ev.target.closest('[data-sec]'); if (sb_) { const on = !sb_.classList.contains('on'); f.querySelectorAll('[data-sec]').forEach(x => x.classList.remove('on')); sb_.classList.toggle('on', on); $('#q_sector').value = on ? sb_.dataset.sec : ''; qf('focus'); } });
 }
+const phoneEx = cc => (window.OopsQF.CC.find(x => x[0] === cc) || window.OopsQF.CC[0])[3];
+const phoneHint = cc => cc === 'x' ? 'اكتب رمز الدولة والرقم، مثلاً: 966501234567' : cc === '962' ? 'الرقم مش مكتمل. اكتبه هيك: 0791234567 (ولو من برا الأردن اختار دولتك تحت)' : 'الرقم مش مكتمل. اكتبه هيك: ' + phoneEx(cc);
 async function quickSubmit(e) {
   e.preventDefault();
   const g = id => (document.getElementById(id)?.value || '').trim();
   const name = g('q_name'), raw = g('q_phone'), cc = g('q_cc') || '962', biz = g('q_biz'), sector = g('q_sector');
-  const err = $('#qerr'); err.textContent = '';
+  const err = $('#qerr'); err.textContent = ''; $('#qeName').textContent = ''; $('#qePhone').textContent = '';
   qf('try');
-  // كبس الزر وما كتب رقم: ما منطلّعه من الصفحة (التحويل التلقائي للواتساب خسّرنا الناس). منطلب الرقم بس، والواتساب المباشر كخيار بكبسة منه
-  if (!raw) {
-    err.textContent = name ? 'ضايل رقم الواتساب بس 👇' : 'اكتب رقم الواتساب بس، والاسم اختياري 👇';
-    qf('bad', name ? 'بدون رقم' : 'فاضي'); const ph = $('#q_phone'); ph.focus(); ph.closest('.qin')?.classList.add('need');
-    const dw = $('#qwaDirect'); if (dw && !dw.hidden) dw.classList.add('pulse');
-    setTimeout(() => ph.closest('.qin')?.classList.remove('need'), 1600); return; }
+  // الخطأ بيطلع تحت الحقل الغلط، والصفحة بتنزل عليه
+  const bad = (id, msg, field, note) => { const el = $('#' + id), inp = $(field === 'name' ? '#q_name' : '#q_phone'); el.textContent = msg; qf('bad', note, 'qf_bad_' + field);
+    const box = inp.closest('.qin'); box?.classList.add('need'); setTimeout(() => box?.classList.remove('need'), 1600);
+    inp.scrollIntoView({behavior: 'smooth', block: 'center'}); inp.focus({preventScroll: true}); };
+  if (name && name.length < 2) return bad('qeName', 'اكتب اسمك (حرفين أو أكثر)، أو خليه فاضي', 'name', 'اسم قصير');
+  if (!raw) { const dw = $('#qwaDirect'); if (dw && !dw.hidden) dw.classList.add('pulse'); return bad('qePhone', 'اكتب رقم الواتساب هيك: ' + phoneEx(cc), 'phone', name ? 'بدون رقم' : 'فاضي'); }
   const phone = window.OopsQF.norm(raw, cc);
-  if (!phone) { const c = window.OopsQF.CC.find(x => x[0] === cc); err.textContent = raw ? 'الرقم مش صحيح. اختار رمز دولتك واكتب الرقم مثل: ' + (c ? c[3] : '') : 'اكتب رقم الواتساب'; qf('bad', 'رقم غلط (+' + cc + '): ' + raw.replace(/\d(?=\d{3})/g, '•')); $('#q_phone').focus(); return; }
+  if (!phone) return bad('qePhone', phoneHint(cc), 'phone', 'رقم غلط (+' + cc + '): ' + raw.replace(/\d(?=\d{3})/g, '•'));
   const btn = $('#qform .qgo'); btn.disabled = true; const bl = btn.querySelector('span'); if (bl) bl.textContent = 'لحظة…';
-  track('Lead', {content_name: 'quick_form'});
   try {
     if (sb) { const r = await Promise.race([sb.rpc('oops_quick_lead', {p: {name: name || 'زائر الموقع', phone, business: biz, sector, vid: VID, utm: utm()}}), new Promise(r => setTimeout(() => r({error: {message: 'timeout 5s'}}), 5000))]);
-      if (r?.error) qf('err', r.error.message); else qf('ok'); }
+      if (r?.error) qf('err', r.error.message); else { qf('ok'); track('Lead', {content_name: 'quick_form'}); } }
   } catch (x) { qf('err', x?.message || 'exception'); }
   const c = SITE.config || {};
   const msg = !name ? 'مرحبا، ' + (biz ? 'أنا من ' + biz + (sector ? ' (' + sector + ')' : '') + '. ' : sector ? 'عندي ' + sector + '. ' : '') + 'عبّيت الفورم وبدي أستفيد من العرض: ' + (c.quick_offer || 'خصم 50%') + ' ' + window.OopsQF.tag() : (c.quick_wa_msg || 'مرحبا، أنا {الاسم}{الشغل}. عبّيت الفورم وبدي أستفيد من العرض: {العرض}')
     .replace(/\{الاسم\}/g, name || 'زائر').replace(/\{الشغل\}/g, biz ? ' من ' + biz : (sector ? ' (' + sector + ')' : '')).replace(/\{العرض\}/g, c.quick_offer || 'خصم 50%') + ' ' + window.OopsQF.tag();
-  if (waNum(c.whatsapp)) { qf('wa'); location.href = waLink(msg); return; }
+  if (waNum(c.whatsapp)) { qf('wa'); track('Contact', {via: 'quick_form'}); location.href = waLink(msg); return; }
   $('#qform').innerHTML = `<div class="qdone"><b>وصلنا طلبك ✅</b><p>رح نتواصل معك على <span dir="ltr">${esc(phone)}</span> بأقرب وقت.</p></div>`;
 }
 
@@ -1038,12 +1061,14 @@ async function boot() {
   if (wn) { const wa = $('#wa'); wa.hidden = false; wa.href = waLink((c.whatsapp_msg || 'مرحبا، بدي أستفسر عن خدماتكم') + ' ' + window.OopsQF.tag()); wa.setAttribute('data-wa-direct', ''); }
   // أي كبسة واتساب مباشرة (الزر العائم، الفوتر، تحت الفورم): حدث تحويل
   document.addEventListener('click', e => { const a = e.target.closest('[data-wa-direct]'); if (!a) return; track('Contact', {via: a.id || 'link'}); qf('wad'); });
+  // اللوجو (فوق وبالفورم) بيرجّع لأول الصفحة
+  document.addEventListener('click', e => { const t = e.target.closest('[data-top], #brand'); if (!t || qs.get('q')) return; e.preventDefault(); scrollTo({top: 0, behavior: 'smooth'}); });
   loadTracking(SITE);
   bind();
   const tok = qs.get('q');
   if (tok) { $$('header a[href^="#"], footer a.brand').forEach(a => a.setAttribute('href', location.pathname + (a.getAttribute('href') === '#' ? '' : a.getAttribute('href')))); await quotePage(tok); if (qs.get('print')) setTimeout(() => print(), 900); return; }
   if (!SITE.live && !qs.has('preview')) { $('#app').innerHTML = `<div class="center"><div><h1>${esc(brand)}</h1><p class="m" style="margin-top:10px">الموقع بيتجهز. ارجعلنا قريب.</p></div></div>`; return; }
-  try { localStorage.setItem('oops-qcfg', JSON.stringify({quick_on: c.quick_on, quick_title: c.quick_title, quick_offer: c.quick_offer, quick_points: c.quick_points, quick_btn: c.quick_btn, quick_trust: c.quick_trust})); } catch (x) {}
+  try { localStorage.setItem('oops-qcfg', JSON.stringify({quick_on: c.quick_on, quick_title: c.quick_title, quick_offer: c.quick_offer, offer_until: c.offer_until, offer_terms: c.offer_terms, quick_points: c.quick_points, quick_btn: c.quick_btn, quick_trust: c.quick_trust, quick_result: c.quick_result, quick_result_num: c.quick_result_num, sectors: c.sectors, headline: c.headline, sub: c.sub, logo: SITE.logo || '', brand: SITE.brand || ''})); } catch (x) {}
   const keep = {}, act = document.activeElement?.id; ['q_name', 'q_phone'].forEach(k => { const v = document.getElementById(k)?.value; if (v) keep[k] = v; });
   $('#app').innerHTML = home();
   Object.entries(keep).forEach(([k, v]) => { const el = document.getElementById(k); if (el) el.value = v; });
