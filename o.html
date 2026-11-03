@@ -11,6 +11,7 @@
 <meta property="og:description" content="أسعار واضحة، وميزانية الإعلانات منفصلة عن الأتعاب.">
 <meta name="theme-color" content="#2f3b82">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"ProfessionalService","name":"Oopside Agency","alternateName":"OOPSIDE","description":"وكالة تسويق رقمي وإدارة إعلانات للمطاعم والمتاجر والعيادات بالأردن ودول الخليج، بأسعار واضحة.","url":"https://oopsidejo.github.io/oopside/o.html","telephone":"+962796893403","email":"oopsideagency@gmail.com","address":{"@type":"PostalAddress","addressLocality":"Amman","addressCountry":"JO"},"areaServed":["JO","PS","SA","AE","KW","QA","BH","OM"],"priceRange":"$$"}</script>
+<link rel="canonical" href="https://oopsidejo.github.io/oopside/o.html">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Alexandria:wght@500;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap">
@@ -332,12 +333,15 @@ dialog::backdrop{background:rgba(10,12,40,.5)}
 <body>
 <header class="top" id="top"><div class="wrap">
   <a class="brand" href="#top" id="brand"><span id="brandName">OOPSIDE</span><i class="dot" aria-hidden="true"></i></a>
-  <nav class="links"><a class="nl" href="#tools">حاسبات مجانية</a><a class="nl" href="#faq">أسئلة</a><a class="btn pri sm" href="#build">ابنِ باقتك</a></nav>
+  <nav class="links"><a class="nl" href="services.html">خدماتنا</a><a class="nl" href="blog.html">مقالات</a><a class="nl" href="#tools">حاسبات مجانية</a><a class="nl" href="#faq">أسئلة</a><a class="btn pri sm" href="#build">ابنِ باقتك</a></nav>
 </div></header>
 <main id="app"><div class="center"><p class="m">جاري التحميل…</p></div></main>
 <footer><div class="wrap">
   <div><a class="brand" href="#top"><span id="fBrand">OOPSIDE</span></a><p style="opacity:.75;margin-top:6px;max-width:40ch" id="fAbout">تسويق بأرقام واضحة.</p></div>
   <div id="fContact" class="fcol"></div>
+  <div class="fcol"><b>خدماتنا</b><a href="facebook-instagram-ads.html">إدارة إعلانات فيسبوك وإنستغرام</a><a href="google-ads.html">إدارة إعلانات جوجل</a><a href="social-media-management.html">إدارة صفحات السوشال ميديا</a><a href="content-design.html">تصميم المحتوى والإعلانات</a></div>
+  <div class="fcol"><b>حسب القطاع</b><a href="restaurant-marketing.html">تسويق المطاعم</a><a href="online-store-marketing.html">تسويق المتاجر الأونلاين</a><a href="real-estate-marketing.html">تسويق العقارات</a><a href="clinic-marketing.html">تسويق العيادات</a></div>
+  <div class="fcol"><b>مقالات</b><a href="why-facebook-ads-no-sales.html">ليش إعلاني ما بيجيب مبيعات؟</a><a href="facebook-ads-cost-jordan.html">كم تكلفة الإعلان على فيسبوك بالأردن؟</a><a href="boost-vs-ads-manager.html">الفرق بين الترويج وإدارة الإعلانات</a><a href="restaurant-ad-budget.html">كم يصرف المطعم على الإعلانات؟</a></div>
   <div class="fcol"><div id="fSocial" class="fsoc"></div><a href="privacy.html" id="privLink">سياسة الخصوصية</a><a href="terms.html">شروط الخدمة</a><small id="fLegal" style="opacity:.6"></small></div>
 </div></footer>
 <a id="wa" class="wa noprint" hidden target="_blank" rel="noopener" aria-label="احكينا على واتساب"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><path fill="currentColor" d="M16 3a13 13 0 0 0-11.2 19.6L3 29l6.6-1.7A13 13 0 1 0 16 3zm0 23.6c-2 0-3.9-.5-5.6-1.5l-.4-.2-3.9 1 1-3.8-.3-.4A10.6 10.6 0 1 1 16 26.6zm5.8-7.9c-.3-.2-1.9-.9-2.2-1-.3-.1-.5-.2-.7.2-.2.3-.8 1-1 1.2-.2.2-.4.2-.7.1a8.7 8.7 0 0 1-4.3-3.8c-.3-.6.3-.5.9-1.7.1-.2 0-.4 0-.6l-1-2.4c-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.2 1.1-1.2 2.8s1.2 3.2 1.4 3.5c.2.2 2.4 3.6 5.7 5 2.1.9 2.9 1 4 .8.6-.1 1.9-.8 2.2-1.5.3-.8.3-1.4.2-1.5l-.7-.4z"/></svg><span>واتساب</span></a>
@@ -394,7 +398,7 @@ dialog::backdrop{background:rgba(10,12,40,.5)}
   function offerOn(c) { if (!c || !c.offer_until) return true; var t = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10); return t <= String(c.offer_until).slice(0, 10); }
   // كود المصدر بأول رسالة الواتساب: الفريق بيعرف من وين إجا الزبون
   function tag() { var q = new URLSearchParams(location.search), src = (q.get('utm_source') || q.get('ref') || (q.get('gclid') || q.get('gbraid') || q.get('wbraid') ? 'google' : '') || (q.get('fbclid') ? 'fb' : '')).toLowerCase(), sec = q.get('s') || '';
-    var m = {fb: 'فيسبوك', facebook: 'فيسبوك', ig: 'إنستغرام', instagram: 'إنستغرام', an: 'فيسبوك', th: 'ثريدز', google: 'جوجل', qr: 'QR', tiktok: 'تيك توك', snap: 'سناب'};
+    var m = {fb: 'فيسبوك', facebook: 'فيسبوك', ig: 'إنستغرام', instagram: 'إنستغرام', an: 'فيسبوك', th: 'ثريدز', google: 'جوجل', seo: 'جوجل-مقال', qr: 'QR', tiktok: 'تيك توك', snap: 'سناب'};
     var secs = {restaurants: 'مطاعم', stores: 'متاجر', 'online-stores': 'متاجر', clinics: 'عيادات'};
     var parts = [m[src] || (src ? src : 'الموقع')]; if (secs[sec]) parts.push(secs[sec]); return '[' + parts.join('-') + ']'; }
   // نفس شكل الهيرو النهائي (العنوان + الفورم) عشان الصفحة ما تنط لما يتحمّل الباقي
