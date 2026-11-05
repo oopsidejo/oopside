@@ -50,7 +50,7 @@ const NAV = NAVS.store;
 const WS = {store: {name: 'المتجر الأونلاين', mark: 'م', sub: 'الطلبات والتوصيل والمستودع والرسائل والإعلانات'},
   agency: {name: 'وكالة التسويق', mark: 'و', sub: 'العملاء والحملات والتسليمات والعملاء المحتملين'}};
 const STORE_ONLY = ['dash','orders','delivery','inbox','control','ads','landing','page','products','inventory','purchases'];
-const ALIAS = {docs: 'leads', ctd: 'leads', agent: 'ai', olive: 'leads', hunt: 'leads', agdash: 'agency', pagesrep: 'dash', oreq: 'leads', oreqd: 'leads', funnel: 'leads'};
+const ALIAS = {audit: 'leads', docs: 'leads', ctd: 'leads', agent: 'ai', olive: 'leads', hunt: 'leads', agdash: 'agency', pagesrep: 'dash', oreq: 'leads', oreqd: 'leads', funnel: 'leads'};
 const lsGet = k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
 const TEMPLATES = {

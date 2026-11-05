@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>تقرير فحص الصفحة</title>
+<meta name="theme-color" content="#2f3b82">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alexandria:wght@500;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ink:#16183d; --indigo:#2f3b82; --paper:#eef0f7; --card:#ffffff; --lilac:#ecebfa; --line:#dcdcee; --muted:#5d6080;
+  --mint:#1e8c63; --mint-bg:#e1f4ec; --coral:#c8402f; --coral-bg:#fbe5e1; --sun:#b7791f; --sun-bg:#fdf1dc;
+  --f-d:"Alexandria","IBM Plex Sans Arabic",Tahoma,sans-serif; --f-b:"IBM Plex Sans Arabic",Tahoma,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--ink:#e8e9ff;--paper:#10122a;--card:#1a1d3d;--lilac:#262a55;--line:#2e3263;--muted:#a3a6cc;--mint-bg:#123a2c;--coral-bg:#43201b;--sun-bg:#3e2f12;--indigo:#7b86e6;color-scheme:dark}}
+:root[data-theme="dark"]{--ink:#e8e9ff;--paper:#10122a;--card:#1a1d3d;--lilac:#262a55;--line:#2e3263;--muted:#a3a6cc;--mint-bg:#123a2c;--coral-bg:#43201b;--sun-bg:#3e2f12;--indigo:#7b86e6;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 16px/1.8 var(--f-b);-webkit-text-size-adjust:100%}
+h1,h2,h3{font-family:var(--f-d);margin:0;line-height:1.45}
+a{color:var(--indigo)}
+.wrap{max-width:900px;margin:0 auto;padding:0 16px 48px}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:10px;max-width:900px;margin:0 auto;padding:16px}
+.brand{display:flex;align-items:center;gap:10px;font:800 18px var(--f-d)}.brand img{height:38px;max-width:140px;object-fit:contain}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:600 15px var(--f-b);padding:10px 18px;border-radius:12px;cursor:pointer;text-decoration:none;min-height:46px}
+.btn.wa{background:#1da851;border-color:#1da851;color:#fff;font-size:17px;padding:14px 26px}
+.card{background:var(--card);border-radius:18px;padding:22px 24px;margin-top:16px;box-shadow:0 8px 30px rgba(22,24,61,.06)}
+.hero{display:grid;grid-template-columns:1fr auto;gap:22px;align-items:center;border-top:8px solid var(--indigo)}
+.hero small.k{display:inline-block;font:700 13px var(--f-d);padding:3px 12px;border-radius:20px;background:var(--lilac);color:var(--indigo)}
+.hero h1{font-size:28px;margin:8px 0 2px}.hero .hl{font:700 19px var(--f-d);margin:12px 0 6px}.hero p{margin:0;color:var(--muted)}
+.ring{--v:0;--c:var(--coral);width:150px;height:150px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--c) calc(var(--v)*1%),var(--lilac) 0)}
+.ring>div{width:118px;height:118px;border-radius:50%;background:var(--card);display:grid;place-items:center;text-align:center}
+.ring b{font:800 40px/1 var(--f-d)}.ring small{display:block;color:var(--muted);font-size:13px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.chip{background:var(--mint-bg);color:var(--mint);border-radius:20px;padding:4px 14px;font-size:14px;font-weight:600}
+h2{font-size:21px;display:flex;align-items:center;gap:10px}h2 .n{font:800 14px var(--f-d);background:var(--indigo);color:#fff;border-radius:8px;padding:1px 9px}
+.sub{color:var(--muted);margin:2px 0 12px;font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.sec{border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.sec .t{display:flex;justify-content:space-between;align-items:center;gap:8px}.sec .t b{font:700 16px var(--f-d)}
+.meter{height:8px;border-radius:8px;background:var(--lilac);margin:10px 0;overflow:hidden}.meter i{display:block;height:100%;border-radius:8px}
+.st{font-size:12px;font-weight:700;border-radius:20px;padding:2px 10px;white-space:nowrap}
+.good{background:var(--mint-bg);color:var(--mint)}.mid{background:var(--sun-bg);color:var(--sun)}.bad{background:var(--coral-bg);color:var(--coral)}.na{background:var(--lilac);color:var(--muted)}
+ul.l{list-style:none;margin:4px 0 0;padding:0;font-size:14.5px}ul.l li{padding:3px 0;padding-inline-start:22px;position:relative}
+ul.l li::before{position:absolute;inset-inline-start:0;font-weight:800}ul.ok li::before{content:"✓";color:var(--mint)}ul.no li::before{content:"✗";color:var(--coral)}
+.fix{display:grid;grid-template-columns:44px 1fr;gap:14px;padding:14px 0;border-top:1px solid var(--line)}.fix:first-of-type{border-top:0}
+.fix .num{width:44px;height:44px;border-radius:12px;background:var(--indigo);color:#fff;display:grid;place-items:center;font:800 18px var(--f-d)}
+.fix h3{font-size:17px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.fix p{margin:4px 0 0;font-size:15px}.fix p b{color:var(--muted);font-weight:600}
+.wins li{padding:6px 0;border-bottom:1px dashed var(--line)}.wins{list-style:none;padding:0;margin:0}.wins li::before{content:"☐ ";color:var(--indigo);font-weight:800}
+.ideas{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}.idea{background:var(--lilac);border-radius:14px;padding:14px 16px}.idea b{font-family:var(--f-d)}.idea q{display:block;margin-top:6px;font-size:15px}
+table{width:100%;border-collapse:collapse;font-size:15px}th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:start}th{color:var(--muted);font-weight:600;font-size:13px}td b{font:800 17px var(--f-d)}
+.note{font-size:13px;color:var(--muted);margin-top:10px}
+.proof{background:var(--mint-bg);color:var(--mint);border-radius:12px;padding:10px 14px;margin-top:12px;font-weight:600}
+.cta{text-align:center;background:linear-gradient(135deg,#2f3b82,#4a2f82);color:#fff}.cta h2{justify-content:center;font-size:24px}.cta p{opacity:.9}
+.foot{text-align:center;color:var(--muted);font-size:13px;margin-top:20px}
+.center{min-height:70vh;display:grid;place-items:center;text-align:center;padding:20px}
+@media (max-width:640px){.hero{grid-template-columns:1fr;justify-items:start}.ring{width:120px;height:120px}.ring>div{width:94px;height:94px}.ring b{font-size:32px}.hero h1{font-size:23px}.card{padding:18px 16px}}
+@media print{body{background:#fff}.noprint{display:none!important}.card{box-shadow:none;border:1px solid #ddd;break-inside:avoid}.cta{background:#2f3b82!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style>
+</head>
+<body>
+<div id="app"><div class="center"><div>…عم نحمّل التقرير</div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+const N = v => Number(v) || 0;
+const fmtN = n => N(n).toLocaleString('en-US');
+const day = t => t ? new Date(t).toLocaleDateString('en-GB', {timeZone: 'Asia/Amman'}) : '';
+const tok = new URLSearchParams(location.search).get('t') || '';
+const cfg = window.SABER_CONFIG || {};
+const clsOf10 = s => s >= 8 ? 'good' : s >= 5 ? 'mid' : 'bad';
+const stCls = t => ({'ممتاز': 'good', 'جيد': 'good', 'يحتاج شغل': 'mid', 'ضعيف': 'bad'}[t] || 'na');
+const col = c => ({good: 'var(--mint)', mid: 'var(--sun)', bad: 'var(--coral)'}[c] || 'var(--muted)');
+const list = (a, cls) => (a || []).length ? `<ul class="l ${cls}">${a.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
+
+function render(d) {
+  const r = d.result || {}, sc = N(d.score), scC = sc >= 75 ? 'good' : sc >= 50 ? 'mid' : 'bad';
+  const verdict = sc >= 75 ? 'صفحة قوية، وجاهزة تكبر' : sc >= 50 ? 'صفحة فيها أساس منيح، بس في فرص ضايعة' : 'الصفحة بتخسّرك زباين هلأ، وفي شغل مهم';
+  const wa = String(d.whatsapp || '').replace(/\D/g, '');
+  const waMsg = encodeURIComponent(`مرحبا، شفت تقرير فحص صفحة ${d.company} (#${d.no}) وبدي أعرف الخطة`);
+  const p = r.projection;
+  document.title = 'تقرير فحص صفحة ' + d.company + ' · ' + d.agency_name;
+  $('#app').innerHTML = `
+  <div class="bar"><div class="brand">${d.agency_logo ? `<img src="${esc(d.agency_logo)}" alt="${esc(d.agency_name)}">` : ''}<span>${esc(d.agency_name)}</span></div>
+    <button class="btn noprint" onclick="print()">⬇ حفظ PDF</button></div>
+  <div class="wrap">
+    <section class="card hero" aria-label="الملخص">
+      <div><small class="k">تقرير فحص صفحة #${esc(d.no)} · ${day(d.created_at)}</small>
+        <h1>${esc(d.company)}</h1><p>${esc(d.sector || '')}${d.city ? ' · ' + esc(d.city) : ''} · <a href="${esc(d.page_url)}" target="_blank" rel="noopener">الصفحة ↗</a></p>
+        <p class="hl">${esc(r.headline || verdict)}</p><p>${esc(r.summary || '')}</p>
+        ${(r.strengths || []).length ? `<div class="chips">${r.strengths.map(x => `<span class="chip">👍 ${esc(x)}</span>`).join('')}</div>` : ''}</div>
+      <div class="ring" style="--v:${sc};--c:${col(scC)}" role="img" aria-label="علامة الصفحة ${sc} من 100"><div><div><b>${sc}</b><small>من 100</small></div></div></div>
+    </section>
+
+    <section class="card"><h2><span class="n">1</span>الصفحة من كل النواحي</h2><p class="sub">قيّمنا كل جانب من 10 حسب اللي شفناه بصفحتك</p>
+      <div class="grid">${(r.sections || []).map(s => { const c = s.status === 'مش واضح من الصور' ? 'na' : clsOf10(N(s.score)); return `<div class="sec">
+        <div class="t"><b>${esc(s.name)}</b><span class="st ${stCls(s.status)}">${esc(s.status)}</span></div>
+        <div class="meter" aria-label="${N(s.score)} من 10"><i style="width:${N(s.score) * 10}%;background:${col(c)}"></i></div>
+        ${list(s.found, 'ok')}${list(s.missing, 'no')}</div>`; }).join('')}</div></section>
+
+    <section class="card"><h2><span class="n">2</span>أهم الأشياء اللي لازم تتصلّح</h2><p class="sub">مرتبة حسب تأثيرها على مبيعاتك</p>
+      ${(r.top_fixes || []).map((f, i) => `<div class="fix"><div class="num">${i + 1}</div><div><h3>${esc(f.title)} <span class="st ${f.impact === 'عالي' ? 'bad' : 'mid'}">تأثير ${esc(f.impact)}</span></h3>
+        <p><b>ليش مهم:</b> ${esc(f.why)}</p><p><b>كيف:</b> ${esc(f.how)}</p></div></div>`).join('')}</section>
+
+    ${(r.quick_wins || []).length ? `<section class="card"><h2><span class="n">3</span>تصليحات سريعة بتقدر تعملها اليوم</h2><ul class="wins">${r.quick_wins.map(x => `<li>${esc(x)}</li>`).join('')}</ul></section>` : ''}
+
+    ${(r.content_ideas || []).length ? `<section class="card"><h2><span class="n">4</span>3 أفكار محتوى جاهزة لصفحتك</h2><div class="ideas">${r.content_ideas.map(x => `<div class="idea"><b>🎬 ${esc(x.title)}</b><q>${esc(x.hook)}</q></div>`).join('')}</div></section>` : ''}
+
+    ${r.ad_plan ? `<section class="card"><h2><span class="n">5</span>الإعلانات</h2>
+      <p><span class="st ${r.ad_plan.ready ? 'good' : 'mid'}">${r.ad_plan.ready ? 'الصفحة جاهزة للإعلان' : 'في تجهيزات قبل الإعلان'}</span></p>
+      <p>${esc(r.ad_plan.note)}</p><p><b>أقوى زاوية إعلان لمشروعك:</b> ${esc(r.ad_plan.angle)}</p></section>` : ''}
+
+    ${p ? `<section class="card"><h2><span class="n">6</span>شو ممكن تجيب الإعلانات لما نشتغل عليها</h2>
+      <p class="sub">تقدير مبني على ${p.real_data ? 'نتائج حملات حقيقية أدرناها بمجال' : 'متوسطات السوق بمجال'} «${esc(p.sector)}»: سعر المحادثة بين ${p.cpr_min}$ و ${p.cpr_max}$</p>
+      <table><thead><tr><th>ميزانية الإعلان شهرياً</th><th>محادثات متوقعة</th><th>طلبات/زباين متوقعين</th></tr></thead><tbody>
+      ${p.rows.map(x => `<tr><td><b>${x.budget}$</b></td><td><b>${fmtN(x.msgs_min)} – ${fmtN(x.msgs_max)}</b></td><td><b>${fmtN(x.orders_min)} – ${fmtN(x.orders_max)}</b></td></tr>`).join('')}</tbody></table>
+      ${p.current ? `<p class="${p.current.better ? 'proof' : 'note'}" style="${p.current.better ? 'background:var(--sun-bg);color:var(--sun)' : ''}">${p.current.better ? `هلأ كل محادثة بتكلّفك تقريباً ${p.current.cpr}$. بالمجال تبعك ممكن تنزل لـ ${p.cpr_max}$ أو أقل، يعني نفس الميزانية بتجيبلك محادثات أكثر.` : `سعر محادثتك الحالي (${p.current.cpr}$) ضمن المعدل الطبيعي، والفرصة الأكبر بتحويل المحادثات لطلبات.`}</p>` : ''}
+      ${p.proof ? `<p class="proof">📊 من شغلنا: ${esc(p.proof)}</p>` : ''}
+      <p class="note">* هاد تقدير مش ضمان. النتيجة الفعلية بتعتمد على العرض والسعر وسرعة الرد على الزباين وجودة المحتوى.</p></section>` : ''}
+
+    <section class="card cta noprint"><h2>بدك نصلّحلك هالأشياء ونشغّل صفحتك صح؟</h2><p>احكي معنا على واتساب، وبنعطيك خطة واضحة خطوة بخطوة.</p>
+      ${wa ? `<a class="btn wa" href="https://wa.me/${wa}?text=${waMsg}" target="_blank" rel="noopener">💬 احكي معنا على واتساب</a>` : ''}</section>
+    <p class="foot">تقرير من ${esc(d.agency_name)} · فحص مبني على صور صفحتك بتاريخ ${day(d.created_at)}</p>
+  </div>`;
+}
+
+(async () => {
+  if (!cfg.url || !cfg.key || !window.supabase?.createClient || tok.length < 30) { $('#app').innerHTML = '<div class="center"><div><h2>الرابط مش صحيح</h2></div></div>'; return; }
+  const sb = window.supabase.createClient(cfg.url, cfg.key, {auth: {persistSession: false}});
+  const {data, error} = await sb.rpc('audit_public', {tok});
+  if (error || !data) { $('#app').innerHTML = '<div class="center"><div><h2>التقرير مش موجود</h2><p>تأكد من الرابط، أو تواصل معنا.</p></div></div>'; return; }
+  render(data);
+})();
+})();
+</script>
+</body>
+</html>
